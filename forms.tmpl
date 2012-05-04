@@ -1,0 +1,187 @@
+#! stdtmpl
+#
+#template `%`(idx: expr): expr {.immediate.} =
+#  row[idx]
+#end template
+#
+#
+#proc genThreadsList(c: var TForumData): string =
+#  const query = sql"select id, name, views, modified from thread order by modified desc"
+#  const threadId = 0
+#  const name = 1
+#  const views = 2
+#  
+#  result = ""
+<table id="threads">
+  <tr>
+    <th>Topics</th>
+    <th>Author</th>
+    <th>Posts</th>
+    <th>Views</th>
+    <th>Last reply</th>
+  </tr>
+#  for row in Rows(db, query):
+  <tr>
+    <td class="topic">${UrlButton(c, XMLencode(%name), actionShow, %threadId)}</td>
+    #let authorName = getValue(db, sql("select name from person where id = " &
+    #  "(select author from post where id = " & 
+    #  "(select min(id) from post where thread = ?))"), %threadId)
+    <td class="author">${authorName}</td>
+#    let posts = GetValue(db, sql"select count(*) from post where thread = ?", %threadId)
+    <td class="posts">$posts</td>
+    <td class="views">${XMLencode(%views)}</td>
+    #let latestReplyAuthor = getValue(db, sql("select name from person where id = " &
+    #  "(select author from post where id = " & 
+    #  "(select max(id) from post where thread = ?))"), %threadId)
+    #let latestReplyDate = getValue(db, sql("SELECT strftime('%s', " &
+    #  "(select creation from post where id = (select max(id) from post where thread = ?)))"), %threadId)
+    <td class="lastreply">
+      <span>${formatTimestamp(latestReplyDate.parseInt())}</span><br/>
+      <span>${latestReplyAuthor}</span>
+    </td>
+  </tr>
+#  end for
+</table>
+#end proc
+#
+#
+#proc genPostPreview(c: var TForumData, 
+#                    title, content, author, date: string): string =
+#  result = ""
+<table class="post">
+  <tr>
+    <th colspan="2">
+      <span>${XMLEncode(title)}</span>
+      <span style="float:right;">${XMLencode(date)}</span>
+    </th>
+  </tr>
+  <tr>
+    <td class="left">
+      <span>${XMLencode(author)}</span>
+    </td>
+    <td class="content">
+    #try:
+      ${content.rstToHtml({roSupportSmilies})}
+    #except ERecoverableError:
+    #  c.errorMsg = getCurrentExceptionMsg()
+    #end
+    </td>
+  </tr>
+</table>
+#end proc
+#
+#
+#proc genPostsList(c: var TForumData, threadId: string): string =
+#  const query = sql"select p.id, u.name, p.header, p.content, p.creation, p.author, u.email from post p, person u where u.id = p.author and p.thread = ? order by p.id"
+#  const postId = 0
+#  const userName = 1
+#  const postHeader = 2
+#  const postContent = 3
+#  const postCreation = 4
+#  const postAuthor = 5
+#  const userEmail = 6
+#  result = ""
+#  for row in FastRows(db, query, threadId):
+<table class="post">
+  <tr>
+    <th colspan="2">
+      <span>${XMLencode(%postHeader)}</span>
+      <span style="float:right;">${XMLencode(%postCreation)}</span>
+    </th>
+  </tr>
+  <tr>
+    <td class="left">
+      <span>${XMLencode(%userName)}</span>
+      <hr/>
+      ${genGravatar(%userEmail)}
+      #if c.userId == %postAuthor and c.currentPost.subject.len == 0:
+        <hr/>${UrlButton(c, "Edit post", actionEditForm, %postId)}
+      #elif c.isAdmin and c.currentPost.subject.len == 0:
+        <hr/><span style="color:red">
+          ${UrlButton(c, "Edit post", actionEditForm, %postId)}</span>
+      #end if
+    </td>
+    <td class="content">
+      ${(%postContent).rstToHtml({roSupportSmilies})}
+    </td>
+  </tr>
+</table>
+#  end for
+#end proc
+#
+#
+#proc genFormPost(c: var TForumData, action: TForumAction,
+#                 isEdit: bool, title, content: string): string =
+#  result = ""
+<br />
+<a name="reply"></a>
+<div id="replywrapper">
+  <div id="replytop">
+    <span>Reply</span>
+  </div>
+  <form action="$postAction" method="POST">
+    ${FieldValid(c, "subject", "Subject:")}
+    ${TextWidget(c, "subject", title, maxlength=100)}
+    <br />
+    ${FieldValid(c, "content", "Content:")}<br />
+    ${TextAreaWidget(c, "content", content, width=100, height=20)}<br />
+    ${FormSession(c, action)}
+
+  #  if isEdit:
+    <input type="checkbox" name="delete" value="Delete">Delete Post<br />
+  #  end if
+    <br/>
+    <input type="submit" name="previewBtn" value="Preview" />
+    <input type="submit" name="postBtn" value="Post" />
+  
+    <a href="http://nimrod-code.org/rst.html">Syntax Cheatsheet</a>
+  </form>
+</div>
+#end proc
+#
+#
+#proc genFormRegister(c: var TForumData): string =
+#  result = ""
+<form action="$postAction" method="POST">
+  <b>Register</b><br />
+  <table border="0">
+    <tr>
+      <td>${FieldValid(c, "name", "Username:")}</td>
+      <td>${TextWidget(c, "name", reuseText, maxlength=20)}</td>
+    </tr>
+    <tr>
+      <td>${FieldValid(c, "new_password", "Password:")}</td>
+      <td><input type="password" name="new_password" maxlength="20" /></td>
+    </tr>
+    <tr>
+      <td>${FieldValid(c, "email", "E-Mail:")}</td>
+      <td>${TextWidget(c, "email", reuseText, maxlength=30)}</td>
+    </tr>
+    <tr>
+      <td>${FieldValid(c, "antibot", "What is " & antibot(c) & "?")}</td>
+      <td>${TextWidget(c, "antibot", "", maxlength=4)}</td>
+    </tr>
+  </table>
+  ${FormSession(c, actionRegister)}
+  <input type="submit" value="Register">
+</form>
+#end proc
+#
+#proc genFormLogin(c: var TForumData): string =
+#  result = ""
+#  if not c.loggedIn:
+  <form action="$postAction" method="POST">
+  <table border="0">
+    <tr><td>Username:</td><td>
+    <input type="text" name="name" maxlength="20"></td></tr>
+    <tr><td>Password:</td><td>
+    <input type="password" name="password" maxlength="20"></td></tr>
+  </table>
+  ${FormSession(c, actionLogin)}
+  <input type="submit" value="Login">
+  </form>
+  <span style="color:red">$c.loginErrorMsg</span>
+#  else:
+  <span style="color:red">You're already logged in!</span>
+#  end if
+#end proc

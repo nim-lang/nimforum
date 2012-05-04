@@ -1,0 +1,36 @@
+#
+#
+#              The Nimrod Forum
+#        (c) Copyright 2012 Andreas Rumpf
+#
+#    All rights reserved.
+#
+
+import cairo, os, strutils
+
+proc getCaptureFilename*(i: int): string {.inline.} =
+  result = "captures/capture_" & $i & ".png"
+
+proc createCapture*(file, text: string) =
+  var surface = imageSurfaceCreate(FORMAT_ARGB32, 10*text.len, 10)
+  var cr = create(surface)
+
+  selectFontFace(cr, "serif", FONT_SLANT_NORMAL, FONT_WEIGHT_BOLD)
+  setFontSize(cr, 12.0)
+
+  setSourceRgb(cr, 1.0, 0.5, 0.0)
+  moveTo(cr, 0.0, 10.0)
+  showText(cr, repeatChar(text.len, 'O'))
+
+  setSourceRgb(cr, 0.0, 0.0, 1.0)
+  moveTo(cr, 0.0, 10.0)
+  showText(cr, text)
+  
+  destroy(cr)
+  discard writeToPng(surface, file)
+  destroy(surface)
+
+when isMainModule:
+  createCapture("test.png", "1+33")
+
+

@@ -1,0 +1,46 @@
+#! stdtmpl
+#proc genMain(c: var TForumData, content: string): string = 
+#  result = ""
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Nimrod Forum</title>
+  <link rel="stylesheet" href="${c.genSlash}css/normalize.css">
+  <link rel="stylesheet" href="${c.genSlash}css/style.css">
+</head>
+<body>
+  <div id="wrapper">
+    <div id="nimbtn">
+      <a href="http://nimrod-code.org/">Homepage</a>
+    </div>
+
+    <div id="header">
+      #let frontQuery = c.genQuery(actionShow, "")
+      <span><a href="${frontQuery}">Nimrod's Forum</a></span>
+      #if c.loggedIn:
+        <a href="${websiteLoc}logout" class="right">Logout</a>
+        <span id="welcome">$c.username</span>
+        ${genGravatar(c.email, 26)}
+      #else:
+        <a href="${websiteLoc}register" class="right">Register</a>
+        <a href="${websiteLoc}login" class="right">Login</a>
+      #end if
+    </div>
+      
+    <div id="topbar">
+       ${c.genActionMenu}
+    </div>
+      
+    <div id="content">
+      $content
+      <span style="color:red">$c.errorMsg</span>
+    </div>
+    <div id="topbar">
+       ${c.genActionMenu}
+    </div>
+  </div>
+  <div id="footer">
+  <p>Written in Nimrod. Generated in ${int((epochTime()-c.startTime)*1000.0)}ms.</p>
+  </div>
+</body>
+</html>
