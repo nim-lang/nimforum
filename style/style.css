@@ -1,0 +1,271 @@
+html, body {
+  height: 100%;
+}
+
+#wrapper {
+  min-height: 100%;
+}
+
+div#header {
+  background-color: #3d3d3d;
+  color: #ffffff;
+  padding-top: 3pt;
+  padding-bottom: 3pt;
+}
+
+div#header span#welcome {
+  float: right;
+  padding: 0;
+  padding-right: 7pt;
+}
+div#header img {
+  float: right;
+  margin-top: -2pt;
+  padding-right: 7pt;
+}
+
+div#header span, #nimbtn span {
+  margin: 0;
+  padding: 5pt;
+}
+
+div#header a.right, #nimbtn a {
+  float: right;
+  
+  color: #ffffff;
+  margin-right: 6pt;
+}
+
+div#header a {
+  color: #ffffff;
+}
+
+div#header a:visited, #nimbtn a:visited {  
+  color: #ffffff;
+}
+
+div#header a:hover, #nimbtn a:hover {
+  text-decoration: none;
+}
+
+#nimbtn a {
+  margin-left: 6pt;
+}
+
+#nimbtn {
+  float: left;
+  background-color: #2a2a2a;
+  color: #ffffff;
+  padding-top: 3pt;
+  padding-bottom: 3pt;
+}
+
+#content {
+  margin: 5pt;
+}
+
+#content table#threads {
+  width: 100%;
+  border-collapse: separate;
+  text-align: center;
+  border: #ffffff solid 1px;
+  font-size: 10pt;
+}
+
+#content table#threads th {
+  background-color: #5D5D5D;
+  background: -moz-linear-gradient(top, #5D5D5D, #4D4D4D);
+  background: -webkit-linear-gradient(top, #5D5D5D, #4d4d4d);
+  background: -o-linear-gradient(top, #5D5D5D, #4d4d4d);
+  color: #ffffff;
+  border-bottom: #2d2d2d solid 2px;
+  border-right: #2d2d2d solid 1px;
+}
+
+#content table#threads tr:nth-child(even) {
+  background-color: #eee;
+}
+
+#content table#threads td {
+  vertical-align: middle;
+  border-right: #9d9d9d solid 1px;
+  border-bottom: #9d9d9d solid 1px;
+}
+
+#content table#threads>tbody>tr>td:first-child {
+  border-left: #9d9d9d solid 1px;
+
+}
+
+#content table#threads>tbody>tr>td:last-child {
+  border-right: #9d9d9d solid 1px;
+}
+
+#content table#threads td:hover {
+  border-right-color: #9d9d9d;
+}
+
+#content table#threads td.topic {
+  text-align: left;
+  padding: 5pt;
+}
+#content table#threads td.author {
+  width: 10%;
+}
+#content table#threads td.posts {
+  width: 10%;
+}
+#content table#threads td.views {
+  width: 10%;
+}
+#content table#threads td.lastreply {
+  width: 15%;
+}
+
+#footer {
+  background-color: #5D5D5D;
+  background: -moz-linear-gradient(top, #5D5D5D, #4D4D4D);
+  background: -webkit-linear-gradient(top, #5D5D5D, #4d4d4d);
+  background: -o-linear-gradient(top, #5D5D5D, #4d4d4d);
+  color: #ffffff;
+  text-align: center;
+}
+
+#topbar {
+  margin: 5pt;  
+}
+
+#content .post {
+  border: #4d4d4d solid 2px;
+  width: 100%;
+  margin-bottom: 5pt;
+}
+
+#content .post th {
+  background-color: #5D5D5D;
+  background: -moz-linear-gradient(top, #5D5D5D, #4D4D4D);
+  background: -webkit-linear-gradient(top, #5D5D5D, #4d4d4d);
+  background: -o-linear-gradient(top, #5D5D5D, #4d4d4d);
+  color: #ffffff;
+  padding-left: 5pt;
+  padding-right: 5pt;
+  padding-top: 3pt;
+  padding-bottom: 3pt;
+  text-align: left;
+  font-size: 9pt;
+}
+
+#content .post .left {
+  border-left: #4d4d4d solid 2px;
+  background-color: #eee;
+  padding: 7pt;
+  width: 15%;
+  height: auto;
+}
+
+#content .post .left hr {
+  margin: 0;
+  margin-bottom: 5pt;
+  margin-top: 2pt;
+}
+
+#content .post .content {
+  padding: 6pt;
+}
+
+div#replywrapper {
+  width: 70%;
+  margin-left: auto;
+  margin-right: auto;
+  border: #4d4d4d solid 2px;
+}
+
+div#replywrapper div#replytop {
+  background-color: #5D5D5D;
+  background: -moz-linear-gradient(top, #5D5D5D, #4D4D4D);
+  background: -webkit-linear-gradient(top, #5D5D5D, #4d4d4d);
+  background: -o-linear-gradient(top, #5D5D5D, #4d4d4d);
+  font-size: 9pt;
+  color: #ffffff;
+  padding: 5pt;
+
+}
+
+div#replywrapper form textarea {
+  width: 99%;
+}
+
+div#replywrapper form > input:first-child {
+  width: 80%;
+}
+
+div#replywrapper form {
+  padding: 8pt;
+}
+
+/* For RST nimrod syntax highlighter */
+span.DecNumber {color: blue}
+span.BinNumber {color: blue}
+span.HexNumber {color: blue}
+span.OctNumber {color: blue}
+span.FloatNumber {color: blue}
+span.Identifier  {color: black}
+span.Keyword {font-weight: bold}
+span.StringLit {color: blue}
+span.LongStringLit {color: blue}
+span.CharLit {color: blue}
+span.EscapeSequence {color: black}
+span.Operator {color: black}
+span.Punctation {color: black}
+span.Comment, span.LongComment {font-style:italic; color: green}
+span.RegularExpression  {color: DarkViolet}
+span.TagStart {color: DarkViolet}
+span.TagEnd {color: DarkViolet}
+span.Key  {color: blue}
+span.Value  {color: black}
+span.RawData {color: blue}
+span.Assembler  {color: blue}
+span.Preprocessor {color: DarkViolet}
+span.Directive  {color: DarkViolet}
+span.Command, span.Rule, span.Hyperlink, span.Label, span.Reference, 
+span.Other  {color: black}
+
+/* Buttons */
+a.button {
+  border-radius: 2px 2px 2px 2px;
+  background: -moz-linear-gradient(top, #f7f7f7, #ebebeb);
+  background: -webkit-linear-gradient(top, #f7f7f7, #ebebeb);
+  background: -o-linear-gradient(top, #f7f7f7, #ebebeb);
+  text-decoration: none;
+  color: #3d3d3d;
+  padding: 5px;
+  border: solid 1px #9d9d9d;
+  display: inline-block;
+  position: relative;
+  text-align: center;
+  font-size: small;
+}
+
+a.button.left {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+a.button.middle {
+  border-radius: 0;
+  border-left: 0;
+}
+
+a.button.right {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: 0;
+}
+
+a.button:hover {
+  background: -moz-linear-gradient(top, #0099c7, #0294C1);
+  background: -webkit-linear-gradient(top, #0099c7, #0294C1);
+  background: -o-linear-gradient(top, #0099c7, #0294C1);
+  border: solid 1px #077A9C;
+  color: #ffffff;
+}
