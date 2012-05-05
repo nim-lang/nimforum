@@ -62,7 +62,7 @@
     <td class="content">
     #try:
       ${content.rstToHtml({roSupportSmilies})}
-    #except ERecoverableError:
+    #except ERecoverableError, EParseError:
     #  c.errorMsg = getCurrentExceptionMsg()
     #end
     </td>

@@ -315,7 +315,7 @@ proc validateRst(c: var TForumData, content: string): bool =
   result = true
   try:
     discard content.rstToHtml({roSupportSmilies})
-  except ERecoverableError:
+  except ERecoverableError, EParseError:
     result = setError(c, "", getCurrentExceptionMsg())
 
 proc crud(c: TCrud, table: string, data: openArray[string]): TSqlQuery =
