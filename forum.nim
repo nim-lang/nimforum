@@ -691,51 +691,53 @@ when not defined(writeStatusContent):
     c.send("Status: " & status & "\r\L" & strHeaders & "\r\L")
     c.send(content)
 
+proc mainLoop() =
+  try:
+    db = Open(connection="nimforum.db", user="postgres", password="", 
+              database="nimforum")
+    open(s, 9000.TPort)
+    while next(s):
+      var r: TRequest
+      r.vars = s.headers
+      r.ip = r.vars["REMOTE_ADDR"]
+      r.url = r.vars["DOCUMENT_URI"]
+      r.startTime = epochTime()
+      
+      # the server software (nginx) seems to f*ck up SCGI + POST/GET, so I work
+      # around this issue here:
+      try:
+        for key, val in cgi.decodeData(r.vars["QUERY_STRING"]):
+          r.vars[key] = val
+      except ECgi:
+        nil
+      try:
+        for key, val in cgi.decodeData(s.input):
+          r.vars[key] = val
+      except ECgi:
+        nil
+      let fi = processFile(r)
+      
+      if fi.isFile:
+        writeStatusOkTextContent(s.client, fi.contentType)
+        send(s.client, fi.content)
+      else:
+        let (status, resp, headers) = processRequest(r)
+        s.client.writeStatusContent(status, resp, headers)
+      s.client.close()
+  finally:
+    close(s)
+    close(db)
+
 proc main() =
   docConfig = rstgen.defaultConfig()
-
   math.randomize()
-  db = Open(connection="nimforum.db", user="postgres", password="", 
-            database="nimforum")
 
-  open(s, 9000.TPort)
-  while next(s):
-    var r: TRequest
-    r.vars = s.headers
-    r.ip = r.vars["REMOTE_ADDR"]
-    r.url = r.vars["DOCUMENT_URI"]
-    r.startTime = epochTime()
-    
-    # the server software (nginx) seems to f*ck up SCGI + POST/GET, so I work
-    # around this issue here:
-    try:
-      for key, val in cgi.decodeData(r.vars["QUERY_STRING"]):
-        r.vars[key] = val
-    except ECgi:
-      nil
-    try:
-      for key, val in cgi.decodeData(s.input):
-        r.vars[key] = val
-    except ECgi:
-      nil
-    let fi = processFile(r)
-    
-    if fi.isFile:
-      writeStatusOkTextContent(s.client, fi.contentType)
-      send(s.client, fi.content)
-    else:
-      let (status, resp, headers) = processRequest(r)
-      s.client.writeStatusContent(status, resp, headers)
-    s.client.close()
-  close(s)
-  close(db)
-
-proc mainWrapper() =
   for i in 0..10:
     try:
-      main()
+      mainLoop()
     except:
       echo "FATAL: ", getCurrentExceptionMsg()
+      os.sleep(1000)
 
-mainWrapper()
+main()
 

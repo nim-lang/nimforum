@@ -10,6 +10,7 @@ See also the
 or the `quick reference <http://docutils.sourceforge.net/docs/user/rst/quickref.html>`_
 for further information.
 
+Elements of **markdown** are also supported.
 
 
 Inline elements
@@ -35,6 +36,10 @@ Links are either direct URLs like ``http://nimrod-code.org`` or written like
 this::
   
   `Nimrod <http://nimrod-code.org>`_
+  
+Or like this::
+
+  `<http://nimrod-code.org>`_
 
 
 Code blocks
@@ -58,6 +63,21 @@ Is rendered as:
 
 Except Nimrod, the programming languages C, C++, Java and C# have highlighting
 support.
+
+An alternative github-like syntax is also supported. This has the advantage
+that no excessive indentation is needed::
+
+  ```nimrod  
+    if x == "abc":
+      echo "xyz"```
+
+Is rendered as:
+
+.. code-block:: nimrod
+  
+  if x == "abc":
+    echo "xyz"
+
 
 
 Literal blocks
