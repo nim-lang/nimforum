@@ -8,7 +8,7 @@
 
 import
   os, strutils, times, md5, strtabs, cgi, math, db_sqlite, matchers,
-  rst, docgen, msgs, captchas, sockets, scgi, cookies
+  rst, rstgen, captchas, sockets, scgi, cookies
 
 const
   unselectedThread = -1
@@ -64,6 +64,7 @@ type
 
 var
   db: TDbConn
+  docConfig: PStringTable
   
 proc init(c: var TForumData) = 
   c.userPass = ""
@@ -135,7 +136,6 @@ proc UrlButton(c: var TForumData, text: string,
     c.genQuery(nextAction, target), text]
 
 proc genButtons(c: var TForumData, btns: seq[TStyledButton]): string =
-  result = ""
   if btns.len == 1:
     var anchor = ""
     if btns[0].action == actionReplyForm:
@@ -144,6 +144,7 @@ proc genButtons(c: var TForumData, btns: seq[TStyledButton]): string =
     result = ("""<a class="active button" href="$1$3">$2</a>""") % [
       c.genQuery(btns[0].action, btns[0].tid), btns[0].text, anchor]
   else:
+    result = ""  
     for i, btn in pairs(btns):
       var anchor = ""
       if btns[i].action == actionReplyForm:
@@ -311,11 +312,15 @@ proc isPreview(c: TForumData): bool =
 proc isDelete(c: TForumData): bool =
   result = c.cgiData["delete"].len > 0
 
+proc rstToHtml(content: string): string =
+  result = rstgen.rstToHtml(content, {roSupportSmilies, roSupportMarkdown}, 
+                            docConfig)
+
 proc validateRst(c: var TForumData, content: string): bool =
   result = true
   try:
-    discard content.rstToHtml({roSupportSmilies})
-  except ERecoverableError, EParseError:
+    discard rstToHtml(content)
+  except EParseError:
     result = setError(c, "", getCurrentExceptionMsg())
 
 proc crud(c: TCrud, table: string, data: openArray[string]): TSqlQuery =
@@ -687,7 +692,8 @@ when not defined(writeStatusContent):
     c.send(content)
 
 proc main() =
-  docgen.setupConfig()
+  docConfig = rstgen.defaultConfig()
+
   math.randomize()
   db = Open(connection="nimforum.db", user="postgres", password="", 
             database="nimforum")

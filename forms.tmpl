@@ -61,8 +61,8 @@
     </td>
     <td class="content">
     #try:
-      ${content.rstToHtml({roSupportSmilies})}
-    #except ERecoverableError, EParseError:
+      ${content.rstToHtml}
+    #except EParseError:
     #  c.errorMsg = getCurrentExceptionMsg()
     #end
     </td>
@@ -102,7 +102,11 @@
       #end if
     </td>
     <td class="content">
-      ${(%postContent).rstToHtml({roSupportSmilies})}
+    #try:
+      ${(%postContent).rstToHtml}
+    #except EParseError:
+    #  c.errorMsg = getCurrentExceptionMsg()
+    #end
     </td>
   </tr>
 </table>
