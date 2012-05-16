@@ -8,10 +8,13 @@
 
 import cairo, os, strutils
 
-proc getCaptureFilename*(i: int): string {.inline.} =
-  result = "captures/capture_" & $i & ".png"
+proc getCaptchaFilename*(i: int): string {.inline.} =
+  result = "public/captchas/capture_" & $i & ".png"
 
-proc createCapture*(file, text: string) =
+proc getCaptchaUrl*(i: int): string =
+  result = "/captchas/capture_" & $i & ".png"
+
+proc createCaptcha*(file, text: string) =
   var surface = imageSurfaceCreate(FORMAT_ARGB32, 10*text.len, 10)
   var cr = create(surface)
 

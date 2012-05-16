@@ -8,30 +8,15 @@
 
 import
   os, strutils, times, md5, strtabs, cgi, math, db_sqlite, matchers,
-  rst, rstgen, captchas, sockets, scgi, cookies
+  rst, rstgen, captchas, sockets, scgi, jester
 
 const
   unselectedThread = -1
   transientThread = 0
-  websiteLoc = "/"
-  postAction = "/"
+  websiteLoc = ""
 
 type
   TCrud = enum crCreate, crRead, crUpdate, crDelete
-  TForumAction = enum
-    actionShow = "show",
-    actionLoginForm = "login",
-    actionLogin = "dologin",
-    actionLogout = "logout",
-    actionRegisterForm = "register",
-    actionRegister = "doregister",
-    actionNewThreadForm = "newthread",
-    actionNewThread = "donewthread",
-    actionReplyForm = "reply",
-    actionReply = "doreply",
-    actionEditForm = "edit",
-    actionEdit = "doedit",
-    action404
 
   TSession = object of TObject
     threadid: int
@@ -42,25 +27,15 @@ type
   TPost = tuple[subject, content: string]
 
   TForumData = object of TSession
-    action: TForumAction
-    cgiData: PStringTable
-    ip: string
+    req: TRequest
     userid: string
     actionContent: string
     errorMsg, loginErrorMsg: string
     invalidField: string
     currentPost: TPost
-    reqUrl: string
     startTime: float
-    cookieData: PStringTable
 
-  TStyledButton = tuple[text: string, action: TForumAction, tid: string]
-
-  TRequest* {.final.} = object  ## a request for the application to process
-    ip*: string                 ## IP of request
-    url*: string                ## requested URL
-    vars*: PStringTable         ## other variables
-    startTime*: float
+  TStyledButton = tuple[text: string, link: string]
 
 var
   db: TDbConn
@@ -72,8 +47,6 @@ proc init(c: var TForumData) =
   c.threadId = unselectedThread
   c.postId = -1
   
-  c.action = actionShow
-  c.ip = ""
   c.userid = ""
   c.actionContent = ""
   c.errorMsg = ""
@@ -94,14 +67,14 @@ const
 proc TextWidget(c: TForumData, name, defaultText: string, 
                 maxlength = 30, size = -1): string =
   let x = if defaultText != reuseText: defaultText
-          else: XMLencode(c.cgiData[name])
+          else: XMLencode(c.req.params[name])
   return """<input type="text" name="$1" maxlength="$2" value="$3" $4/>""" % [
     name, $maxlength, x, if size != -1: "size=\"" & $size & "\"" else: ""]
 
 proc TextAreaWidget(c: TForumData, name, defaultText: string,  
                     width = 80, height = 20): string =
   let x = if defaultText != reuseText: defaultText
-          else: XMLencode(c.cgiData[name])
+          else: XMLencode(c.req.params[name])
   return """<textarea name="$1" cols="$2" rows="$3">$4</textarea>""" % [
     name, $width, $height, x]
 
@@ -111,71 +84,44 @@ proc FieldValid(c: TForumData, name, text: string): string =
   else:
     result = text
 
-proc genQuery(c: var TForumData, action: TForumAction, target: string): string =
-  result = websiteLoc
-  case action
-  of actionShow:
-    if target != "":
-      result.add("t/" & target)
-  of actionReplyForm:
-    result.add("t/" & target & "?action=reply")
-  of actionEditForm:
-    result.add("t/" & $c.threadid & "?action=edit&postid=" & target)
-  else:
-    result.add($action & "/" & target)
+proc genThreadUrl(c: TForumData, postId = "", action = "", threadid = ""): string =
+  result = "/t/" & (if threadid == "": $c.threadId else: threadid)
+  if action != "":
+    result.add("?action=" & action)
+    if postId != "":
+      result.add("&postid=" & postid)
+  result = c.req.makeUri(result, absolute = false)
 
-proc FormSession(c: var TForumData, nextAction: TForumAction): string =
-  return """<input type="hidden" name="action" value="$1" />
-            <input type="hidden" name="threadid" value="$2" />
-            <input type="hidden" name="postid" value="$3" />""" % [
-    $nextAction, $c.threadId, $c.postid]
+proc FormSession(c: var TForumData, nextAction: string): string =
+  return """<input type="hidden" name="threadid" value="1" />
+            <input type="hidden" name="postid" value="$2" />""" % [
+    $c.threadId, $c.postid]
 
-proc UrlButton(c: var TForumData, text: string, 
-               nextAction: TForumAction, target=""): string =
+proc UrlButton(c: var TForumData, text, url: string): string =
   return ("""<a class="url_button" href="$1">$2</a>""") % [
-    c.genQuery(nextAction, target), text]
+    url, text]
 
 proc genButtons(c: var TForumData, btns: seq[TStyledButton]): string =
   if btns.len == 1:
     var anchor = ""
-    if btns[0].action == actionReplyForm:
-      anchor = "#reply"
     
     result = ("""<a class="active button" href="$1$3">$2</a>""") % [
-      c.genQuery(btns[0].action, btns[0].tid), btns[0].text, anchor]
+      btns[0].link, btns[0].text, anchor]
   else:
     result = ""  
     for i, btn in pairs(btns):
       var anchor = ""
-      if btns[i].action == actionReplyForm:
-        anchor = "#reply"
     
       var class = ""
       if i == 0: class = "left "
       elif i == btns.len()-1: class = "right "
       else: class = "middle "
       result.add(("""<a class="$3active button" href="$1$4">$2</a>""") % [
-        c.genQuery(btns[i].action, btns[i].tid), btns[i].text, class, anchor])
-
-proc genSlash(c: var TForumData): string =
-  let reqPath = c.reqUrl
-  if reqPath.endswith("/"):
-    return ""
-  else: return reqPath & "/"
+        btns[i].link, btns[i].text, class, anchor])
 
 proc formatTimestamp(t: int): string =
   let t2 = getGMTime(TTime(t))
-  result = ""
-  result.add(`$`(t2.weekday)[ .. 2] & ", ")
-  result.add($t2.monthday & " ")
-  result.add(`$`(t2.month)[ .. 2] & " ")
-  result.add($t2.year & " ")
-  if t2.hour < 10:
-    result.add("0")
-  result.add($t2.hour & ":")
-  if t2.minute < 10:
-    result.add("0")
-  result.add($t2.minute)
+  return t2.format("ddd',' d MMM yyyy HH':'mm 'UTC'")
 
 proc genGravatar(email: string, size: int = 80): string =
   let emailMD5 = email.toLower.toMD5
@@ -226,13 +172,13 @@ proc antibot(c: var TForumData): string =
   let b = math.random(1000)+1
   let answer = $(a+b)
   
-  Exec(db, sql"delete from antibot where ip = ?", c.ip)
-  let captureId = TryInsertID(db, 
-    sql"insert into antibot(ip, answer) values (?, ?)", c.ip, 
+  Exec(db, sql"delete from antibot where ip = ?", c.req.ip)
+  let CaptchaId = TryInsertID(db, 
+    sql"insert into antibot(ip, answer) values (?, ?)", c.req.ip, 
     answer).int mod 10_000
-  let captureFile = "captchas/captcha_" & $captureId & ".png"
-  createCapture(captureFile, $a & "+" & $b)
-  result = """<img src="$1" />""" % captureFile
+  let CaptchaFile = getCaptchaFilename(CaptchaId)
+  createCaptcha(CaptchaFile, $a & "+" & $b)
+  result = """<img src="$1" />""" % getCaptchaUrl(captchaId)
 
 const
   SecureChars = {'A'..'Z', 'a'..'z', '0'..'9', '_', '\128'..'\255'}
@@ -242,12 +188,7 @@ proc setError(c: var TForumData, field, msg: string): bool {.inline.} =
   c.errorMsg = "Error: " & msg
   return false
 
-proc register(c: var TForumData): bool = 
-  # get form data:
-  let name = c.cgiData["name"]
-  let pass = c.cgiData["new_password"]
-  let antibot = c.cgiData["antibot"]
-  let email = c.cgiData["email"]
+proc register(c: var TForumData, name, pass, antibot, email: string): bool = 
   # Username validation:
   if name.len == 0 or not allCharsInSet(name, SecureChars):
     return setError(c, "name", "Invalid username!")
@@ -260,7 +201,7 @@ proc register(c: var TForumData): bool =
 
   # antibot validation:
   let correctRes = GetValue(db, 
-    sql"select answer from antibot where ip = ?", c.ip)
+    sql"select answer from antibot where ip = ?", c.req.ip)
   if antibot != correctRes:
     return setError(c, "antibot", "You seem to be a bot!")
     
@@ -277,16 +218,16 @@ proc register(c: var TForumData): bool =
   return true
 
 proc checkLoggedIn(c: var TForumData) = 
-  let pass = c.cookieData["sid"]
+  let pass = c.req.cookies["sid"]
   if pass.len == 0: return
   if ExecAffectedRows(db, 
        sql("update session set lastModified = DATETIME('now') " &
            "where ip = ? and password = ?"), 
-           c.ip, pass) > 0:
+           c.req.ip, pass) > 0:
     c.userpass = pass
     c.userid = GetValue(db, 
       sql"select userid from session where ip = ? and password = ?", 
-      c.ip, pass)
+      c.req.ip, pass)
       
     let row = getRow(db,
       sql"select name, email, admin from person where id = ?", c.userid)
@@ -294,23 +235,23 @@ proc checkLoggedIn(c: var TForumData) =
     c.email = ||row[1]
     c.isAdmin = parseBool(||row[2])
   else:
-    echo("not found login")
+    echo("SID not found in sessions. Assuming logged out.")
 
 proc logout(c: var TForumData) =
   const query = sql"delete from session where ip = ? and password = ?"
   c.username = ""
   c.userpass = ""
-  Exec(db, query, c.ip, c.cookieData["sid"])
+  Exec(db, query, c.req.ip, c.req.cookies["sid"])
 
 proc incrementViews(c: var TForumData) = 
   const query = sql"update thread set views = views + 1 where id = ?"
   Exec(db, query, $c.threadId)
 
 proc isPreview(c: TForumData): bool =
-  result = c.cgiData["previewBtn"].len > 0
+  result = c.req.params["previewBtn"].len > 0 # TODO: Could be wrong?
 
 proc isDelete(c: TForumData): bool =
-  result = c.cgiData["delete"].len > 0
+  result = c.req.params["delete"].len > 0
 
 proc rstToHtml(content: string): string =
   result = rstgen.rstToHtml(content, {roSupportSmilies, roSupportMarkdown}, 
@@ -352,11 +293,11 @@ proc crud(c: TCrud, table: string, data: openArray[string]): TSqlQuery =
     result = sql("delete from " & table & " where id = ?")
 
 template retrSubject(c: expr) =
-  let subject = c.cgiData["subject"]
+  let subject = c.req.params["subject"]
   if subject.len < 3: return setError(c, "subject", "Subject not long enough")
   
 template retrContent(c: expr) =
-  let content = c.cgiData["content"]
+  let content = c.req.params["content"]
   if not validateRst(c, content): return false
 
 template retrPost(c: expr) =
@@ -379,7 +320,7 @@ template setPreviewData(c: expr) =
 
 template writeToDb(c, cr, postId: expr) =
   exec(db, crud(cr, "post", "author", "ip", "header", "content", "thread"),
-       c.userId, c.ip, subject, content, $c.threadId, postId)
+       c.userId, c.req.ip, subject, content, $c.threadId, postId)
 
 proc edit(c: var TForumData, postId: int): bool =
   checkLogin(c)  
@@ -422,7 +363,7 @@ proc newThread(c: var TForumData): bool =
     setPreviewData(c)
     c.threadID = transientThread
   else:
-    c.threadID = TryInsertID(db, query, c.cgiData["subject"]).int
+    c.threadID = TryInsertID(db, query, c.req.params["subject"]).int
     if c.threadID < 0: return setError(c, "subject", "Subject already exists")
     writeToDb(c, crCreate, "")
     result = true
@@ -447,7 +388,7 @@ proc login(c: var TForumData, name, pass: string): bool =
     # create session:
     Exec(db, 
       sql"insert into session (ip, password, userid) values (?, ?, ?)", 
-      c.ip, c.userpass, c.userid)
+      c.req.ip, c.userpass, c.userid)
     return true
   else:
     return c.setError("password", "Login failed!")
@@ -456,25 +397,16 @@ proc genActionMenu(c: var TForumData): string =
   result = ""
   var btns: seq[TStyledButton] = @[]
   if c.threadId >= 0:
-    btns.add(("Thread List", actionShow, ""))
+    btns.add(("Thread List", c.req.makeUri("/", false)))
   if c.loggedIn: 
     if c.threadId >= 0:
-      btns.add(("Reply", actionReplyForm, $c.threadId))
-    btns.add(("New Thread", actionNewThreadForm, ""))
+      let replyUrl = c.genThreadUrl("", "reply") & "#reply"
+      btns.add(("Reply", replyUrl))
+    btns.add(("New Thread", c.req.makeUri("/newthread", false)))
   result = c.genButtons(btns)
 
 include "forms.tmpl"
 include "main.tmpl"
-
-proc contentAtPosition(c: var TForumData): string = 
-  if c.threadId == transientThread:
-    result = c.genPostPreview(c.currentPost.subject, 
-                              c.currentPost.content, 
-                              c.username, $getGMTime(getTime()))
-  elif validThreadId(c):
-    result = genPostsList(c, $c.threadId)
-  else:
-    result = genThreadsList(c)
 
 proc prependRe(s: string): string =
   result = if s.len == 0:
@@ -482,262 +414,133 @@ proc prependRe(s: string): string =
            elif s.startswith("Re:"): s
            else: "Re: " & s
 
-proc dispatch(c: var TForumData): tuple[status, content: string,
-                                        headers: PStringTable] =
-  template `@`(x: expr): expr = c.cgiData[x]
-  
-  template redirect(): stmt =
-    result[0] = "303 See Other"
-    let q =  c.genQuery(actionShow, $c.threadId)
-    result[2] = {"Location": q}.newStringTable()
-  
-  template successfulLogin() =
-    redirect()
-    # TODO: Security risk: I'm not sure that using the hashed password as the 
-    # sid is the best idea...
-    var tim = TTime(int(getTime()) + 7 * (60 * 60 * 24)) # 7 days added
-    result[2]["Set-Cookie"] = setCookie("sid", c.userpass, 
-                                        tim.getGMTime(), noName = true)
-  
-  let tid = @"threadid"
-  if tid.len > 0:
-    parseInt(tid, c.threadId, -1..1000_000)
-  let pid = @"postid"
-  if pid.len > 0:
-    parseInt(pid, c.postId, -1..1000_000)
-  
-  result[0] = "200 OK"
-  result[1] = ""
-  result[2] = {"Content-Type": "text/html"}.newStringTable
-  case c.action
-  of actionShow:
-    if tid.len > 0:
-      incrementViews(c)
-    result[1] = contentAtPosition(c)
-  of actionRegisterForm:
-    result[1] = genFormRegister(c)
-  of actionRegister:
-    if register(c):
-      discard login(c, @"name", @"new_password")
-      successfulLogin()
-    else:
-      result[1] = genFormRegister(c)
-  of actionLoginForm:
-    result[1] = genFormLogin(c)
-  of actionLogin:
-    if login(c, @"name", @"password"):
-      successfulLogin()
-    else:
-      result[1] = genFormLogin(c)
-  of actionLogout:
-    logout(c)
-    redirect()
-  of actionReplyForm:
-    let subject = GetValue(db,
-      sql"select header from post where id = (select max(id) from post where thread = ?)", 
-      $c.threadId).prependRe
-    result[1] = contentAtPosition(c)
-    result[1].add genFormPost(c, actionReply, false, subject, "")
-  of actionReply:
-    if reply(c):
-      redirect()
-    else:
-      result[1] = contentAtPosition(c)
-      if c.isPreview:
-        result[1] = genPostPreview(c, @"subject", @"content", 
-                                c.userName, $getGMTime(getTime()))
-      result[1].add genFormPost(c, actionReply, false, reuseText, reuseText)
-  of actionEditForm:
-    const query = sql"select header, content from post where id = ?"
-    let row = getRow(db, query, $c.postId)
-    let header = ||row[0]
-    let content = ||row[1]
-    result[1] = genFormPost(c, actionEdit, true, header, content)
-  of actionEdit:
-    if edit(c, c.postId):
-      redirect()
-    else:
-      if c.isPreview:
-        result[1] = genPostPreview(c, @"subject", @"content", 
-                                   c.userName, $getGMTime(getTime()))
-      result[1].add genFormPost(c, actionEdit, true, reuseText, reuseText)
-  of actionNewThreadForm:
-    result[1] = genFormPost(c, actionNewThread, false, "", "")
-  of actionNewThread:
-    if newThread(c):
-      redirect()
-    else:
-      if c.isPreview:
-        result[1] = genPostPreview(c, @"subject", @"content", 
-                                c.userName, $getGMTime(getTime()))
-      result[1].add genFormPost(c, actionNewThread, false, reuseText, reuseText)
-  of action404:
-    result[0] = "404 Not Found"
-    result[1] = ""
-    result[2] = newStringTable()
-  
-  if result[0] == "200 OK":
-    result[1] = genMain(c, result[1])
+template createTFD(): stmt =
+  var c: TForumData
+  init(c)
+  c.req = request
+  c.startTime = epochTime()
+  if request.cookies.len > 0:
+    checkLoggedIn(c)
 
-proc normalizeDocURI(url: string): string =
-  ## Adds a leading / if one doesn't exist.
-  result = if url[url.len-1] != '/': url & '/' else: url
+get "/":
+  createTFD()
+  resp genMain(c, genThreadsList(c))
 
-proc getAction(cgiData: PStringTable): TForumAction =
-  var a = cgiData["action"]
+get "/t/@threadid/?":
+  createTFD()
+  parseInt(@"threadid", c.threadId, -1..1000_000)
+  if (@"postid").len > 0:
+    parseInt(@"postid", c.postId, -1..1000_000)
   
-  var path = ""
-  let url = cgiData["DOCUMENT_URI"].normalizeDocURI
-  if url.startswith(websiteLoc):
-    path = url.substr(websiteLoc.len)
-    if path.len != 0:
-      if path[path.len-1] == '/': path = path.substr(0, path.len()-2)
-    echo "PATH: ", path
-  else: return action404
-  
-  if path == "":
-    if a != "":
-      result = parseEnum[TForumAction](a, action404)
-    else:
-      result = actionShow
+  if (@"action").len > 0:
+    case @"action"
+    of "reply":
+      let subject = GetValue(db,
+          sql"select header from post where id = (select max(id) from post where thread = ?)", 
+          $c.threadId).prependRe
+      body = genPostsList(c, $c.threadId)
+      if c.isPreview:
+        body = genPostPreview(c, @"subject", @"content", 
+                                c.userName, $getGMTime(getTime()))
+      body.add genFormPost(c, "doreply", false, subject, "")
+    of "edit":
+      cond c.postId != -1
+      const query = sql"select header, content from post where id = ?"
+      let row = getRow(db, query, $c.postId)
+      let header = ||row[0]
+      let content = ||row[1]
+      body = genFormPost(c, "doedit", true, header, content)
+    resp c.genMain(body)
   else:
-    var slashes = path.split('/')
-    case slashes[0]
-    of "t", "thread":
-      if slashes.len() > 1:
-        cgiData["threadid"] = slashes[1]
-        case a
-        of "reply": result = actionReplyForm
-        of "edit": result = actionEditForm
-        else: result = actionShow
-      else:
-        result = action404
-    else:
-      result = parseEnum[TForumAction](path, action404)
-      echo("Parsed ", path, " as ", result) 
+    cond validThreadId(c)
+    incrementViews(c)
+    resp genMain(c, genPostsList(c, $c.threadId))
 
-proc processRequest(r: TRequest): tuple[status, content: string,
-                                        headers: PStringTable] =
-  try:
-    var c: TForumData
-    init(c)
-    c.ip = r.ip
-    c.reqUrl = r.url
-    c.startTime = r.startTime
-    
-    assert c.ip.len > 0
-    c.cgiData = r.vars
-    c.cookieData = parseCookies(c.cgiData["HTTP_COOKIE"])
-    echo(c.cookieData)
-    if c.cookieData.len > 0:
-      checkLoggedIn(c)
-    if c.cgiData.len > 0:
-      c.action = getAction(c.cgiData)
+get "/login/?":
+  createTFD()
+  resp genMain(c, genFormLogin(c))
 
-    echo c.cgiData
-    echo(c.action)
-    result = dispatch(c)
-  except:
-    result[0] = "500 Internal Server Error"
-    result[1] = "Internal Error: " & getCurrentExceptionMsg()
-    result[2] = newStringTable()
+get "/logout/?":
+  createTFD()
+  logout(c)
+  redirect(uri("/"))
 
-proc extractDirFile(s: string): tuple[dir, file: string] = 
-  var last = s.len-1
-  while last > 0 and s[last] == '/': dec last
-  var splitPoint = last-1
-  while splitPoint >= 0 and s[splitPoint] != '/': dec splitPoint
-  
-  result.file = s.substr(splitPoint+1, last)
-  # skip '/'
-  var splitPoint2 = splitPoint-1
-  while splitPoint2 >= 0 and s[splitPoint2] != '/': dec splitPoint2
-  result.dir = s.substr(splitPoint2+1, splitPoint-1)
+get "/register/?":
+  createTFD()
+  resp genMain(c, genFormRegister(c))
 
-proc processFile(r: TRequest): tuple[isFile: bool, 
-                                     contentType, content: string] =  
-  try:
-    let url = r.vars["DOCUMENT_URI"].normalizeDocURI
-    let (dir, file) = extractDirFile(url)
-    case dir
-    of "css":
-      result = (true, "text/css", readFile("style/" & file))
-    of "captchas":
-      result = (true, "image/png", readFile("captchas/" & file))
-    of "smilies":
-      result = (true, "image/gif", readFile("images/smilies/" & file))
-    else:
-      result = (false, "", "")
-  except:
-    result = (false, "", "")
+template readIDs(): stmt =
+  # Retrieve the threadid and postid
+  if (@"threadid").len > 0:
+    parseInt(@"threadid", c.threadId, -1..1000_000)
+  if (@"postid").len > 0:
+    parseInt(@"postid", c.postId, -1..1000_000)
 
-# ------------------ main file ----------------------------------------------
+template finishLogin(): stmt = 
+  setCookie("sid", c.userpass, daysForward(7))
+  redirect(uri("/"))
 
-var s: TScgiState
+template handleError(action: string, isEdit: bool): stmt =
+  if c.isPreview:
+    body.add genPostPreview(c, @"subject", @"content", 
+                            c.userName, $getGMTime(getTime()))
+  body.add genFormPost(c, action, isEdit, reuseText, reuseText)
+  resp genMain(c, body)
 
-proc shutdown() {.noconv.} =
-  s.close()
-  writeStackTrace()
-  quit 1
-  
-system.setControlCHook(shutdown)
+post "/dologin":
+  createTFD()
+  if login(c, @"name", @"password"):
+    finishLogin()
+  else:
+    resp c.genMain(genFormLogin(c))
 
-when not defined(writeStatusContent):
-  proc writeStatusContent(c: TSocket, status, content: string, 
-                          headers: PStringTable) =
-    var strHeaders = ""
-    for key, value in headers:
-      strHeaders.add(key & ": " & value & "\r\L")
-    c.send("Status: " & status & "\r\L" & strHeaders & "\r\L")
-    c.send(content)
+post "/doregister":
+  createTFD()
+  if c.register(@"name", @"new_password", @"antibot", @"email"):
+    discard c.login(@"name", @"new_password")
+    finishLogin()
+  else:
+    resp c.genMain(genFormRegister(c))
 
-proc mainLoop() =
-  try:
-    db = Open(connection="nimforum.db", user="postgres", password="", 
-              database="nimforum")
-    open(s, 9000.TPort)
-    while next(s):
-      var r: TRequest
-      r.vars = s.headers
-      r.ip = r.vars["REMOTE_ADDR"]
-      r.url = r.vars["DOCUMENT_URI"]
-      r.startTime = epochTime()
-      
-      # the server software (nginx) seems to f*ck up SCGI + POST/GET, so I work
-      # around this issue here:
-      try:
-        for key, val in cgi.decodeData(r.vars["QUERY_STRING"]):
-          r.vars[key] = val
-      except ECgi:
-        nil
-      try:
-        for key, val in cgi.decodeData(s.input):
-          r.vars[key] = val
-      except ECgi:
-        nil
-      let fi = processFile(r)
-      
-      if fi.isFile:
-        writeStatusOkTextContent(s.client, fi.contentType)
-        send(s.client, fi.content)
-      else:
-        let (status, resp, headers) = processRequest(r)
-        s.client.writeStatusContent(status, resp, headers)
-      s.client.close()
-  finally:
-    close(s)
-    close(db)
+post "/donewthread":
+  createTFD()
+  if newThread(c):
+    redirect(uri("/"))
+  else:
+    body = ""
+    handleError("donewthread", false)
 
-proc main() =
+post "/doreply":
+  createTFD()
+  readIDs()
+  if reply(c):
+    redirect(c.genThreadUrl())
+  else:
+    body = genPostsList(c, $c.threadId)
+    handleError("doreply", false)
+
+post "/doedit":
+  createTFD()
+  readIDs()
+  if edit(c, c.postId):
+    redirect(c.genThreadUrl())
+  else:
+    body = ""
+    handleError("doedit", true)
+
+get "/newthread/?":
+  createTFD()
+  resp genMain(c, genFormPost(c, "donewthread", false, "", ""))
+
+when isMainModule:
   docConfig = rstgen.defaultConfig()
   math.randomize()
-
-  for i in 0..10:
-    try:
-      mainLoop()
-    except:
-      echo "FATAL: ", getCurrentExceptionMsg()
-      os.sleep(1000)
-
-main()
+  db = Open(connection="nimforum.db", user="postgres", password="", 
+              database="nimforum")
+  var http = true
+  if paramCount() > 0:
+    if paramStr(1) == "scgi":
+      http = false
+  run(websiteLoc, port = TPort(9001), http = http)
+  db.close()
 

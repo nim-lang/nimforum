@@ -5,8 +5,8 @@
 <html lang="en">
 <head>
   <title>Nimrod Forum</title>
-  <link rel="stylesheet" href="${c.genSlash}css/normalize.css">
-  <link rel="stylesheet" href="${c.genSlash}css/style.css">
+  <link rel="stylesheet" href="/css/normalize.css">
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <div id="wrapper">
@@ -15,7 +15,7 @@
     </div>
 
     <div id="header">
-      #let frontQuery = c.genQuery(actionShow, "")
+      #let frontQuery = c.req.makeUri("/")
       <span><a href="${frontQuery}">Nimrod's Forum</a></span>
       #if c.loggedIn:
         <a href="${websiteLoc}logout" class="right">Logout</a>

@@ -22,7 +22,7 @@
   </tr>
 #  for row in Rows(db, query):
   <tr>
-    <td class="topic">${UrlButton(c, XMLencode(%name), actionShow, %threadId)}</td>
+    <td class="topic">${UrlButton(c, XMLencode(%name), c.genThreadUrl(threadid = %threadid))}</td>
     #let authorName = getValue(db, sql("select name from person where id = " &
     #  "(select author from post where id = " & 
     #  "(select min(id) from post where thread = ?))"), %threadId)
@@ -95,10 +95,10 @@
       <hr/>
       ${genGravatar(%userEmail)}
       #if c.userId == %postAuthor and c.currentPost.subject.len == 0:
-        <hr/>${UrlButton(c, "Edit post", actionEditForm, %postId)}
+        <hr/>${UrlButton(c, "Edit post", c.genThreadUrl(%postId, "edit"))}
       #elif c.isAdmin and c.currentPost.subject.len == 0:
         <hr/><span style="color:red">
-          ${UrlButton(c, "Edit post", actionEditForm, %postId)}</span>
+          ${UrlButton(c, "Edit post", c.genThreadUrl(%postId, "edit"))}</span>
       #end if
     </td>
     <td class="content">
@@ -114,7 +114,7 @@
 #end proc
 #
 #
-#proc genFormPost(c: var TForumData, action: TForumAction,
+#proc genFormPost(c: var TForumData, action: string,
 #                 isEdit: bool, title, content: string): string =
 #  result = ""
 <br />
@@ -123,7 +123,7 @@
   <div id="replytop">
     <span>Reply</span>
   </div>
-  <form action="$postAction" method="POST">
+  <form action="/$action" method="POST">
     ${FieldValid(c, "subject", "Subject:")}
     ${TextWidget(c, "subject", title, maxlength=100)}
     <br />
@@ -146,7 +146,7 @@
 #
 #proc genFormRegister(c: var TForumData): string =
 #  result = ""
-<form action="$postAction" method="POST">
+<form action="/doregister" method="POST">
   <b>Register</b><br />
   <table border="0">
     <tr>
@@ -166,7 +166,6 @@
       <td>${TextWidget(c, "antibot", "", maxlength=4)}</td>
     </tr>
   </table>
-  ${FormSession(c, actionRegister)}
   <input type="submit" value="Register">
 </form>
 #end proc
@@ -174,14 +173,13 @@
 #proc genFormLogin(c: var TForumData): string =
 #  result = ""
 #  if not c.loggedIn:
-  <form action="$postAction" method="POST">
+  <form action="/dologin" method="POST">
   <table border="0">
     <tr><td>Username:</td><td>
     <input type="text" name="name" maxlength="20"></td></tr>
     <tr><td>Password:</td><td>
     <input type="password" name="password" maxlength="20"></td></tr>
   </table>
-  ${FormSession(c, actionLogin)}
   <input type="submit" value="Login">
   </form>
   <span style="color:red">$c.loginErrorMsg</span>
