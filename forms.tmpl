@@ -197,7 +197,7 @@
       <span>Who is online?<span>
     </div>
     <div class="content">
-    <span>Out of ${stats.totalUsers} users ${stats.activeUsers.len} are online:
+    <span>Out of ${stats.totalUsers} users ${stats.activeUsers.len} are online${if stats.activeUsers.len == 0: "." else: ":"}
       #for index, usr in stats.activeUsers:
       #  if usr.isAdmin:
           #if index != 0: result.add ','
