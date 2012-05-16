@@ -100,7 +100,7 @@ proc genThreadUrl(c: TForumData, postId = "", action = "", threadid = ""): strin
   result = c.req.makeUri(result, absolute = false)
 
 proc FormSession(c: var TForumData, nextAction: string): string =
-  return """<input type="hidden" name="threadid" value="1" />
+  return """<input type="hidden" name="threadid" value="$1" />
             <input type="hidden" name="postid" value="$2" />""" % [
     $c.threadId, $c.postid]
 
@@ -407,10 +407,11 @@ proc login(c: var TForumData, name, pass: string): bool =
 proc genActionMenu(c: var TForumData): string =
   result = ""
   var btns: seq[TStyledButton] = @[]
-  if c.threadId >= 0:
+  if c.req.pathInfo != "/":
     btns.add(("Thread List", c.req.makeUri("/", false)))
-  if c.loggedIn: 
-    if c.threadId >= 0:
+  if c.loggedIn:
+    let hasReplyBtn = c.req.pathInfo != "/donewthread" and c.req.pathInfo != "/doreply"
+    if c.threadId >= 0 and hasReplyBtn:
       let replyUrl = c.genThreadUrl("", "reply") & "#reply"
       btns.add(("Reply", replyUrl))
     btns.add(("New Thread", c.req.makeUri("/newthread", false)))
@@ -473,17 +474,15 @@ get "/t/@threadid/?":
           sql"select header from post where id = (select max(id) from post where thread = ?)", 
           $c.threadId).prependRe
       body = genPostsList(c, $c.threadId)
-      if c.isPreview:
-        body = genPostPreview(c, @"subject", @"content", 
-                                c.userName, $getGMTime(getTime()))
-      body.add genFormPost(c, "doreply", false, subject, "")
+      echo(c.threadId)
+      body.add genFormPost(c, "doreply", "Reply", subject, "")
     of "edit":
       cond c.postId != -1
       const query = sql"select header, content from post where id = ?"
       let row = getRow(db, query, $c.postId)
       let header = ||row[0]
       let content = ||row[1]
-      body = genFormPost(c, "doedit", true, header, content)
+      body = genFormPost(c, "doedit", "Edit", header, content)
     resp c.genMain(body)
   else:
     cond validThreadId(c)
@@ -514,11 +513,11 @@ template finishLogin(): stmt =
   setCookie("sid", c.userpass, daysForward(7))
   redirect(uri("/"))
 
-template handleError(action: string, isEdit: bool): stmt =
+template handleError(action: string, topText: string): stmt =
   if c.isPreview:
     body.add genPostPreview(c, @"subject", @"content", 
                             c.userName, $getGMTime(getTime()))
-  body.add genFormPost(c, action, isEdit, reuseText, reuseText)
+  body.add genFormPost(c, action, topText, reuseText, reuseText)
   resp genMain(c, body)
 
 post "/dologin":
@@ -542,7 +541,7 @@ post "/donewthread":
     redirect(uri("/"))
   else:
     body = ""
-    handleError("donewthread", false)
+    handleError("donewthread", "New thread")
 
 post "/doreply":
   createTFD()
@@ -551,7 +550,7 @@ post "/doreply":
     redirect(c.genThreadUrl())
   else:
     body = genPostsList(c, $c.threadId)
-    handleError("doreply", false)
+    handleError("doreply", "Reply")
 
 post "/doedit":
   createTFD()
@@ -560,11 +559,11 @@ post "/doedit":
     redirect(c.genThreadUrl())
   else:
     body = ""
-    handleError("doedit", true)
+    handleError("doedit", "Edit")
 
 get "/newthread/?":
   createTFD()
-  resp genMain(c, genFormPost(c, "donewthread", false, "", ""))
+  resp genMain(c, genFormPost(c, "donewthread", "New thread", "", ""))
 
 when isMainModule:
   docConfig = rstgen.defaultConfig()

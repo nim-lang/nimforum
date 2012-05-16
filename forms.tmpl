@@ -115,13 +115,14 @@
 #
 #
 #proc genFormPost(c: var TForumData, action: string,
-#                 isEdit: bool, title, content: string): string =
+#                 topText, title, content: string): string =
 #  result = ""
 <br />
 <a name="reply"></a>
 <div id="replywrapper">
+  # let isEdit = topText == "Edit"
   <div id="replytop">
-    <span>Reply</span>
+    <span>${topText}</span>
   </div>
   <form action="/$action" method="POST">
     ${FieldValid(c, "subject", "Subject:")}
@@ -136,7 +137,7 @@
   #  end if
     <br/>
     <input type="submit" name="previewBtn" value="Preview" />
-    <input type="submit" name="postBtn" value="Post" />
+    <input type="submit" name="postBtn" value="Submit" />
   
     <a href="http://nimrod-code.org/rst.html">Syntax Cheatsheet</a>
   </form>
