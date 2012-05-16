@@ -433,7 +433,8 @@ proc getStats(c: var TForumData): TForumStats =
   const getUsersQuery =
     sql"select id, name, admin, strftime('%s', lastOnline), strftime('%s', creation) from person"
   for row in fastRows(db, getUsersQuery):
-    let lastOnlineSeconds = getTime() - TTime(row[3].parseInt)
+    let secs = if row[3] == "": 0 else: row[3].parseint
+    let lastOnlineSeconds = getTime() - TTime(secs)
     if lastOnlineSeconds < (60 * 5): # 5 minutes
       result.activeUsers.add((row[1], row[0].parseInt, row[2].parseBool))
     if row[4].parseInt > newestMemberCreation:
@@ -475,14 +476,14 @@ get "/t/@threadid/?":
           $c.threadId).prependRe
       body = genPostsList(c, $c.threadId)
       echo(c.threadId)
-      body.add genFormPost(c, "doreply", "Reply", subject, "")
+      body.add genFormPost(c, "doreply", "Reply", subject, "", false)
     of "edit":
       cond c.postId != -1
       const query = sql"select header, content from post where id = ?"
       let row = getRow(db, query, $c.postId)
       let header = ||row[0]
       let content = ||row[1]
-      body = genFormPost(c, "doedit", "Edit", header, content)
+      body = genFormPost(c, "doedit", "Edit", header, content, true)
     resp c.genMain(body)
   else:
     cond validThreadId(c)
@@ -513,11 +514,11 @@ template finishLogin(): stmt =
   setCookie("sid", c.userpass, daysForward(7))
   redirect(uri("/"))
 
-template handleError(action: string, topText: string): stmt =
+template handleError(action: string, topText: string, isEdit: bool): stmt =
   if c.isPreview:
     body.add genPostPreview(c, @"subject", @"content", 
                             c.userName, $getGMTime(getTime()))
-  body.add genFormPost(c, action, topText, reuseText, reuseText)
+  body.add genFormPost(c, action, topText, reuseText, reuseText, isEdit)
   resp genMain(c, body)
 
 post "/dologin":
@@ -541,7 +542,7 @@ post "/donewthread":
     redirect(uri("/"))
   else:
     body = ""
-    handleError("donewthread", "New thread")
+    handleError("donewthread", "New thread", false)
 
 post "/doreply":
   createTFD()
@@ -550,7 +551,7 @@ post "/doreply":
     redirect(c.genThreadUrl())
   else:
     body = genPostsList(c, $c.threadId)
-    handleError("doreply", "Reply")
+    handleError("doreply", "Reply", false)
 
 post "/doedit":
   createTFD()
@@ -559,11 +560,11 @@ post "/doedit":
     redirect(c.genThreadUrl())
   else:
     body = ""
-    handleError("doedit", "Edit")
+    handleError("doedit", "Edit", true)
 
 get "/newthread/?":
   createTFD()
-  resp genMain(c, genFormPost(c, "donewthread", "New thread", "", ""))
+  resp genMain(c, genFormPost(c, "donewthread", "New thread", "", "", false))
 
 when isMainModule:
   docConfig = rstgen.defaultConfig()

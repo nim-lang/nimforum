@@ -115,12 +115,11 @@
 #
 #
 #proc genFormPost(c: var TForumData, action: string,
-#                 topText, title, content: string): string =
+#                 topText, title, content: string, isEdit: bool): string =
 #  result = ""
 <br />
 <a name="reply"></a>
 <div id="replywrapper">
-  # let isEdit = topText == "Edit"
   <div id="replytop">
     <span>${topText}</span>
   </div>
