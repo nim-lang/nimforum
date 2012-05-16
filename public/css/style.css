@@ -122,13 +122,50 @@ div#header a:hover, #nimbtn a:hover {
   width: 15%;
 }
 
+#whoisonline {
+  margin: 5pt;
+  font-size: 9pt;
+}
+
+#whoisonline .wioHeader {
+  background-color: #5D5D5D;
+  background: -moz-linear-gradient(top, #5D5D5D, #4D4D4D);
+  background: -webkit-linear-gradient(top, #5D5D5D, #4d4d4d);
+  background: -o-linear-gradient(top, #5D5D5D, #4d4d4d);
+  color: #ffffff;
+  border-bottom: #2d2d2d solid 1px;
+  padding: 3px;
+  padding-left: 5pt;
+}
+
+#whoisonline .content {
+  border: #9d9d9d solid 1px;
+  border-top: #2D2D2D solid 1px;
+  padding: 5pt;
+}
+
+#whoisonline .content hr {
+  margin-top: 5pt;
+  margin-bottom: 5pt;
+}
+
 #footer {
   background-color: #5D5D5D;
   background: -moz-linear-gradient(top, #5D5D5D, #4D4D4D);
   background: -webkit-linear-gradient(top, #5D5D5D, #4d4d4d);
   background: -o-linear-gradient(top, #5D5D5D, #4d4d4d);
   color: #ffffff;
-  text-align: center;
+
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#footer a:link, #footer a:visited {
+  color: #ffffff;
+}
+
+#footer a:hover {
+  text-decoration: none;
 }
 
 #topbar {

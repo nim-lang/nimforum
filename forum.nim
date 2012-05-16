@@ -37,6 +37,13 @@ type
 
   TStyledButton = tuple[text: string, link: string]
 
+  TForumStats = object
+    totalUsers: int
+    totalPosts: int
+    totalThreads: int
+    newestMember: tuple[nick: string, id: int, isAdmin: bool]
+    activeUsers: seq[tuple[nick: string, id: int, isAdmin: bool]]
+
 var
   db: TDbConn
   docConfig: PStringTable
@@ -211,8 +218,8 @@ proc register(c: var TForumData, name, pass, antibot, email: string): bool =
   
   # perform registration:
   var salt = makeSalt()
-  Exec(db, sql("INSERT INTO person(name, password, email, salt, status) " &
-              "VALUES (?, ?, ?, ?, 'user')"), name, 
+  Exec(db, sql("INSERT INTO person(name, password, email, salt, status, lastOnline) " &
+              "VALUES (?, ?, ?, ?, 'user', DATETIME('now'))"), name, 
               makePassword(pass, salt), email, salt)
   #  return setError(c, "", "Could not create your account!")
   return true
@@ -234,6 +241,10 @@ proc checkLoggedIn(c: var TForumData) =
     c.username = ||row[0]
     c.email = ||row[1]
     c.isAdmin = parseBool(||row[2])
+    # Update lastOnline
+    db.exec(sql"update person set lastOnline = DATETIME('now') where id = ?",
+            c.userid)
+    
   else:
     echo("SID not found in sessions. Assuming logged out.")
 
@@ -405,6 +416,29 @@ proc genActionMenu(c: var TForumData): string =
     btns.add(("New Thread", c.req.makeUri("/newthread", false)))
   result = c.genButtons(btns)
 
+proc getStats(c: var TForumData): TForumStats =
+  const totalUsersQuery = 
+    sql"select count(*) from person"
+  result.totalUsers = getValue(db, totalUsersQuery).parseInt
+  const totalPostsQuery =
+    sql"select count(*) from post"
+  result.totalPosts = getValue(db, totalPostsQuery).parseInt
+  const totalThreadsQuery =
+    sql"select count(*) from thread"
+  result.totalThreads = getValue(db, totalThreadsQuery).parseInt
+  
+  var newestMemberCreation = 0
+  result.activeUsers = @[]
+  const getUsersQuery =
+    sql"select id, name, admin, strftime('%s', lastOnline), strftime('%s', creation) from person"
+  for row in fastRows(db, getUsersQuery):
+    let lastOnlineSeconds = getTime() - TTime(row[3].parseInt)
+    if lastOnlineSeconds < (60 * 5): # 5 minutes
+      result.activeUsers.add((row[1], row[0].parseInt, row[2].parseBool))
+    if row[4].parseInt > newestMemberCreation:
+      result.newestMember = (row[1], row[0].parseInt, row[2].parseBool)
+      newestMemberCreation = row[4].parseInt
+
 include "forms.tmpl"
 include "main.tmpl"
 
@@ -424,7 +458,7 @@ template createTFD(): stmt =
 
 get "/":
   createTFD()
-  resp genMain(c, genThreadsList(c))
+  resp genMain(c, genThreadsList(c), true)
 
 get "/t/@threadid/?":
   createTFD()
@@ -541,6 +575,6 @@ when isMainModule:
   if paramCount() > 0:
     if paramStr(1) == "scgi":
       http = false
-  run(websiteLoc, port = TPort(9001), http = http)
+  run(websiteLoc, port = TPort(9000), http = http)
   db.close()
 

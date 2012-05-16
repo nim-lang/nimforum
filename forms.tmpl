@@ -187,3 +187,32 @@
   <span style="color:red">You're already logged in!</span>
 #  end if
 #end proc
+#
+#
+#proc genListOnline(c: var TForumData): string =
+#  result = ""
+#  let stats = c.getStats()
+  <div id="whoisonline">
+    <div class="wioHeader">
+      <span>Who is online?<span>
+    </div>
+    <div class="content">
+    <span>Out of ${stats.totalUsers} users ${stats.activeUsers.len} are online:
+      #for index, usr in stats.activeUsers:
+      #  if usr.isAdmin:
+          #if index != 0: result.add ','
+          #end if
+          <span class="user admin">${usr.nick}</span>
+      #  else:
+          #if index != 0: result.add ','
+          #end if
+          <span class="user">${usr.nick}</span>
+      #  end if
+      #end for
+    </span>
+    <hr/>
+    <span>Total threads: ${stats.totalThreads} | Total posts: ${stats.totalPosts} | Newest member: ${stats.newestMember.nick}</span>
+    </div>
+  </div>
+  
+#end proc
