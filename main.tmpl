@@ -5,8 +5,8 @@
 <html lang="en">
 <head>
   <title>Nimrod Forum</title>
-  <link rel="stylesheet" href="/css/normalize.css">
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="${c.req.makeUri("css/normalize.css", absolute = false)}">
+  <link rel="stylesheet" href="${c.req.makeUri("css/style.css", absolute = false)}">
 </head>
 <body>
   <div id="wrapper">
@@ -18,12 +18,12 @@
       #let frontQuery = c.req.makeUri("/")
       <span><a href="${frontQuery}">Nimrod's Forum</a></span>
       #if c.loggedIn:
-        <a href="${websiteLoc}logout" class="right">Logout</a>
+        <a href="${frontQuery}logout" class="right">Logout</a>
         <span id="welcome">$c.username</span>
         ${genGravatar(c.email, 26)}
       #else:
-        <a href="${websiteLoc}register" class="right">Register</a>
-        <a href="${websiteLoc}login" class="right">Login</a>
+        <a href="${frontQuery}register" class="right">Register</a>
+        <a href="${frontQuery}login" class="right">Login</a>
       #end if
     </div>
       

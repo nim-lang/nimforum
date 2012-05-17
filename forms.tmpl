@@ -123,7 +123,7 @@
   <div id="replytop">
     <span>${topText}</span>
   </div>
-  <form action="/$action" method="POST">
+  <form action="${c.req.makeUri(action, false)}" method="POST">
     ${FieldValid(c, "subject", "Subject:")}
     ${TextWidget(c, "subject", title, maxlength=100)}
     <br />
@@ -146,7 +146,7 @@
 #
 #proc genFormRegister(c: var TForumData): string =
 #  result = ""
-<form action="/doregister" method="POST">
+<form action="${c.req.makeUri("/doregister", false)}" method="POST">
   <b>Register</b><br />
   <table border="0">
     <tr>
@@ -173,7 +173,7 @@
 #proc genFormLogin(c: var TForumData): string =
 #  result = ""
 #  if not c.loggedIn:
-  <form action="/dologin" method="POST">
+  <form action="${c.req.makeUri("/dologin", false)}" method="POST">
   <table border="0">
     <tr><td>Username:</td><td>
     <input type="text" name="name" maxlength="20"></td></tr>
@@ -202,11 +202,11 @@
       #  if usr.isAdmin:
           #if index != 0: result.add ','
           #end if
-          <span class="user admin">${usr.nick}</span>
+          #result.add("""<span class="user admin"> """ & usr.nick & """</span>""")
       #  else:
           #if index != 0: result.add ','
           #end if
-          <span class="user">${usr.nick}</span>
+          #result.add("""<span class="user"> """ & usr.nick & """</span>""")
       #  end if
       #end for
     </span>

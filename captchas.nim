@@ -6,13 +6,13 @@
 #    All rights reserved.
 #
 
-import cairo, os, strutils
+import cairo, os, strutils, jester
 
 proc getCaptchaFilename*(i: int): string {.inline.} =
   result = "public/captchas/capture_" & $i & ".png"
 
-proc getCaptchaUrl*(i: int): string =
-  result = "/captchas/capture_" & $i & ".png"
+proc getCaptchaUrl*(req: var TRequest, i: int): string =
+  result = req.makeUri("/captchas/capture_" & $i & ".png", absolute = false)
 
 proc createCaptcha*(file, text: string) =
   var surface = imageSurfaceCreate(FORMAT_ARGB32, 10*text.len, 10)

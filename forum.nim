@@ -13,7 +13,6 @@ import
 const
   unselectedThread = -1
   transientThread = 0
-  websiteLoc = ""
 
 type
   TCrud = enum crCreate, crRead, crUpdate, crDelete
@@ -185,7 +184,7 @@ proc antibot(c: var TForumData): string =
     answer).int mod 10_000
   let CaptchaFile = getCaptchaFilename(CaptchaId)
   createCaptcha(CaptchaFile, $a & "+" & $b)
-  result = """<img src="$1" />""" % getCaptchaUrl(captchaId)
+  result = """<img src="$1" />""" % c.req.getCaptchaUrl(captchaId)
 
 const
   SecureChars = {'A'..'Z', 'a'..'z', '0'..'9', '_', '\128'..'\255'}
@@ -407,7 +406,8 @@ proc login(c: var TForumData, name, pass: string): bool =
 proc genActionMenu(c: var TForumData): string =
   result = ""
   var btns: seq[TStyledButton] = @[]
-  if c.req.pathInfo != "/":
+  # TODO: Make this detection better?
+  if c.req.pathInfo notin ["/", "/login", "/register", "/dologin", "/doregister"]:
     btns.add(("Thread List", c.req.makeUri("/", false)))
   if c.loggedIn:
     let hasReplyBtn = c.req.pathInfo != "/donewthread" and c.req.pathInfo != "/doreply"
@@ -575,6 +575,6 @@ when isMainModule:
   if paramCount() > 0:
     if paramStr(1) == "scgi":
       http = false
-  run(websiteLoc, port = TPort(9000), http = http)
+  run("", port = TPort(9000), http = http)
   db.close()
 
