@@ -1,6 +1,11 @@
 #! stdtmpl
-#proc genMain(c: var TForumData, content: string, mainPage = false): string = 
+#proc genMain(c: var TForumData, content: string): string = 
 #  result = ""
+#  var stats: TForumStats
+#  if c.isThreadsList: stats = c.getStats(false)
+#  else:
+#    stats = c.getStats(true)
+#  end if
 <!doctype html>
 <html lang="en">
 <head>
@@ -35,12 +40,15 @@
       $content
       <span style="color:red">$c.errorMsg</span>
     </div>
+    #if c.req.pathInfo.normalizeUri notin noPageNums:
+        ${c.genPagenumNav(stats)}
+    #end if
     <div id="topbar">
        ${c.genActionMenu}
     </div>
-    
-    #if mainPage:
-      ${c.genListOnline}
+
+    #if c.isThreadsList:
+      ${c.genListOnline(stats)}
     #end if
     
   </div>

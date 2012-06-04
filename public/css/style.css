@@ -240,6 +240,49 @@ div#replywrapper form {
   padding: 8pt;
 }
 
+div#pagenumbers {
+  font-size: 11pt;
+  height: 21px;
+  margin: 5.9pt;
+  padding: 2pt;
+  padding-left: 4pt;
+  padding-right: 4pt;
+  border-top: 1px solid #9d9d9d;
+  border-bottom: 1px solid #9d9d9d;
+  background-color: #eee;
+}
+
+div#pagenumbers div.left {
+  float: left;
+}
+
+div#pagenumbers div.middle {
+  text-align: center;
+}
+
+div#pagenumbers div.middle a, div#pagenumbers div.middle span {
+  padding-right: 4pt;
+}
+
+div#pagenumbers div.middle span {
+  font-weight: bold;
+}
+
+div#pagenumbers div.left span, div#pagenumbers div.left a {
+  padding-right: 8pt;
+}
+
+div#pagenumbers div.right span, div#pagenumbers div.right a {
+  padding-left: 8pt;
+}
+
+
+div#pagenumbers div.right {
+  float: right;
+}
+
+
+
 /* For RST nimrod syntax highlighter */
 span.DecNumber {color: blue}
 span.BinNumber {color: blue}

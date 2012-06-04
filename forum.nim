@@ -8,11 +8,16 @@
 
 import
   os, strutils, times, md5, strtabs, cgi, math, db_sqlite, matchers,
-  rst, rstgen, captchas, sockets, scgi, jester
+  rst, rstgen, captchas, sockets, scgi, jester, htmlgen
 
 const
   unselectedThread = -1
   transientThread = 0
+
+  ThreadsPerPage = 15
+  PostsPerPage = 10
+  noPageNums = ["/login", "/register", "/dologin", "/doregister"]
+  noHomeBtn = ["/", "/login", "/register", "/dologin", "/doregister"]
 
 type
   TCrud = enum crCreate, crRead, crUpdate, crDelete
@@ -33,7 +38,10 @@ type
     invalidField: string
     currentPost: TPost
     startTime: float
-
+    isThreadsList: bool
+    pageNum: int
+    totalPosts: int
+  
   TStyledButton = tuple[text: string, link: string]
 
   TForumStats = object
@@ -90,8 +98,10 @@ proc FieldValid(c: TForumData, name, text: string): string =
   else:
     result = text
 
-proc genThreadUrl(c: TForumData, postId = "", action = "", threadid = ""): string =
+proc genThreadUrl(c: TForumData, postId = "", action = "", threadid = "", pageNum = ""): string =
   result = "/t/" & (if threadid == "": $c.threadId else: threadid)
+  if pageNum != "":
+    result.add("/" & pageNum)
   if action != "":
     result.add("?action=" & action)
     if postId != "":
@@ -328,9 +338,11 @@ template setPreviewData(c: expr) =
   c.currentPost.subject = subject
   c.currentPost.content = content
 
-template writeToDb(c, cr, postId: expr) =
-  exec(db, crud(cr, "post", "author", "ip", "header", "content", "thread"),
-       c.userId, c.req.ip, subject, content, $c.threadId, postId)
+template writeToDb(c, cr, setPostId: expr) =
+  let retID = insertID(db, crud(cr, "post", "author", "ip", "header", "content", "thread"),
+       c.userId, c.req.ip, subject, content, $c.threadId, "")
+  if setPostId:
+    c.postId = retID.int
 
 proc edit(c: var TForumData, postId: int): bool =
   checkLogin(c)  
@@ -360,7 +372,8 @@ proc reply(c: var TForumData): bool =
   if c.isPreview:
     setPreviewData(c)
   else:
-    writeToDb(c, crCreate, "")
+    writeToDb(c, crCreate, true)
+    
     exec(db, sql"update thread set modified = DATETIME('now') where id = ?",
          $c.threadId)
     result = true
@@ -375,7 +388,7 @@ proc newThread(c: var TForumData): bool =
   else:
     c.threadID = TryInsertID(db, query, c.req.params["subject"]).int
     if c.threadID < 0: return setError(c, "subject", "Subject already exists")
-    writeToDb(c, crCreate, "")
+    writeToDb(c, crCreate, false)
     result = true
 
 proc login(c: var TForumData, name, pass: string): bool = 
@@ -407,17 +420,18 @@ proc genActionMenu(c: var TForumData): string =
   result = ""
   var btns: seq[TStyledButton] = @[]
   # TODO: Make this detection better?
-  if c.req.pathInfo notin ["/", "/login", "/register", "/dologin", "/doregister"]:
+  if c.req.pathInfo.normalizeUri notin noHomeBtn and not c.isThreadsList:
     btns.add(("Thread List", c.req.makeUri("/", false)))
   if c.loggedIn:
     let hasReplyBtn = c.req.pathInfo != "/donewthread" and c.req.pathInfo != "/doreply"
     if c.threadId >= 0 and hasReplyBtn:
-      let replyUrl = c.genThreadUrl("", "reply") & "#reply"
+      let replyUrl = c.genThreadUrl(action = "reply", 
+            pageNum = $(ceil(c.totalPosts / postsPerPage).int)) & "#reply"
       btns.add(("Reply", replyUrl))
     btns.add(("New Thread", c.req.makeUri("/newthread", false)))
   result = c.genButtons(btns)
 
-proc getStats(c: var TForumData): TForumStats =
+proc getStats(c: var TForumData, simple: bool): TForumStats =
   const totalUsersQuery = 
     sql"select count(*) from person"
   result.totalUsers = getValue(db, totalUsersQuery).parseInt
@@ -427,19 +441,89 @@ proc getStats(c: var TForumData): TForumStats =
   const totalThreadsQuery =
     sql"select count(*) from thread"
   result.totalThreads = getValue(db, totalThreadsQuery).parseInt
+  if not simple:
+    var newestMemberCreation = 0
+    result.activeUsers = @[]
+    const getUsersQuery =
+      sql"select id, name, admin, strftime('%s', lastOnline), strftime('%s', creation) from person"
+    for row in fastRows(db, getUsersQuery):
+      let secs = if row[3] == "": 0 else: row[3].parseint
+      let lastOnlineSeconds = getTime() - TTime(secs)
+      if lastOnlineSeconds < (60 * 5): # 5 minutes
+        result.activeUsers.add((row[1], row[0].parseInt, row[2].parseBool))
+      if row[4].parseInt > newestMemberCreation:
+        result.newestMember = (row[1], row[0].parseInt, row[2].parseBool)
+        newestMemberCreation = row[4].parseInt
+
+proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
+  result = ""
+  var 
+    firstUrl = ""
+    prevUrl  = ""
+    totalPages = 0
+    lastUrl = ""
+    nextUrl = ""
   
-  var newestMemberCreation = 0
-  result.activeUsers = @[]
-  const getUsersQuery =
-    sql"select id, name, admin, strftime('%s', lastOnline), strftime('%s', creation) from person"
-  for row in fastRows(db, getUsersQuery):
-    let secs = if row[3] == "": 0 else: row[3].parseint
-    let lastOnlineSeconds = getTime() - TTime(secs)
-    if lastOnlineSeconds < (60 * 5): # 5 minutes
-      result.activeUsers.add((row[1], row[0].parseInt, row[2].parseBool))
-    if row[4].parseInt > newestMemberCreation:
-      result.newestMember = (row[1], row[0].parseInt, row[2].parseBool)
-      newestMemberCreation = row[4].parseInt
+  if c.isThreadsList:
+    firstUrl = c.req.makeUri("/")
+    prevUrl = c.req.makeUri(if c.pageNum == 1: "/" else: "/page/" & $(c.pageNum-1))
+    totalPages = ceil(stats.totalThreads / ThreadsPerPage).int
+    lastUrl = c.req.makeUri("/page/" & $(totalPages))
+    nextUrl = c.req.makeUri("/page/" & $(c.pageNum+1))
+  else:
+    firstUrl = c.req.makeUri("/t/" & $c.threadId)
+    if c.pageNum == 1: 
+      prevUrl = firstUrl
+    else: 
+      prevUrl = c.req.makeUri(firstUrl & "/" & $(c.pageNum-1))
+    totalPages = ceil(c.totalPosts / postsPerPage).int
+    lastUrl = c.req.makeUri(firstUrl & "/" & $(totalPages))
+    nextUrl = c.req.makeUri(firstUrl & "/" & $(c.pageNum+1))
+  
+  if totalPages <= 1:
+    return ""
+  
+  var firstTag = ""
+  var prevTag = ""
+  if c.pageNum == 1:
+    firstTag = span("First")
+    prevTag = span("Prev")
+  else:
+    firstTag = a(href=firstUrl, "First")
+    prevTag = a(href=prevUrl, "Prev")
+  result.add(htmlgen.`div`(class = "left",
+                           firstTag,
+                           prevTag))
+  # Right
+  var lastTag = ""
+  var nextTag = ""
+  if c.pageNum == totalPages:
+    lastTag = span("Last")
+    nextTag = span("Next")
+  else:
+    lastTag = a(href=lastUrl, "Last")
+    nextTag = a(href=nextUrl, "Next")
+  result.add(htmlgen.`div`(class = "right",
+                           nextTag,
+                           lastTag))
+  
+  # Numbers
+  var pages = "" # Tags
+  for i in 1..totalPages:
+    if i == c.pageNum:
+      pages.add(span($(i)))
+    else:
+      var pageUrl = ""
+      if c.isThreadsList:
+        pageUrl = c.req.makeUri("/page/" & $(i))
+      else:
+        pageUrl = c.req.makeUri(firstUrl & "/" & $(i))
+      
+      pages.add(a(href = pageUrl, $(i)))
+  result.add(htmlgen.`div`(class = "middle",
+                           pages))
+
+  result = htmlgen.`div`(id = "pagenumbers", result)
 
 include "forms.tmpl"
 include "main.tmpl"
@@ -455,27 +539,43 @@ template createTFD(): stmt =
   init(c)
   c.req = request
   c.startTime = epochTime()
+  c.isThreadsList = false
+  c.pageNum = 1
   if request.cookies.len > 0:
     checkLoggedIn(c)
 
+proc gatherData(c: var TForumData) =
+  if c.totalPosts > 0: return
+  # Gather some data.
+  const totalPostsQuery =
+      sql"select count(*) from post p, person u where u.id = p.author and p.thread = ?"
+  c.totalPosts = getValue(db, totalPostsQuery, $c.threadId).parseInt
+
 get "/":
   createTFD()
-  resp genMain(c, genThreadsList(c), true)
+  c.isThreadsList = true
+  var count = 0
+  resp genMain(c, genThreadsList(c, count))
 
-get "/t/@threadid/?":
+get "/t/@threadid/?@page?/?":
   createTFD()
+  if @"page".len > 0:
+    parseInt(@"page", c.pageNum, 0..1000_000)
+    cond (c.pageNum > 0)
   parseInt(@"threadid", c.threadId, -1..1000_000)
   if (@"postid").len > 0:
     parseInt(@"postid", c.postId, -1..1000_000)
-  
+  var count = 0
+  cond validThreadId(c)
+  gatherData(c)
   if (@"action").len > 0:
     case @"action"
     of "reply":
       let subject = GetValue(db,
           sql"select header from post where id = (select max(id) from post where thread = ?)", 
           $c.threadId).prependRe
-      body = genPostsList(c, $c.threadId)
-      echo(c.threadId)
+      body = genPostsList(c, $c.threadId, count)
+      cond count != 0
       body.add genFormPost(c, "doreply", "Reply", subject, "", false)
     of "edit":
       cond c.postId != -1
@@ -486,9 +586,22 @@ get "/t/@threadid/?":
       body = genFormPost(c, "doedit", "Edit", header, content, true)
     resp c.genMain(body)
   else:
-    cond validThreadId(c)
     incrementViews(c)
-    resp genMain(c, genPostsList(c, $c.threadId))
+    let posts = genPostsList(c, $c.threadId, count)
+    cond count != 0
+    resp genMain(c, posts)
+
+get "/page/@page/?":
+  createTFD()
+  c.isThreadsList = true
+  cond (@"page" != "")
+  parseInt(@"page", c.pageNum, 0..1000_000)
+  cond (c.pageNum > 0)
+  var count = 0
+  let list = genThreadsList(c, count)
+  if count == 0:
+    pass()
+  resp genMain(c, list)
 
 get "/login/?":
   createTFD()
@@ -504,11 +617,15 @@ get "/register/?":
   resp genMain(c, genFormRegister(c))
 
 template readIDs(): stmt =
-  # Retrieve the threadid and postid
+  # Retrieve the threadid, postid and pagenum
   if (@"threadid").len > 0:
     parseInt(@"threadid", c.threadId, -1..1000_000)
   if (@"postid").len > 0:
     parseInt(@"postid", c.postId, -1..1000_000)
+
+proc getTotalPosts(c: var TForumData): int =
+  c.gatherData() # Get total post count
+  result = ceil(c.totalPosts / postsPerPage).int-1
 
 template finishLogin(): stmt = 
   setCookie("sid", c.userpass, daysForward(7))
@@ -548,9 +665,12 @@ post "/doreply":
   createTFD()
   readIDs()
   if reply(c):
-    redirect(c.genThreadUrl())
+    redirect(c.genThreadUrl(pageNum = $(c.getTotalPosts+1)) & "#" & $c.postId)
   else:
-    body = genPostsList(c, $c.threadId)
+    var count = 0
+    if c.isPreview:
+      c.pageNum = c.getTotalPosts+1
+    body = genPostsList(c, $c.threadId, count)
     handleError("doreply", "Reply", false)
 
 post "/doedit":
