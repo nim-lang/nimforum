@@ -284,7 +284,7 @@ proc validateRst(c: var TForumData, content: string): bool =
   except EParseError:
     result = setError(c, "", getCurrentExceptionMsg())
 
-proc crud(c: TCrud, table: string, data: openArray[string]): TSqlQuery =
+proc crud(c: TCrud, table: string, data: varargs[string]): TSqlQuery =
   case c
   of crCreate:
     var fields = "insert into " & table & "(" 
@@ -313,11 +313,11 @@ proc crud(c: TCrud, table: string, data: openArray[string]): TSqlQuery =
     result = sql("delete from " & table & " where id = ?")
 
 template retrSubject(c: expr) =
-  let subject = c.req.params["subject"]
+  let subject {.inject.} = c.req.params["subject"]
   if subject.len < 3: return setError(c, "subject", "Subject not long enough")
   
 template retrContent(c: expr) =
-  let content = c.req.params["content"]
+  let content {.inject.} = c.req.params["content"]
   if not validateRst(c, content): return false
 
 template retrPost(c: expr) =
@@ -334,7 +334,7 @@ template checkOwnership(c, postId: expr) =
     if x != c.userId:
       return setError(c, "", "You are not the owner of this post")
 
-template setPreviewData(c: expr) =
+template setPreviewData(c: expr) {.immediate, dirty.} =
   c.currentPost.subject = subject
   c.currentPost.content = content
 
@@ -535,7 +535,7 @@ proc prependRe(s: string): string =
            else: "Re: " & s
 
 template createTFD(): stmt =
-  var c: TForumData
+  var c {.inject.}: TForumData
   init(c)
   c.req = request
   c.startTime = epochTime()

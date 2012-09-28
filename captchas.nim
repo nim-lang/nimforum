@@ -15,7 +15,7 @@ proc getCaptchaUrl*(req: var TRequest, i: int): string =
   result = req.makeUri("/captchas/capture_" & $i & ".png", absolute = false)
 
 proc createCaptcha*(file, text: string) =
-  var surface = imageSurfaceCreate(FORMAT_ARGB32, 10*text.len, 10)
+  var surface = imageSurfaceCreate(FORMAT_ARGB32, int32(10*text.len), int32(10))
   var cr = create(surface)
 
   selectFontFace(cr, "serif", FONT_SLANT_NORMAL, FONT_WEIGHT_BOLD)
@@ -34,6 +34,6 @@ proc createCaptcha*(file, text: string) =
   destroy(surface)
 
 when isMainModule:
-  createCapture("test.png", "1+33")
+  createCaptcha("test.png", "1+33")
 
 
