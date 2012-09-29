@@ -4,6 +4,9 @@ html, body {
 
 #wrapper {
   min-height: 100%;
+  height: auto !important;
+  height: 100%;
+  margin: 0 auto -21pt; /* the bottom margin is the negative value of the footer's height */
 }
 
 div#header {
@@ -156,8 +159,11 @@ div#header a:hover, #nimbtn a:hover {
   background: -o-linear-gradient(top, #5D5D5D, #4d4d4d);
   color: #ffffff;
 
+  padding-top: 1.5pt;
+  padding-bottom: 1.5pt;
   padding-left: 5px;
   padding-right: 5px;
+  height: 18pt;
 }
 
 #footer a:link, #footer a:visited {
@@ -281,7 +287,27 @@ div#pagenumbers div.right {
   float: right;
 }
 
+#content #threads .localnums {
+  float: right;
+  border-top: 1px solid #9d9d9d;
+  border-bottom: 1px solid #9d9d9d;
+  padding-left: 4pt;
+  padding-right: 4pt;
+}
 
+#content #threads .localnums a:first-child {
+  padding-left: 0;
+}
+
+#content #threads .localnums a {
+  padding-left: 6pt;
+  text-decoration: none;
+}
+
+#content #threads .localnums span {
+  padding-left: 3pt;
+  margin-right: -3pt;
+}
 
 /* For RST nimrod syntax highlighter */
 span.DecNumber {color: blue}
