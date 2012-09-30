@@ -16,8 +16,8 @@ const
 
   ThreadsPerPage = 15
   PostsPerPage = 10
-  noPageNums = ["/login", "/register", "/dologin", "/doregister"]
-  noHomeBtn = ["/", "/login", "/register", "/dologin", "/doregister"]
+  noPageNums = ["/login", "/register", "/dologin", "/doregister", "/profile"]
+  noHomeBtn = ["/", "/login", "/register", "/dologin", "/doregister", "/profile"]
 
 type
   TCrud = enum crCreate, crRead, crUpdate, crDelete
@@ -50,6 +50,13 @@ type
     totalThreads: int
     newestMember: tuple[nick: string, id: int, isAdmin: bool]
     activeUsers: seq[tuple[nick: string, id: int, isAdmin: bool]]
+
+  TUserInfo = object
+    nick: string
+    posts: int
+    threads: int
+    lastOnline: int
+    email: string
 
 var
   db: TDbConn
@@ -563,6 +570,46 @@ proc genPagenumLocalNav(c: var TForumData, thrid: int): string =
 
   result = htmlgen.`div`(class = "localnums", result)
 
+proc gatherUserInfo(c: var TForumData, nick: string, ui: var TUserInfo): bool =
+  ui.nick = nick
+  const getUIDQuery = sql"select id from person where name = ?"
+  var uid = getValue(db, getUIDQuery, nick)
+  if uid == "": return false
+  result = true
+  const totalPostsQuery =
+      sql"select count(*) from post p, person u where u.id = ?"
+  ui.posts = getValue(db, totalPostsQuery, uid).parseInt
+  ui.threads = 0
+  const lastOnlineQuery =
+      sql"select strftime('%s', lastOnline) from person where id = ?"
+  ui.lastOnline = getValue(db, lastOnlineQuery, uid).parseInt
+  ui.email = getValue(db, sql"select email from person where id = ?", uid)
+
+proc genProfile(c: var TForumData, ui: TUserInfo): string =
+  result = ""
+  result.add(htmlgen.`div`(id = "avatar", genGravatar(ui.email, 250)))
+  let t2 = getGMTime(TTime(ui.lastOnline))
+  
+  result.add(htmlgen.`div`(id = "info", 
+    table(
+      tr(
+        th("Nickname"),
+        td(ui.nick)
+      ),
+      tr(
+        th("Posts"),
+        td($ui.posts)
+      ),
+      tr(
+        th("Last Online"),
+        td(t2.format("dd/MM/yy HH':'mm 'UTC'"))
+      )
+    )
+  ))
+  
+  result = htmlgen.`div`(id = "profile",
+    htmlgen.`div`(id = "left", result))
+
 include "forms.tmpl"
 include "main.tmpl"
 
@@ -633,6 +680,16 @@ get "/page/@page/?":
   if count == 0:
     pass()
   resp genMain(c, list)
+
+get "/profile/@nick/?":
+  createTFD()
+  cond (@"nick" != "")
+  var userinfo: TUserInfo
+  if gatherUserInfo(c, @"nick", userinfo):
+    resp genMain(c, c.genProfile(userinfo))
+  else:
+    halt()
+  
 
 get "/login/?":
   createTFD()

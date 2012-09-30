@@ -313,6 +313,30 @@ div#pagenumbers div.right {
   margin-right: -3pt;
 }
 
+#profile {
+  margin-left: 1.30em;
+}
+
+#profile #left {
+  width: 250px;
+}
+
+#profile #left #info table th {
+  text-align: left;
+  padding-right: 0.5em;
+}
+
+#profile #left #info table {
+  font-size: 10.5pt;
+}
+
+
+#profile #left #avatar {
+  border-bottom: 2px solid #6d6d6d;
+  padding-bottom: 0.75em;
+  margin-bottom: 0.50em;
+}
+
 /* For RST nimrod syntax highlighter */
 span.DecNumber {color: blue}
 span.BinNumber {color: blue}
