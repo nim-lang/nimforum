@@ -24,7 +24,10 @@
 #  for row in Rows(db, query, $((c.pageNum-1) * ThreadsPerPage), $ThreadsPerPage):
 #  inc(count)
   <tr>
-    <td class="topic">${UrlButton(c, XMLencode(%name), c.genThreadUrl(threadid = %threadid))}</td>
+    <td class="topic">
+      ${UrlButton(c, XMLencode(%name), c.genThreadUrl(threadid = %threadid))}
+      ${genPagenumLocalNav(c, (%threadid).parseInt)}
+    </td>
     #let authorName = getValue(db, sql("select name from person where id = " &
     #  "(select author from post where id = " & 
     #  "(select min(id) from post where thread = ?))"), %threadId)

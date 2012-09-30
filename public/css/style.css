@@ -152,6 +152,10 @@ div#header a:hover, #nimbtn a:hover {
   margin-bottom: 5pt;
 }
 
+#footerPush {
+  height: 21pt;
+}
+
 #footer {
   background-color: #5D5D5D;
   background: -moz-linear-gradient(top, #5D5D5D, #4D4D4D);

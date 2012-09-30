@@ -525,6 +525,44 @@ proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
 
   result = htmlgen.`div`(id = "pagenumbers", result)
 
+proc gatherTotalPostsByID(c: var TForumData, thrid: int): int =
+  ## Gets the total post count of a thread.
+  result = GetValue(db, sql"select count(*) from post where thread = ?", $thrid).parseInt
+
+proc gatherTotalPosts(c: var TForumData) =
+  if c.totalPosts > 0: return
+  # Gather some data.
+  const totalPostsQuery =
+      sql"select count(*) from post p, person u where u.id = p.author and p.thread = ?"
+  c.totalPosts = getValue(db, totalPostsQuery, $c.threadId).parseInt
+
+proc getPagesInThread(c: var TForumData): int =
+  c.gatherTotalPosts() # Get total post count
+  result = ceil(c.totalPosts / postsPerPage).int-1
+
+proc getPagesInThreadByID(c: var TForumData, thrid: int): int =
+  result = ceil(c.gatherTotalPostsByID(thrid) / postsPerPage).int
+
+proc genPagenumLocalNav(c: var TForumData, thrid: int): string =
+  result = ""
+  const maxPostPages = 6 # Maximum links to pages shown.
+  const hmpp = maxPostPages div 2
+  # 1 2 3 ... 10 11 12
+  var currentThrURL = "/t/" & $thrid & "/"
+  let totalPagesInThread = c.getPagesInThreadByID(thrid)
+  if totalPagesInThread <= 1: return
+  var i = 1
+  while i <= totalPagesInThread:
+    result.add(a(href=c.req.makeUri(currentThrURL & $i), $i))
+    if i == hmpp and totalPagesInThread-i > hmpp:
+      result.add(span("..."))
+      # skip to the last 3
+      i = totalPagesInThread-(hmpp-1)
+    else:
+      inc(i)
+
+  result = htmlgen.`div`(class = "localnums", result)
+
 include "forms.tmpl"
 include "main.tmpl"
 
@@ -544,13 +582,6 @@ template createTFD(): stmt =
   if request.cookies.len > 0:
     checkLoggedIn(c)
 
-proc gatherData(c: var TForumData) =
-  if c.totalPosts > 0: return
-  # Gather some data.
-  const totalPostsQuery =
-      sql"select count(*) from post p, person u where u.id = p.author and p.thread = ?"
-  c.totalPosts = getValue(db, totalPostsQuery, $c.threadId).parseInt
-
 get "/":
   createTFD()
   c.isThreadsList = true
@@ -567,7 +598,7 @@ get "/t/@threadid/?@page?/?":
     parseInt(@"postid", c.postId, -1..1000_000)
   var count = 0
   cond validThreadId(c)
-  gatherData(c)
+  gatherTotalPosts(c)
   if (@"action").len > 0:
     case @"action"
     of "reply":
@@ -623,10 +654,6 @@ template readIDs(): stmt =
   if (@"postid").len > 0:
     parseInt(@"postid", c.postId, -1..1000_000)
 
-proc getTotalPosts(c: var TForumData): int =
-  c.gatherData() # Get total post count
-  result = ceil(c.totalPosts / postsPerPage).int-1
-
 template finishLogin(): stmt = 
   setCookie("sid", c.userpass, daysForward(7))
   redirect(uri("/"))
@@ -665,11 +692,11 @@ post "/doreply":
   createTFD()
   readIDs()
   if reply(c):
-    redirect(c.genThreadUrl(pageNum = $(c.getTotalPosts+1)) & "#" & $c.postId)
+    redirect(c.genThreadUrl(pageNum = $(c.getPagesInThread+1)) & "#" & $c.postId)
   else:
     var count = 0
     if c.isPreview:
-      c.pageNum = c.getTotalPosts+1
+      c.pageNum = c.getPagesInThread+1
     body = genPostsList(c, $c.threadId, count)
     handleError("doreply", "Reply", false)
 
