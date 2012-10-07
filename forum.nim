@@ -577,18 +577,24 @@ proc gatherUserInfo(c: var TForumData, nick: string, ui: var TUserInfo): bool =
   if uid == "": return false
   result = true
   const totalPostsQuery =
-      sql"select count(*) from post p, person u where u.id = ?"
+      sql"SELECT count(*) FROM post WHERE author = ?"
   ui.posts = getValue(db, totalPostsQuery, uid).parseInt
-  ui.threads = 0
+  const totalThreadsQuery =
+      sql("select count(*) from thread where id in (select thread from post where" &
+         " author = ? and post.id in (select min(id) from post group by thread))")
+  
+  ui.threads = getValue(db, totalThreadsQuery, uid).parseInt
   const lastOnlineQuery =
       sql"select strftime('%s', lastOnline) from person where id = ?"
-  ui.lastOnline = getValue(db, lastOnlineQuery, uid).parseInt
+  let lastOnlineDBVal = getValue(db, lastOnlineQuery, uid)
+  ui.lastOnline = if lastOnlineDBVal != "": lastOnlineDBVal.parseInt else: -1
   ui.email = getValue(db, sql"select email from person where id = ?", uid)
 
 proc genProfile(c: var TForumData, ui: TUserInfo): string =
   result = ""
   result.add(htmlgen.`div`(id = "avatar", genGravatar(ui.email, 250)))
-  let t2 = getGMTime(TTime(ui.lastOnline))
+  let t2 = if ui.lastOnline != -1: getGMTime(TTime(ui.lastOnline)) 
+           else: getGMTime(GetTime())
   
   result.add(htmlgen.`div`(id = "info", 
     table(
@@ -597,12 +603,17 @@ proc genProfile(c: var TForumData, ui: TUserInfo): string =
         td(ui.nick)
       ),
       tr(
+        th("Threads"),
+        td($ui.threads)
+      ),
+      tr(
         th("Posts"),
         td($ui.posts)
       ),
       tr(
         th("Last Online"),
-        td(t2.format("dd/MM/yy HH':'mm 'UTC'"))
+        td(if ui.lastOnline != -1: t2.format("dd/MM/yy HH':'mm 'UTC'")
+           else: "Never")
       )
     )
   ))
