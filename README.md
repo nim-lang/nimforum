@@ -8,4 +8,6 @@ the Nimrod compiler.
 Copyright (c) 2012 Andreas Rumpf.
 All rights reserved.
 
+# License
 
+Nimforum is licensed under the MIT license.
