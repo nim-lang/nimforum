@@ -1,9 +1,9 @@
 #
 #
-#         Nimrod Forum
-#    (c) Copyright 2012 Andreas Rumpf
-#
-#    All rights reserved.
+#              The Nimrod Forum
+#        (c) Copyright 2012 Andreas Rumpf, Dominik Picheta
+#        Look at license.txt for more info.
+#        All rights reserved.
 #
 
 import strutils, db_sqlite
@@ -37,7 +37,8 @@ create table if not exists person(
   creation timestamp not null default (DATETIME('now')),
   salt varbin(128) not null,
   status integer not null,
-  admin bool default false
+  admin bool default false,
+  lastOnline timestamp not null default (DATETIME('now'))
 );""" % [TUserName, TPassword, TEmail]), [])
 #  echo "person table already exists"
 

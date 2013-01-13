@@ -1,9 +1,9 @@
 #
 #
 #              The Nimrod Forum
-#        (c) Copyright 2012 Andreas Rumpf
-#
-#    All rights reserved.
+#        (c) Copyright 2012 Andreas Rumpf, Dominik Picheta
+#        Look at license.txt for more info.
+#        All rights reserved.
 #
 
 import
@@ -451,6 +451,7 @@ proc getStats(c: var TForumData, simple: bool): TForumStats =
   if not simple:
     var newestMemberCreation = 0
     result.activeUsers = @[]
+    result.newestMember = ("", -1, false)
     const getUsersQuery =
       sql"select id, name, admin, strftime('%s', lastOnline), strftime('%s', creation) from person"
     for row in fastRows(db, getUsersQuery):

@@ -1,9 +1,9 @@
 #
 #
 #              The Nimrod Forum
-#        (c) Copyright 2012 Andreas Rumpf
-#
-#    All rights reserved.
+#        (c) Copyright 2012 Andreas Rumpf, Dominik Picheta
+#        Look at license.txt for more info.
+#        All rights reserved.
 #
 
 import cairo, os, strutils, jester

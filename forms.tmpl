@@ -220,7 +220,11 @@
       #end for
     </span>
     <hr/>
-    <span>Total threads: ${stats.totalThreads} | Total posts: ${stats.totalPosts} | Newest member: ${stats.newestMember.nick}</span>
+    #if stats.newestMember.nick != "":
+      <span>Total threads: ${stats.totalThreads} | Total posts: ${stats.totalPosts} | Newest member: ${stats.newestMember.nick}</span>
+    #else:
+      <span>Total threads: ${stats.totalThreads} | Total posts: ${stats.totalPosts}</span>
+    #end if
     </div>
   </div>
   
