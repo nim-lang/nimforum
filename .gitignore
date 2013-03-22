@@ -1,0 +1,8 @@
+# Wildcard patterns.
+*.swp
+nimcache/
+
+# Specific paths
+/createdb
+/forum
+/nimforum.db
