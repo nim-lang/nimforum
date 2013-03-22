@@ -31,7 +31,8 @@
     #let authorName = getValue(db, sql("select name from person where id = " &
     #  "(select author from post where id = " & 
     #  "(select min(id) from post where thread = ?))"), %threadId)
-    <td class="author">${authorName}</td>
+    #let profileUrl = c.req.makeUri("profile/", false) & XMLEncode(authorName)
+    <td class="author"><a href="$profileUrl">${authorName}</a></td>
 #    let posts = GetValue(db, sql"select count(*) from post where thread = ?", %threadId)
     <td class="posts">$posts</td>
     <td class="views">${XMLencode(%views)}</td>
@@ -42,7 +43,9 @@
     #  "(select creation from post where id = (select max(id) from post where thread = ?)))"), %threadId)
     <td class="lastreply">
       <span>${formatTimestamp(latestReplyDate.parseInt())}</span><br/>
-      <span>${latestReplyAuthor}</span>
+      #let replyProfileUrl = c.req.makeUri("profile/", false) &
+      #  XMLEncode(latestReplyAuthor)
+      <span><a href="$replyProfileUrl">${latestReplyAuthor}</a></span>
     </td>
   </tr>
 #  end for
@@ -101,9 +104,10 @@
   </tr>
   <tr>
     <td class="left">
-      <span>${XMLencode(%userName)}</span>
+      #let profileUrl = c.req.makeUri("profile/", false) & XMLencode(%userName)
+      <span><a href="$profileUrl">${XMLencode(%userName)}</a></span>
       <hr/>
-      ${genGravatar(%userEmail)}
+      <a href="$profileUrl">${genGravatar(%userEmail)}</a>
       #if c.userId == %postAuthor and c.currentPost.subject.len == 0:
         <hr/>${UrlButton(c, "Edit post", c.genThreadUrl(%postId, "edit"))}
       #elif c.isAdmin and c.currentPost.subject.len == 0:
@@ -208,20 +212,27 @@
     <div class="content">
     <span>Out of ${stats.totalUsers} users ${stats.activeUsers.len} are online${if stats.activeUsers.len == 0: "." else: ":"}
       #for index, usr in stats.activeUsers:
+      #  let profileHref = """<a href="""" & c.req.makeUri("profile/", false) &
+      #    XMLencode(usr.nick) & """">"""
+      #  let hrefEnd = """</a>"""
       #  if usr.isAdmin:
           #if index != 0: result.add ','
           #end if
-          #result.add("""<span class="user admin"> """ & usr.nick & """</span>""")
+          #result.add("""<span class="user admin"> """ & profileHref &
+          #  usr.nick & hrefEnd & """</span>""")
       #  else:
           #if index != 0: result.add ','
           #end if
-          #result.add("""<span class="user"> """ & usr.nick & """</span>""")
+          #result.add("""<span class="user"> """ & profileHref &
+          #  usr.nick & hrefEnd & """</span>""")
       #  end if
       #end for
     </span>
     <hr/>
     #if stats.newestMember.nick != "":
-      <span>Total threads: ${stats.totalThreads} | Total posts: ${stats.totalPosts} | Newest member: ${stats.newestMember.nick}</span>
+      #let profileUrl = c.req.makeUri("profile/", false) &
+      #  XMLEncode(stats.newestMember.nick)
+      <span>Total threads: ${stats.totalThreads} | Total posts: ${stats.totalPosts} | Newest member: <a href="$profileUrl">${stats.newestMember.nick}</a></span>
     #else:
       <span>Total threads: ${stats.totalThreads} | Total posts: ${stats.totalPosts}</span>
     #end if
