@@ -16,13 +16,16 @@
 </head>
 <body>
   <div id="wrapper">
+    #let frontQuery = c.req.makeUri("/")
     <div id="nimbtn">
-      <a href="http://nimrod-code.org/">Homepage</a>
+      <a href="${frontQuery}">Forum</a>
     </div>
 
     <div id="header">
-      #let frontQuery = c.req.makeUri("/")
-      <span><a href="${frontQuery}">Nimrod's Forum</a></span>
+      <span>Nimrod's <a href="http://nimrod-code.org/">homepage</a></span>
+      <span><a href="http://nimrod-code.org/documentation.html">stable docs</a></span>
+      <span><a href="http://build.nimrod-code.org/docs/documentation.html">development docs</a></span>
+      <span><a href="https://github.com/Araq/Nimrod/issues">github issues</a></span>
       #if c.loggedIn:
         <a href="${frontQuery}logout" class="right">Logout</a>
         <span id="welcome">$c.username</span>
