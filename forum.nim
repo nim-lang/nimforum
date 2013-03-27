@@ -665,7 +665,6 @@ get "/t/@threadid/?@page?/?":
   if @"page".len > 0:
     parseInt(@"page", c.pageNum, 0..1000_000)
     cond (c.pageNum > 0)
-    if c.pageNum == 1: redirect(uri("/t/" & $c.threadId))
   if (@"postid").len > 0:
     parseInt(@"postid", c.postId, -1..1000_000)
   var count = 0
@@ -703,7 +702,6 @@ get "/page/@page/?":
   cond (@"page" != "")
   parseInt(@"page", c.pageNum, 0..1000_000)
   cond (c.pageNum > 0)
-  if c.pageNum == 1: redirect(uri("/"))
   var count = 0
   let list = genThreadsList(c, count)
   if count == 0:
