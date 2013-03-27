@@ -1,5 +1,6 @@
 #! stdtmpl
-#proc genMain(c: var TForumData, content: string): string = 
+#proc genMain(c: var TForumData, content: string,
+#             additional_headers = ""): string =
 #  result = ""
 #  var stats: TForumStats
 #  if c.isThreadsList: stats = c.getStats(false)
@@ -11,7 +12,7 @@
 <head>
   <title>Nimrod Forum</title>
   <link rel="stylesheet" href="${c.req.makeUri("css/normalize.css", absolute = false)}">
-  <link rel="stylesheet" href="${c.req.makeUri("css/style.css", absolute = false)}">
+  <link rel="stylesheet" href="${c.req.makeUri("css/style.css", absolute = false)}">${additional_headers}
   <meta charset="UTF-8">
 </head>
 <body>
@@ -37,11 +38,11 @@
         <a href="${frontQuery}login" class="right">Login</a>
       #end if
     </div>
-      
+
     <div id="topbar">
        ${c.genActionMenu}
     </div>
-      
+
     <div id="content">
       $content
       <span style="color:red">$c.errorMsg</span>
@@ -65,3 +66,55 @@
   </div>
 </body>
 </html>
+#end proc
+#
+#proc genRSSHeaders(c: var TForumData): string =
+#  result = ""
+<link href="${c.req.makeUri("threadActivity.xml")}" title="Thread activity"
+  type="application/atom+xml" rel="alternate">
+#end proc
+#
+#proc genRSS(c: var TForumData): string =
+#  result = ""
+#  var stats: TForumStats
+#  let frontQuery = c.req.makeUri("/")
+#  if c.isThreadsList: stats = c.getStats(false)
+#  else:
+#    stats = c.getStats(true)
+#  end if
+#  const query = sql"""SELECT A.id, A.name,
+#    strftime('%Y-%m-%dT%H:%M:%S', (A.modified)),
+#    COUNT(B.id), C.name, B.content
+#    FROM thread AS A, post AS B, person AS C
+#    WHERE A.id = b.thread AND B.author = C.id
+#    GROUP BY B.thread
+#    ORDER BY modified DESC LIMIT ?"""
+#  const threadId = 0
+#  const name = 1
+#  const threadDate = 2
+#  const postCount = 3
+#  const postAuthor = 4
+#  const postContent = 5
+#  let recent = GetValue(db, sql"""SELECT
+#    strftime('%Y-%m-%dT%H:%M:%S', (modified)) FROM thread
+#    ORDER BY modified DESC LIMIT 1""")
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>Nimrod forum thread activity</title>
+    <link href="${c.req.makeUri("/threadActivity.xml")}" rel="self" />
+    <link href="${frontQuery}" rel="self" />
+    <id>${frontQuery}</id>
+    <updated>${recent}</updated>
+# for row in Rows(db, query, 10):
+    <entry>
+        <title>${XMLencode(%name)}</title>
+        <id>urn:entry:${%threadid}</id>
+        <link rel="alternate" type="text/html"
+          href="${c.req.makeUri(c.genThreadUrl(threadid = %threadid))}"/>
+        <updated>${%threadDate}</updated>
+        <content type="text"
+>Posts ${postCount}, ${XMLEncode(%postAuthor)} said: ${XMLEncode(%postContent)}</content>
+    </entry>
+# end for
+</feed>
+#end proc

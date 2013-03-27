@@ -645,7 +645,13 @@ get "/":
   createTFD()
   c.isThreadsList = true
   var count = 0
-  resp genMain(c, genThreadsList(c, count))
+  resp genMain(c, genThreadsList(c, count), genRSSHeaders(c))
+
+get "/threadActivity.xml":
+  createTFD()
+  c.isThreadsList = true
+  var count = 0
+  resp genRSS(c), "application/atom+xml"
 
 get "/t/@threadid/?@page?/?":
   createTFD()
@@ -691,7 +697,7 @@ get "/page/@page/?":
   let list = genThreadsList(c, count)
   if count == 0:
     pass()
-  resp genMain(c, list)
+  resp genMain(c, list, genRSSHeaders(c))
 
 get "/profile/@nick/?":
   createTFD()
