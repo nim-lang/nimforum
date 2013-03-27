@@ -79,7 +79,7 @@
 #  end if
 #  const query = sql"""SELECT A.id, A.name,
 #    strftime('%Y-%m-%dT%H:%M:%S', (A.modified)),
-#    COUNT(B.id), C.name, B.content
+#    COUNT(B.id), C.name, B.content, B.id
 #    FROM thread AS A, post AS B, person AS C
 #    WHERE A.id = b.thread AND B.author = C.id
 #    GROUP BY B.thread
@@ -90,6 +90,7 @@
 #  const postCount = 3
 #  const postAuthor = 4
 #  const postContent = 5
+#  const postId = 6
 #  let recent = GetValue(db, sql"""SELECT
 #    strftime('%Y-%m-%dT%H:%M:%S', (modified)) FROM thread
 #    ORDER BY modified DESC LIMIT 1""")
@@ -104,11 +105,14 @@
     <entry>
         <title>${XMLencode(%name)}</title>
         <id>urn:entry:${%threadid}</id>
+        # let url = c.genThreadUrl(threadid = %threadid,
+        #   pageNum = $(ceil(parseInt(%postCount) / postsPerPage).int)) &
+        #   "#" & %postId
         <link rel="alternate" type="text/html"
-          href="${c.req.makeUri(c.genThreadUrl(threadid = %threadid))}"/>
+          href="${c.req.makeUri(url)}"/>
         <updated>${%threadDate}</updated>
         <content type="text"
->Posts ${postCount}, ${XMLEncode(%postAuthor)} said: ${XMLEncode(%postContent)}</content>
+>Posts ${%postCount}, ${XMLEncode(%postAuthor)} said: ${XMLEncode(%postContent)}</content>
     </entry>
 # end for
 </feed>
