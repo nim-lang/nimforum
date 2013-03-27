@@ -36,7 +36,7 @@ type
     actionContent: string
     errorMsg, loginErrorMsg: string
     invalidField: string
-    currentPost: TPost
+    currentPost: TPost ## Only used for reply previews
     startTime: float
     isThreadsList: bool
     pageNum: int
@@ -551,6 +551,11 @@ proc getPagesInThread(c: var TForumData): int =
 proc getPagesInThreadByID(c: var TForumData, thrid: int): int =
   result = ceil(c.gatherTotalPostsByID(thrid) / postsPerPage).int
 
+proc getThreadTitle(thrid: int, pageNum: int): string =
+  result = GetValue(db, sql"select name from thread where id = ?", $thrid)
+  if pageNum notin {0,1}:
+    result.add(" - Page " & $pageNum)
+
 proc genPagenumLocalNav(c: var TForumData, thrid: int): string =
   result = ""
   const maxPostPages = 6 # Maximum links to pages shown.
@@ -645,23 +650,26 @@ get "/":
   createTFD()
   c.isThreadsList = true
   var count = 0
-  resp genMain(c, genThreadsList(c, count), genRSSHeaders(c))
+  resp genMain(c, genThreadsList(c, count),
+               additionalHeaders = genRSSHeaders(c))
 
 get "/threadActivity.xml":
   createTFD()
   c.isThreadsList = true
-  var count = 0
   resp genRSS(c), "application/atom+xml"
 
 get "/t/@threadid/?@page?/?":
   createTFD()
+  var title = "Nimrod Forum - "
+  parseInt(@"threadid", c.threadId, -1..1000_000)
   if @"page".len > 0:
     parseInt(@"page", c.pageNum, 0..1000_000)
     cond (c.pageNum > 0)
-  parseInt(@"threadid", c.threadId, -1..1000_000)
+    if c.pageNum == 1: redirect(uri("/t/" & $c.threadId))
   if (@"postid").len > 0:
     parseInt(@"postid", c.postId, -1..1000_000)
   var count = 0
+  var pSubject = getThreadTitle(c.threadid, c.pageNum)
   cond validThreadId(c)
   gatherTotalPosts(c)
   if (@"action").len > 0:
@@ -673,6 +681,7 @@ get "/t/@threadid/?@page?/?":
       body = genPostsList(c, $c.threadId, count)
       cond count != 0
       body.add genFormPost(c, "doreply", "Reply", subject, "", false)
+      title.add("Replying to thread: " & pSubject)
     of "edit":
       cond c.postId != -1
       const query = sql"select header, content from post where id = ?"
@@ -680,12 +689,13 @@ get "/t/@threadid/?@page?/?":
       let header = ||row[0]
       let content = ||row[1]
       body = genFormPost(c, "doedit", "Edit", header, content, true)
-    resp c.genMain(body)
+      title.add("Editing post")
+    resp c.genMain(body, title)
   else:
     incrementViews(c)
     let posts = genPostsList(c, $c.threadId, count)
     cond count != 0
-    resp genMain(c, posts)
+    resp genMain(c, posts, title & pSubject)
 
 get "/page/@page/?":
   createTFD()
@@ -693,25 +703,26 @@ get "/page/@page/?":
   cond (@"page" != "")
   parseInt(@"page", c.pageNum, 0..1000_000)
   cond (c.pageNum > 0)
+  if c.pageNum == 1: redirect(uri("/"))
   var count = 0
   let list = genThreadsList(c, count)
   if count == 0:
     pass()
-  resp genMain(c, list, genRSSHeaders(c))
+  resp genMain(c, list, "Nimrod Forum - Page " & $c.pageNum, genRSSHeaders(c))
 
 get "/profile/@nick/?":
   createTFD()
   cond (@"nick" != "")
   var userinfo: TUserInfo
   if gatherUserInfo(c, @"nick", userinfo):
-    resp genMain(c, c.genProfile(userinfo))
+    resp genMain(c, c.genProfile(userinfo),
+                 "Nimrod Forum - " & @"nick" & "'s profile")
   else:
     halt()
-  
 
 get "/login/?":
   createTFD()
-  resp genMain(c, genFormLogin(c))
+  resp genMain(c, genFormLogin(c), "Nimrod Forum - Log in")
 
 get "/logout/?":
   createTFD()
@@ -720,7 +731,7 @@ get "/logout/?":
 
 get "/register/?":
   createTFD()
-  resp genMain(c, genFormRegister(c))
+  resp genMain(c, genFormRegister(c), "Nimrod Forum - Register")
 
 template readIDs(): stmt =
   # Retrieve the threadid, postid and pagenum
@@ -738,7 +749,7 @@ template handleError(action: string, topText: string, isEdit: bool): stmt =
     body.add genPostPreview(c, @"subject", @"content", 
                             c.userName, $getGMTime(getTime()))
   body.add genFormPost(c, action, topText, reuseText, reuseText, isEdit)
-  resp genMain(c, body)
+  resp genMain(c, body, "Nimrod Forum - Error")
 
 post "/dologin":
   createTFD()
@@ -786,7 +797,8 @@ post "/doedit":
 
 get "/newthread/?":
   createTFD()
-  resp genMain(c, genFormPost(c, "donewthread", "New thread", "", "", false))
+  resp genMain(c, genFormPost(c, "donewthread", "New thread", "", "", false),
+               "Nimrod Forum - New Thread")
 
 when isMainModule:
   docConfig = rstgen.defaultConfig()

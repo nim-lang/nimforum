@@ -1,6 +1,6 @@
 #! stdtmpl
 #proc genMain(c: var TForumData, content: string,
-#             additional_headers = ""): string =
+#             title = "Nimrod Forum", additional_headers = ""): string =
 #  result = ""
 #  var stats: TForumStats
 #  if c.isThreadsList: stats = c.getStats(false)
@@ -10,7 +10,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <title>Nimrod Forum</title>
+  <title>${XmlEncode(title)}</title>
   <link rel="stylesheet" href="${c.req.makeUri("css/normalize.css", absolute = false)}">
   <link rel="stylesheet" href="${c.req.makeUri("css/style.css", absolute = false)}">${additional_headers}
   <meta charset="UTF-8">

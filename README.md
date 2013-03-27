@@ -5,7 +5,7 @@ This is Nimrod's forum. The code is not nice and depends on the RST parser of
 the Nimrod compiler. 
 
 
-Copyright (c) 2012 Andreas Rumpf.
+Copyright (c) 2012 Andreas Rumpf, Dominik Picheta.
 All rights reserved.
 
 # License
