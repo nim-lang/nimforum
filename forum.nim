@@ -650,8 +650,7 @@ get "/":
 get "/threadActivity.xml":
   createTFD()
   c.isThreadsList = true
-  var count = 0
-  resp genRSS(c), "application/atom+xml"
+  resp genThreadsRSS(c), "application/atom+xml"
 
 get "/t/@threadid/?@page?/?":
   createTFD()

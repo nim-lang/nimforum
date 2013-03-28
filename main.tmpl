@@ -69,14 +69,8 @@
   type="application/atom+xml" rel="alternate">
 #end proc
 #
-#proc genRSS(c: var TForumData): string =
+#proc genThreadsRSS(c: var TForumData): string =
 #  result = ""
-#  var stats: TForumStats
-#  let frontQuery = c.req.makeUri("/")
-#  if c.isThreadsList: stats = c.getStats(false)
-#  else:
-#    stats = c.getStats(true)
-#  end if
 #  const query = sql"""SELECT A.id, A.name,
 #    strftime('%Y-%m-%dT%H:%M:%S', (A.modified)),
 #    COUNT(B.id), C.name, B.content, B.id
@@ -91,6 +85,7 @@
 #  const postAuthor = 4
 #  const postContent = 5
 #  const postId = 6
+#  let frontQuery = c.req.makeUri("/")
 #  let recent = GetValue(db, sql"""SELECT
 #    strftime('%Y-%m-%dT%H:%M:%S', (modified)) FROM thread
 #    ORDER BY modified DESC LIMIT 1""")
