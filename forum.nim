@@ -652,6 +652,10 @@ get "/threadActivity.xml":
   c.isThreadsList = true
   resp genThreadsRSS(c), "application/atom+xml"
 
+get "/postActivity.xml":
+  createTFD()
+  resp genPostsRSS(c), "application/atom+xml"
+
 get "/t/@threadid/?@page?/?":
   createTFD()
   if @"page".len > 0:

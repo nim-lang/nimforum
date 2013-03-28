@@ -65,7 +65,9 @@
 #
 #proc genRSSHeaders(c: var TForumData): string =
 #  result = ""
-<link href="${c.req.makeUri("threadActivity.xml")}" title="Thread activity"
+<link href="${c.req.makeUri("/threadActivity.xml")}" title="Thread activity"
+  type="application/atom+xml" rel="alternate">
+<link href="${c.req.makeUri("/postActivity.xml")}" title="Post activity"
   type="application/atom+xml" rel="alternate">
 #end proc
 #
@@ -108,6 +110,53 @@
         <updated>${%threadDate}</updated>
         <content type="text"
 >Posts ${%postCount}, ${XMLEncode(%postAuthor)} said: ${XMLEncode(%postContent)}</content>
+    </entry>
+# end for
+</feed>
+#end proc
+#
+#proc genPostsRSS(c: var TForumData): string =
+#  result = ""
+#  const query = sql"""SELECT A.id, B.name, A.content, A.thread,
+#    A.header, strftime('%Y-%m-%dT%H:%M:%S', A.creation),
+#    A.creation, COUNT(C.id)
+#    FROM post AS A, person AS B, post AS C
+#    WHERE A.author = B.id AND A.thread = C.thread AND C.id <= A.id
+#    GROUP BY A.id
+#    ORDER BY A.creation DESC LIMIT ?"""
+#  const postId = 0
+#  const postAuthor = 1
+#  const postContent = 2
+#  const postThread = 3
+#  const postHeader = 4
+#  const postRssDate = 5
+#  const postHumanDate = 6
+#  const postPosition = 7
+#  let frontQuery = c.req.makeUri("/")
+#  let recent = GetValue(db, sql"""SELECT
+#    strftime('%Y-%m-%dT%H:%M:%S', creation) FROM post
+#    ORDER BY creation DESC LIMIT 1""")
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>Nimrod forum post activity</title>
+    <link href="${c.req.makeUri("/postActivity.xml")}" rel="self" />
+    <link href="${frontQuery}" rel="self" />
+    <id>${frontQuery}</id>
+    <updated>${recent}</updated>
+# for row in Rows(db, query, 10):
+    <entry>
+        <title>${XMLencode(%postHeader)}</title>
+        <id>urn:entry:${%postId}</id>
+        # let url = c.genThreadUrl(threadid = %postThread,
+        #   pageNum = $(ceil(parseInt(%postPosition) / postsPerPage).int)) &
+        #   "#" & %postId
+        <link rel="alternate" type="text/html"
+          href="${c.req.makeUri(url)}"/>
+        <updated>${%postRssDate}</updated>
+        <content type="text"
+>On ${XMLEncode(%postHumanDate)}, ${XMLEncode(%postAuthor)} said:
+
+${XMLEncode(%postContent)}</content>
     </entry>
 # end for
 </feed>
