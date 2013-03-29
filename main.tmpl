@@ -1,6 +1,6 @@
 #! stdtmpl
 #proc genMain(c: var TForumData, content: string,
-#             additional_headers = ""): string =
+#             additional_headers = "", showRssLinks = false): string =
 #  result = ""
 #  var stats: TForumStats
 #  if c.isThreadsList: stats = c.getStats(false)
@@ -47,6 +47,20 @@
     #end if
     <div id="topbar">
        ${c.genActionMenu}
+       #if showRssLinks:
+       <span id="rss">
+         <a href="${c.req.makeUri("/threadActivity.xml")}"
+           ><img
+             src="${c.req.makeUri("/images/Feed-icon.svg", absolute = false)}"
+             style="width:1em;height:1em;vertical-align:middle"
+             >Thread activity</a>
+         <a href="${c.req.makeUri("/postActivity.xml")}"
+           ><img
+             src="${c.req.makeUri("/images/Feed-icon.svg", absolute = false)}"
+             style="width:1em;height:1em;vertical-align:middle"
+             >Posts activity</a>
+       </span>
+       #end if
     </div>
 
     #if c.isThreadsList:
