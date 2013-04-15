@@ -108,6 +108,7 @@
         <link rel="alternate" type="text/html"
           href="${c.req.makeUri(url)}"/>
         <updated>${%threadDate}</updated>
+        <author><name>${XMLEncode(%postAuthor)}</name></author>
         <content type="text"
 >Posts ${%postCount}, ${XMLEncode(%postAuthor)} said: ${XMLEncode(%postContent)}</content>
     </entry>
@@ -153,6 +154,7 @@
         <link rel="alternate" type="text/html"
           href="${c.req.makeUri(url)}"/>
         <updated>${%postRssDate}</updated>
+        <author><name>${XMLEncode(%postAuthor)}</name></author>
         <content type="text"
 >On ${XMLEncode(%postHumanDate)}, ${XMLEncode(%postAuthor)} said:
 
