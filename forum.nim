@@ -651,12 +651,16 @@ get "/":
   c.isThreadsList = true
   var count = 0
   resp genMain(c, genThreadsList(c, count),
-               additionalHeaders = genRSSHeaders(c))
+               additionalHeaders = genRSSHeaders(c), showRssLinks = true)
 
 get "/threadActivity.xml":
   createTFD()
   c.isThreadsList = true
-  resp genRSS(c), "application/atom+xml"
+  resp genThreadsRSS(c), "application/atom+xml"
+
+get "/postActivity.xml":
+  createTFD()
+  resp genPostsRSS(c), "application/atom+xml"
 
 get "/t/@threadid/?@page?/?":
   createTFD()
@@ -706,7 +710,8 @@ get "/page/@page/?":
   let list = genThreadsList(c, count)
   if count == 0:
     pass()
-  resp genMain(c, list, "Nimrod Forum - Page " & $c.pageNum, genRSSHeaders(c))
+  resp genMain(c, list, "Nimrod Forum - Page " & $c.pageNum,
+               genRSSHeaders(c), showRssLinks = true)
 
 get "/profile/@nick/?":
   createTFD()

@@ -182,6 +182,12 @@ div#header a:hover, #nimbtn a:hover {
   margin: 5pt;  
 }
 
+div#topbar span#rss {
+  float: right;
+  padding: 0;
+  padding-right: 7pt;
+}
+
 #content .post {
   border: #4d4d4d solid 2px;
   width: 100%;

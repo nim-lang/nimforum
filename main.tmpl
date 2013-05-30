@@ -1,6 +1,6 @@
 #! stdtmpl
-#proc genMain(c: var TForumData, content: string,
-#             title = "Nimrod Forum", additional_headers = ""): string =
+#proc genMain(c: var TForumData, content: string, title = "Nimrod Forum",
+#             additional_headers = "", showRssLinks = false): string =
 #  result = ""
 #  var stats: TForumStats
 #  if c.isThreadsList: stats = c.getStats(false)
@@ -52,6 +52,20 @@
     #end if
     <div id="topbar">
        ${c.genActionMenu}
+       #if showRssLinks:
+       <span id="rss">
+         <a href="${c.req.makeUri("/threadActivity.xml")}"
+           ><img
+             src="${c.req.makeUri("/images/Feed-icon.svg", absolute = false)}"
+             style="width:1em;height:1em;vertical-align:middle"
+             >Thread activity</a>
+         <a href="${c.req.makeUri("/postActivity.xml")}"
+           ><img
+             src="${c.req.makeUri("/images/Feed-icon.svg", absolute = false)}"
+             style="width:1em;height:1em;vertical-align:middle"
+             >Posts activity</a>
+       </span>
+       #end if
     </div>
 
     #if c.isThreadsList:
@@ -70,21 +84,17 @@
 #
 #proc genRSSHeaders(c: var TForumData): string =
 #  result = ""
-<link href="${c.req.makeUri("threadActivity.xml")}" title="Thread activity"
+<link href="${c.req.makeUri("/threadActivity.xml")}" title="Thread activity"
+  type="application/atom+xml" rel="alternate">
+<link href="${c.req.makeUri("/postActivity.xml")}" title="Post activity"
   type="application/atom+xml" rel="alternate">
 #end proc
 #
-#proc genRSS(c: var TForumData): string =
+#proc genThreadsRSS(c: var TForumData): string =
 #  result = ""
-#  var stats: TForumStats
-#  let frontQuery = c.req.makeUri("/")
-#  if c.isThreadsList: stats = c.getStats(false)
-#  else:
-#    stats = c.getStats(true)
-#  end if
 #  const query = sql"""SELECT A.id, A.name,
 #    strftime('%Y-%m-%dT%H:%M:%S', (A.modified)),
-#    COUNT(B.id), C.name, B.content
+#    COUNT(B.id), C.name, B.content, B.id
 #    FROM thread AS A, post AS B, person AS C
 #    WHERE A.id = b.thread AND B.author = C.id
 #    GROUP BY B.thread
@@ -95,6 +105,8 @@
 #  const postCount = 3
 #  const postAuthor = 4
 #  const postContent = 5
+#  const postId = 6
+#  let frontQuery = c.req.makeUri("/")
 #  let recent = GetValue(db, sql"""SELECT
 #    strftime('%Y-%m-%dT%H:%M:%S', (modified)) FROM thread
 #    ORDER BY modified DESC LIMIT 1""")
@@ -102,18 +114,70 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Nimrod forum thread activity</title>
     <link href="${c.req.makeUri("/threadActivity.xml")}" rel="self" />
-    <link href="${frontQuery}" rel="self" />
+    <link href="${frontQuery}" />
     <id>${frontQuery}</id>
     <updated>${recent}</updated>
 # for row in Rows(db, query, 10):
     <entry>
         <title>${XMLencode(%name)}</title>
         <id>urn:entry:${%threadid}</id>
+        # let url = c.genThreadUrl(threadid = %threadid,
+        #   pageNum = $(ceil(parseInt(%postCount) / postsPerPage).int)) &
+        #   "#" & %postId
         <link rel="alternate" type="text/html"
-          href="${c.req.makeUri(c.genThreadUrl(threadid = %threadid))}"/>
+          href="${c.req.makeUri(url)}"/>
         <updated>${%threadDate}</updated>
+        <author><name>${XMLEncode(%postAuthor)}</name></author>
         <content type="text"
->Posts ${postCount}, ${XMLEncode(%postAuthor)} said: ${XMLEncode(%postContent)}</content>
+>Posts ${%postCount}, ${XMLEncode(%postAuthor)} said: ${XMLEncode(%postContent)}</content>
+    </entry>
+# end for
+</feed>
+#end proc
+#
+#proc genPostsRSS(c: var TForumData): string =
+#  result = ""
+#  const query = sql"""SELECT A.id, B.name, A.content, A.thread,
+#    A.header, strftime('%Y-%m-%dT%H:%M:%S', A.creation),
+#    A.creation, COUNT(C.id)
+#    FROM post AS A, person AS B, post AS C
+#    WHERE A.author = B.id AND A.thread = C.thread AND C.id <= A.id
+#    GROUP BY A.id
+#    ORDER BY A.creation DESC LIMIT ?"""
+#  const postId = 0
+#  const postAuthor = 1
+#  const postContent = 2
+#  const postThread = 3
+#  const postHeader = 4
+#  const postRssDate = 5
+#  const postHumanDate = 6
+#  const postPosition = 7
+#  let frontQuery = c.req.makeUri("/")
+#  let recent = GetValue(db, sql"""SELECT
+#    strftime('%Y-%m-%dT%H:%M:%S', creation) FROM post
+#    ORDER BY creation DESC LIMIT 1""")
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>Nimrod forum post activity</title>
+    <link href="${c.req.makeUri("/postActivity.xml")}" rel="self" />
+    <link href="${frontQuery}" />
+    <id>${frontQuery}</id>
+    <updated>${recent}</updated>
+# for row in Rows(db, query, 10):
+    <entry>
+        <title>${XMLencode(%postHeader)}</title>
+        <id>urn:entry:${%postId}</id>
+        # let url = c.genThreadUrl(threadid = %postThread,
+        #   pageNum = $(ceil(parseInt(%postPosition) / postsPerPage).int)) &
+        #   "#" & %postId
+        <link rel="alternate" type="text/html"
+          href="${c.req.makeUri(url)}"/>
+        <updated>${%postRssDate}</updated>
+        <author><name>${XMLEncode(%postAuthor)}</name></author>
+        <content type="text"
+>On ${XMLEncode(%postHumanDate)}, ${XMLEncode(%postAuthor)} said:
+
+${XMLEncode(%postContent)}</content>
     </entry>
 # end for
 </feed>
