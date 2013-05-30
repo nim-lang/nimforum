@@ -125,6 +125,19 @@ div#header a:hover, #nimbtn a:hover {
   width: 15%;
 }
 
+span#rss {
+  margin: 5pt;
+  font-size: 9pt;
+}
+
+img.rssfeed {
+  width: 1em;
+  height: 1em;
+  padding-right:3pt;
+  margin-top:-1pt;
+
+}
+
 #whoisonline {
   margin: 5pt;
   font-size: 9pt;
@@ -153,7 +166,7 @@ div#header a:hover, #nimbtn a:hover {
 }
 
 #footerPush {
-  height: 21pt;
+  height: 24pt;
 }
 
 #footer {

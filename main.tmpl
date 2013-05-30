@@ -52,25 +52,27 @@
     #end if
     <div id="topbar">
        ${c.genActionMenu}
-       #if showRssLinks:
-       <span id="rss">
-         <a href="${c.req.makeUri("/threadActivity.xml")}"
-           ><img
-             src="${c.req.makeUri("/images/Feed-icon.svg", absolute = false)}"
-             style="width:1em;height:1em;vertical-align:middle"
-             >Thread activity</a>
-         <a href="${c.req.makeUri("/postActivity.xml")}"
-           ><img
-             src="${c.req.makeUri("/images/Feed-icon.svg", absolute = false)}"
-             style="width:1em;height:1em;vertical-align:middle"
-             >Posts activity</a>
-       </span>
-       #end if
     </div>
 
     #if c.isThreadsList:
       ${c.genListOnline(stats)}
     #end if
+    
+    #if showRssLinks:
+    <span id="rss">
+      <a href="${c.req.makeUri("/threadActivity.xml")}"
+        ><img
+          src="${c.req.makeUri("/images/Feed-icon.svg", absolute = false)}"
+          class="rssfeed"
+          >Thread activity</a>
+      <a href="${c.req.makeUri("/postActivity.xml")}"
+        ><img
+           src="${c.req.makeUri("/images/Feed-icon.svg", absolute = false)}"
+           class="rssfeed"
+          >Posts activity</a>
+    </span>
+    #end if
+    
     <div id="footerPush"></div>
   </div>
   <div id="footer">
