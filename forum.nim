@@ -321,10 +321,13 @@ proc crud(c: TCrud, table: string, data: varargs[string]): TSqlQuery =
 
 template retrSubject(c: expr) =
   let subject {.inject.} = c.req.params["subject"]
-  if subject.len < 3: return setError(c, "subject", "Subject not long enough")
-  
+  if subject.strip.len < 3:
+    return setError(c, "subject", "Subject not long enough")
+
 template retrContent(c: expr) =
   let content {.inject.} = c.req.params["content"]
+  if content.strip.len < 10:
+    return setError(c, "content", "Content not long enough")
   if not validateRst(c, content): return false
 
 template retrPost(c: expr) =
