@@ -15,9 +15,15 @@
 #  count = 0
 <table id="threads">
   <tr>
-    <th>Topics</th>
+    <th>Topics&nbsp;<a href="${c.req.makeUri("/threadActivity.xml")}"
+      ><img src="${c.req.makeUri("/images/Feed-icon.svg", absolute = false)}"
+        style="width:1em;height:1em;vertical-align:middle"
+        alt="Thread activity"></a></th>
     <th>Author</th>
-    <th>Posts</th>
+    <th>Posts&nbsp;<a href="${c.req.makeUri("/postActivity.xml")}"
+      ><img src="${c.req.makeUri("/images/Feed-icon.svg", absolute = false)}"
+        style="width:1em;height:1em;vertical-align:middle"
+        alt="Posts activity"></a></th>
     <th>Views</th>
     <th>Last reply</th>
   </tr>
