@@ -95,7 +95,7 @@
 #proc genThreadsRSS(c: var TForumData): string =
 #  result = ""
 #  const query = sql"""SELECT A.id, A.name,
-#    strftime('%Y-%m-%dT%H:%M:%S', (A.modified)),
+#    strftime('%Y-%m-%dT%H:%M:%SZ', (A.modified)),
 #    COUNT(B.id), C.name, B.content, B.id
 #    FROM thread AS A, post AS B, person AS C
 #    WHERE A.id = b.thread AND B.author = C.id
@@ -110,7 +110,7 @@
 #  const postId = 6
 #  let frontQuery = c.req.makeUri("/")
 #  let recent = GetValue(db, sql"""SELECT
-#    strftime('%Y-%m-%dT%H:%M:%S', (modified)) FROM thread
+#    strftime('%Y-%m-%dT%H:%M:%SZ', (modified)) FROM thread
 #    ORDER BY modified DESC LIMIT 1""")
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
@@ -140,7 +140,7 @@
 #proc genPostsRSS(c: var TForumData): string =
 #  result = ""
 #  const query = sql"""SELECT A.id, B.name, A.content, A.thread,
-#    A.header, strftime('%Y-%m-%dT%H:%M:%S', A.creation),
+#    A.header, strftime('%Y-%m-%dT%H:%M:%SZ', A.creation),
 #    A.creation, COUNT(C.id)
 #    FROM post AS A, person AS B, post AS C
 #    WHERE A.author = B.id AND A.thread = C.thread AND C.id <= A.id
@@ -156,7 +156,7 @@
 #  const postPosition = 7
 #  let frontQuery = c.req.makeUri("/")
 #  let recent = GetValue(db, sql"""SELECT
-#    strftime('%Y-%m-%dT%H:%M:%S', creation) FROM post
+#    strftime('%Y-%m-%dT%H:%M:%SZ', creation) FROM post
 #    ORDER BY creation DESC LIMIT 1""")
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
