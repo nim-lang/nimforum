@@ -667,7 +667,6 @@ get "/postActivity.xml":
 
 get "/t/@threadid/?@page?/?":
   createTFD()
-  var title = "Nimrod Forum - "
   parseInt(@"threadid", c.threadId, -1..1000_000)
   if @"page".len > 0:
     parseInt(@"page", c.pageNum, 0..1000_000)
@@ -679,6 +678,7 @@ get "/t/@threadid/?@page?/?":
   cond validThreadId(c)
   gatherTotalPosts(c)
   if (@"action").len > 0:
+    var title = ""
     case @"action"
     of "reply":
       let subject = GetValue(db,
@@ -687,7 +687,7 @@ get "/t/@threadid/?@page?/?":
       body = genPostsList(c, $c.threadId, count)
       cond count != 0
       body.add genFormPost(c, "doreply", "Reply", subject, "", false)
-      title.add("Replying to thread: " & pSubject)
+      title = "Replying to thread: " & pSubject
     of "edit":
       cond c.postId != -1
       const query = sql"select header, content from post where id = ?"
@@ -695,13 +695,13 @@ get "/t/@threadid/?@page?/?":
       let header = ||row[0]
       let content = ||row[1]
       body = genFormPost(c, "doedit", "Edit", header, content, true)
-      title.add("Editing post")
-    resp c.genMain(body, title)
+      title = "Editing post"
+    resp c.genMain(body, title & " - Nimrod Forum")
   else:
     incrementViews(c)
     let posts = genPostsList(c, $c.threadId, count)
     cond count != 0
-    resp genMain(c, posts, title & pSubject)
+    resp genMain(c, posts, pSubject & " - Nimrod Forum")
 
 get "/page/@page/?":
   createTFD()
@@ -713,7 +713,7 @@ get "/page/@page/?":
   let list = genThreadsList(c, count)
   if count == 0:
     pass()
-  resp genMain(c, list, "Nimrod Forum - Page " & $c.pageNum,
+  resp genMain(c, list, "Page " & $c.pageNum & " - Nimrod Forum",
                genRSSHeaders(c), showRssLinks = true)
 
 get "/profile/@nick/?":
@@ -722,13 +722,13 @@ get "/profile/@nick/?":
   var userinfo: TUserInfo
   if gatherUserInfo(c, @"nick", userinfo):
     resp genMain(c, c.genProfile(userinfo),
-                 "Nimrod Forum - " & @"nick" & "'s profile")
+                 @"nick" & "'s profile - Nimrod Forum")
   else:
     halt()
 
 get "/login/?":
   createTFD()
-  resp genMain(c, genFormLogin(c), "Nimrod Forum - Log in")
+  resp genMain(c, genFormLogin(c), "Log in - Nimrod Forum")
 
 get "/logout/?":
   createTFD()
@@ -737,7 +737,7 @@ get "/logout/?":
 
 get "/register/?":
   createTFD()
-  resp genMain(c, genFormRegister(c), "Nimrod Forum - Register")
+  resp genMain(c, genFormRegister(c), "Register - Nimrod Forum")
 
 template readIDs(): stmt =
   # Retrieve the threadid, postid and pagenum
@@ -804,12 +804,12 @@ post "/doedit":
 get "/newthread/?":
   createTFD()
   resp genMain(c, genFormPost(c, "donewthread", "New thread", "", "", false),
-               "Nimrod Forum - New Thread")
+               "New Thread - Nimrod Forum")
 
 const licenseRst = slurp("static/license.rst")
 get "/license":
   createTFD()
-  resp genMain(c, rstToHtml(licenseRst), "Forum content license")
+  resp genMain(c, rstToHtml(licenseRst), "Content license - Nimrod Forum")
 
 when isMainModule:
   docConfig = rstgen.defaultConfig()
