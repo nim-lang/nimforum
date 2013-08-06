@@ -806,6 +806,11 @@ get "/newthread/?":
   resp genMain(c, genFormPost(c, "donewthread", "New thread", "", "", false),
                "Nimrod Forum - New Thread")
 
+const licenseRst = slurp("static/license.rst")
+get "/license":
+  createTFD()
+  resp genMain(c, rstToHtml(licenseRst), "Forum content license")
+
 when isMainModule:
   docConfig = rstgen.defaultConfig()
   math.randomize()
