@@ -131,8 +131,10 @@
           href="${c.req.makeUri(url)}"/>
         <updated>${%threadDate}</updated>
         <author><name>${XMLEncode(%postAuthor)}</name></author>
-        <content type="text"
->Posts ${%postCount}, ${XMLEncode(%postAuthor)} said: ${XMLEncode(%postContent)}</content>
+        <content type="html"
+>Posts ${%postCount}, ${XMLEncode(%postAuthor)} said:
+&lt;p&gt;
+${XMLEncode(rstToHtml(%postContent))}</content>
     </entry>
 # end for
 </feed>
@@ -177,10 +179,10 @@
           href="${c.req.makeUri(url)}"/>
         <updated>${%postRssDate}</updated>
         <author><name>${XMLEncode(%postAuthor)}</name></author>
-        <content type="text"
+        <content type="html"
 >On ${XMLEncode(%postHumanDate)}, ${XMLEncode(%postAuthor)} said:
-
-${XMLEncode(%postContent)}</content>
+&lt;p&gt;
+${XMLEncode(rstToHtml(%postContent))}</content>
     </entry>
 # end for
 </feed>
