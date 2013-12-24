@@ -3,7 +3,7 @@ nimforum
 
 This is Nimrod's forum. The code depends on the RST parser of the Nimrod
 compiler and on Jester. The code generating captchas for registration uses the
-[cairo module](http://nimrod-code.org/cairo.html), which requires you to have
+[cairo module](http://nimrod-lang.org/cairo.html), which requires you to have
 the [cairo library](http://cairographics.org) installed when you run the forum,
 or you will be greeted by a cryptic error message similar to:
 
