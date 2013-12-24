@@ -32,14 +32,14 @@ Plain text                        Result
 Links
 =====
 
-Links are either direct URLs like ``http://nimrod-code.org`` or written like 
+Links are either direct URLs like ``http://nimrod-lang.org`` or written like
 this::
   
-  `Nimrod <http://nimrod-code.org>`_
+  `Nimrod <http://nimrod-lang.org>`_
   
 Or like this::
 
-  `<http://nimrod-code.org>`_
+  `<http://nimrod-lang.org>`_
 
 
 Code blocks
