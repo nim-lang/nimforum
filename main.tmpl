@@ -43,6 +43,16 @@
        ${c.genActionMenu}
     </div>
 
+    <form method="get" action="http://www.google.com/search">
+        <table align="right" cellpadding="5pt" cellspacing="5pt"><tr><td>
+        <input type="text" name="q" size="25" maxlength="255" value="" />
+        </td><td>
+        <input type="submit" value="Google Search this forum" />
+        <input type="hidden"  name="sitesearch"
+         value="http://forum.nimrod-lang.org" />
+        </td></tr></table>
+    </form>
+
     <div id="content">
       $content
       <span style="color:red">$c.errorMsg</span>
