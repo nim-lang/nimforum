@@ -129,6 +129,7 @@
         #   "#" & %postId
         <link rel="alternate" type="text/html"
           href="${c.req.makeUri(url)}"/>
+        <published>${%threadDate}</published>
         <updated>${%threadDate}</updated>
         <author><name>${XMLEncode(%postAuthor)}</name></author>
         <content type="html"
@@ -177,6 +178,7 @@ ${XMLEncode(rstToHtml(%postContent))}</content>
         #   "#" & %postId
         <link rel="alternate" type="text/html"
           href="${c.req.makeUri(url)}"/>
+        <published>${%postRssDate}</published>
         <updated>${%postRssDate}</updated>
         <author><name>${XMLEncode(%postAuthor)}</name></author>
         <content type="html"
