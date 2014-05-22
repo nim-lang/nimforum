@@ -1,0 +1,9 @@
+[Package]
+name        = "nimfourm"
+version     = "0.0"
+author      = "Andreas Rumpf, Dominik Picheta"
+description = "A forum for the nimrod programming language"
+license     = "MIT"
+
+[Deps]
+Requires: "nimrod >= 0.9.2"
