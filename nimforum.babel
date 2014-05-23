@@ -7,4 +7,6 @@ license     = "MIT"
 
 [Deps]
 Requires: "nimrod >= 0.9.2"
+Requires: "jester >= 0.1.0"
 Requires: "bcrypt >= 0.2.0"
+Requires: "cairo >= 1.0"
