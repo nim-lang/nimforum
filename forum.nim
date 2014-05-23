@@ -7,7 +7,7 @@
 #
 
 import
-  os, strutils, times, md5, strtabs, cgi, math, db_sqlite, matchers,
+  os, strutils, times, md5, bcrypt, strtabs, cgi, math, db_sqlite, matchers,
   rst, rstgen, captchas, sockets, scgi, jester, htmlgen
 
 const
@@ -181,7 +181,9 @@ proc makeSalt(): string =
 
 proc makePassword(password, salt: string): string =
   ## Creates an MD5 hash by combining password and salt.
-  result = getMD5(salt & getMD5(password))
+  ## Then hashes that with bcrypt to keep backwards compatiblity and
+  ## make it slower
+  result = hash(getMD5(salt & getMD5(password)), salt)
 
 # -----------------------------------------------------------------------------
 template `||`(x: expr): expr = (if not isNil(x): x else: "")
@@ -235,8 +237,8 @@ proc register(c: var TForumData, name, pass, antibot, email: string): bool =
   # perform registration:
   var salt = makeSalt()
   Exec(db, sql("INSERT INTO person(name, password, email, salt, status, lastOnline) " &
-              "VALUES (?, ?, ?, ?, 'user', DATETIME('now'))"), name, 
-              makePassword(pass, salt), email, salt)
+              "VALUES (?, ?, ?, ?, 'user', DATETIME('now'))"),
+              name, makePassword(pass, salt), email, salt)
   #  return setError(c, "", "Could not create your account!")
   return true
 
