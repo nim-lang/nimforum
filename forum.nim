@@ -8,7 +8,9 @@
 
 import
   os, strutils, times, md5, strtabs, cgi, math, db_sqlite, matchers,
-  rst, rstgen, captchas, sockets, scgi, jester, htmlgen
+  rst, rstgen, captchas, sockets, scgi, jester
+
+from htmlgen import tr, th, td, span
 
 const
   unselectedThread = -1
@@ -500,8 +502,8 @@ proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
     firstTag = span("First")
     prevTag = span("Prev")
   else:
-    firstTag = a(href=firstUrl, "First")
-    prevTag = a(href=prevUrl, "Prev")
+    firstTag = htmlgen.a(href=firstUrl, "First")
+    prevTag = htmlgen.a(href=prevUrl, "Prev")
   result.add(htmlgen.`div`(class = "left",
                            firstTag,
                            prevTag))
@@ -512,8 +514,8 @@ proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
     lastTag = span("Last")
     nextTag = span("Next")
   else:
-    lastTag = a(href=lastUrl, "Last")
-    nextTag = a(href=nextUrl, "Next")
+    lastTag = htmlgen.a(href=lastUrl, "Last")
+    nextTag = htmlgen.a(href=nextUrl, "Next")
   result.add(htmlgen.`div`(class = "right",
                            nextTag,
                            lastTag))
@@ -530,7 +532,7 @@ proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
       else:
         pageUrl = c.req.makeUri(firstUrl & "/" & $(i))
       
-      pages.add(a(href = pageUrl, $(i)))
+      pages.add(htmlgen.a(href = pageUrl, $(i)))
   result.add(htmlgen.`div`(class = "middle",
                            pages))
 
@@ -569,7 +571,7 @@ proc genPagenumLocalNav(c: var TForumData, thrid: int): string =
   if totalPagesInThread <= 1: return
   var i = 1
   while i <= totalPagesInThread:
-    result.add(a(href=c.req.makeUri(currentThrURL & $i), $i))
+    result.add(htmlgen.a(href=c.req.makeUri(currentThrURL & $i), $i))
     if i == hmpp and totalPagesInThread-i > hmpp:
       result.add(span("..."))
       # skip to the last 3
@@ -606,7 +608,7 @@ proc genProfile(c: var TForumData, ui: TUserInfo): string =
            else: getGMTime(GetTime())
   
   result.add(htmlgen.`div`(id = "info", 
-    table(
+    htmlgen.table(
       tr(
         th("Nickname"),
         td(ui.nick)
@@ -755,7 +757,7 @@ template handleError(action: string, topText: string, isEdit: bool): stmt =
     body.add genPostPreview(c, @"subject", @"content", 
                             c.userName, $getGMTime(getTime()))
   body.add genFormPost(c, action, topText, reuseText, reuseText, isEdit)
-  resp genMain(c, body, "Nimrod Forum - Error")
+  resp genMain(c, body(), "Nimrod Forum - Error")
 
 post "/dologin":
   createTFD()
