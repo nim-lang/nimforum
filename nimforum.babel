@@ -1,0 +1,11 @@
+[Package]
+name          = "nimforum"
+version       = "0.1.0"
+author        = "Dominik Picheta"
+description   = "Nimrod forum"
+license       = "MIT"
+
+bin = "forum"
+
+[Deps]
+Requires: "nimrod >= 0.9.2, cairo#head, jester#head"

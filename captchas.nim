@@ -11,7 +11,7 @@ import cairo, os, strutils, jester
 proc getCaptchaFilename*(i: int): string {.inline.} =
   result = "public/captchas/capture_" & $i & ".png"
 
-proc getCaptchaUrl*(req: var TRequest, i: int): string =
+proc getCaptchaUrl*(req: PRequest, i: int): string =
   result = req.makeUri("/captchas/capture_" & $i & ".png", absolute = false)
 
 proc createCaptcha*(file, text: string) =

@@ -8,7 +8,7 @@
 
 import
   os, strutils, times, md5, strtabs, cgi, math, db_sqlite, matchers,
-  rst, rstgen, captchas, sockets, scgi, jester
+  rst, rstgen, captchas, scgi, jester, asyncdispatch, asyncnet
 
 from htmlgen import tr, th, td, span
 
@@ -33,7 +33,7 @@ type
   TPost = tuple[subject, content: string]
 
   TForumData = object of TSession
-    req: TRequest
+    req: PRequest
     userid: string
     actionContent: string
     errorMsg, loginErrorMsg: string
@@ -651,167 +651,168 @@ template createTFD(): stmt =
   if request.cookies.len > 0:
     checkLoggedIn(c)
 
-get "/":
-  createTFD()
-  c.isThreadsList = true
-  var count = 0
-  resp genMain(c, genThreadsList(c, count),
-               additionalHeaders = genRSSHeaders(c), showRssLinks = true)
+routes:
+  get "/":
+    createTFD()
+    c.isThreadsList = true
+    var count = 0
+    resp genMain(c, genThreadsList(c, count),
+                 additionalHeaders = genRSSHeaders(c), showRssLinks = true)
 
-get "/threadActivity.xml":
-  createTFD()
-  c.isThreadsList = true
-  resp genThreadsRSS(c), "application/atom+xml"
+  get "/threadActivity.xml":
+    createTFD()
+    c.isThreadsList = true
+    resp genThreadsRSS(c), "application/atom+xml"
 
-get "/postActivity.xml":
-  createTFD()
-  resp genPostsRSS(c), "application/atom+xml"
+  get "/postActivity.xml":
+    createTFD()
+    resp genPostsRSS(c), "application/atom+xml"
 
-get "/t/@threadid/?@page?/?":
-  createTFD()
-  parseInt(@"threadid", c.threadId, -1..1000_000)
-  if @"page".len > 0:
+  get "/t/@threadid/?@page?/?":
+    createTFD()
+    parseInt(@"threadid", c.threadId, -1..1000_000)
+    if @"page".len > 0:
+      parseInt(@"page", c.pageNum, 0..1000_000)
+      cond (c.pageNum > 0)
+    if (@"postid").len > 0:
+      parseInt(@"postid", c.postId, -1..1000_000)
+    var count = 0
+    var pSubject = getThreadTitle(c.threadid, c.pageNum)
+    cond validThreadId(c)
+    gatherTotalPosts(c)
+    if (@"action").len > 0:
+      var title = ""
+      case @"action"
+      of "reply":
+        let subject = GetValue(db,
+            sql"select header from post where id = (select max(id) from post where thread = ?)", 
+            $c.threadId).prependRe
+        body = genPostsList(c, $c.threadId, count)
+        cond count != 0
+        body.add genFormPost(c, "doreply", "Reply", subject, "", false)
+        title = "Replying to thread: " & pSubject
+      of "edit":
+        cond c.postId != -1
+        const query = sql"select header, content from post where id = ?"
+        let row = getRow(db, query, $c.postId)
+        let header = ||row[0]
+        let content = ||row[1]
+        body = genFormPost(c, "doedit", "Edit", header, content, true)
+        title = "Editing post"
+      resp c.genMain(body, title & " - Nimrod Forum")
+    else:
+      incrementViews(c)
+      let posts = genPostsList(c, $c.threadId, count)
+      cond count != 0
+      resp genMain(c, posts, pSubject & " - Nimrod Forum")
+
+  get "/page/@page/?":
+    createTFD()
+    c.isThreadsList = true
+    cond (@"page" != "")
     parseInt(@"page", c.pageNum, 0..1000_000)
     cond (c.pageNum > 0)
-  if (@"postid").len > 0:
-    parseInt(@"postid", c.postId, -1..1000_000)
-  var count = 0
-  var pSubject = getThreadTitle(c.threadid, c.pageNum)
-  cond validThreadId(c)
-  gatherTotalPosts(c)
-  if (@"action").len > 0:
-    var title = ""
-    case @"action"
-    of "reply":
-      let subject = GetValue(db,
-          sql"select header from post where id = (select max(id) from post where thread = ?)", 
-          $c.threadId).prependRe
-      body = genPostsList(c, $c.threadId, count)
-      cond count != 0
-      body.add genFormPost(c, "doreply", "Reply", subject, "", false)
-      title = "Replying to thread: " & pSubject
-    of "edit":
-      cond c.postId != -1
-      const query = sql"select header, content from post where id = ?"
-      let row = getRow(db, query, $c.postId)
-      let header = ||row[0]
-      let content = ||row[1]
-      body = genFormPost(c, "doedit", "Edit", header, content, true)
-      title = "Editing post"
-    resp c.genMain(body, title & " - Nimrod Forum")
-  else:
-    incrementViews(c)
-    let posts = genPostsList(c, $c.threadId, count)
-    cond count != 0
-    resp genMain(c, posts, pSubject & " - Nimrod Forum")
-
-get "/page/@page/?":
-  createTFD()
-  c.isThreadsList = true
-  cond (@"page" != "")
-  parseInt(@"page", c.pageNum, 0..1000_000)
-  cond (c.pageNum > 0)
-  var count = 0
-  let list = genThreadsList(c, count)
-  if count == 0:
-    pass()
-  resp genMain(c, list, "Page " & $c.pageNum & " - Nimrod Forum",
-               genRSSHeaders(c), showRssLinks = true)
-
-get "/profile/@nick/?":
-  createTFD()
-  cond (@"nick" != "")
-  var userinfo: TUserInfo
-  if gatherUserInfo(c, @"nick", userinfo):
-    resp genMain(c, c.genProfile(userinfo),
-                 @"nick" & "'s profile - Nimrod Forum")
-  else:
-    halt()
-
-get "/login/?":
-  createTFD()
-  resp genMain(c, genFormLogin(c), "Log in - Nimrod Forum")
-
-get "/logout/?":
-  createTFD()
-  logout(c)
-  redirect(uri("/"))
-
-get "/register/?":
-  createTFD()
-  resp genMain(c, genFormRegister(c), "Register - Nimrod Forum")
-
-template readIDs(): stmt =
-  # Retrieve the threadid, postid and pagenum
-  if (@"threadid").len > 0:
-    parseInt(@"threadid", c.threadId, -1..1000_000)
-  if (@"postid").len > 0:
-    parseInt(@"postid", c.postId, -1..1000_000)
-
-template finishLogin(): stmt = 
-  setCookie("sid", c.userpass, daysForward(7))
-  redirect(uri("/"))
-
-template handleError(action: string, topText: string, isEdit: bool): stmt =
-  if c.isPreview:
-    body.add genPostPreview(c, @"subject", @"content", 
-                            c.userName, $getGMTime(getTime()))
-  body.add genFormPost(c, action, topText, reuseText, reuseText, isEdit)
-  resp genMain(c, body(), "Nimrod Forum - Error")
-
-post "/dologin":
-  createTFD()
-  if login(c, @"name", @"password"):
-    finishLogin()
-  else:
-    resp c.genMain(genFormLogin(c))
-
-post "/doregister":
-  createTFD()
-  if c.register(@"name", @"new_password", @"antibot", @"email"):
-    discard c.login(@"name", @"new_password")
-    finishLogin()
-  else:
-    resp c.genMain(genFormRegister(c))
-
-post "/donewthread":
-  createTFD()
-  if newThread(c):
-    redirect(uri("/"))
-  else:
-    body = ""
-    handleError("donewthread", "New thread", false)
-
-post "/doreply":
-  createTFD()
-  readIDs()
-  if reply(c):
-    redirect(c.genThreadUrl(pageNum = $(c.getPagesInThread+1)) & "#" & $c.postId)
-  else:
     var count = 0
+    let list = genThreadsList(c, count)
+    if count == 0:
+      pass()
+    resp genMain(c, list, "Page " & $c.pageNum & " - Nimrod Forum",
+                 genRSSHeaders(c), showRssLinks = true)
+
+  get "/profile/@nick/?":
+    createTFD()
+    cond (@"nick" != "")
+    var userinfo: TUserInfo
+    if gatherUserInfo(c, @"nick", userinfo):
+      resp genMain(c, c.genProfile(userinfo),
+                   @"nick" & "'s profile - Nimrod Forum")
+    else:
+      halt()
+
+  get "/login/?":
+    createTFD()
+    resp genMain(c, genFormLogin(c), "Log in - Nimrod Forum")
+
+  get "/logout/?":
+    createTFD()
+    logout(c)
+    redirect(uri("/"))
+
+  get "/register/?":
+    createTFD()
+    resp genMain(c, genFormRegister(c), "Register - Nimrod Forum")
+
+  template readIDs(): stmt =
+    # Retrieve the threadid, postid and pagenum
+    if (@"threadid").len > 0:
+      parseInt(@"threadid", c.threadId, -1..1000_000)
+    if (@"postid").len > 0:
+      parseInt(@"postid", c.postId, -1..1000_000)
+
+  template finishLogin(): stmt = 
+    setCookie("sid", c.userpass, daysForward(7))
+    redirect(uri("/"))
+
+  template handleError(action: string, topText: string, isEdit: bool): stmt =
     if c.isPreview:
-      c.pageNum = c.getPagesInThread+1
-    body = genPostsList(c, $c.threadId, count)
-    handleError("doreply", "Reply", false)
+      body.add genPostPreview(c, @"subject", @"content", 
+                              c.userName, $getGMTime(getTime()))
+    body.add genFormPost(c, action, topText, reuseText, reuseText, isEdit)
+    resp genMain(c, body(), "Nimrod Forum - Error")
 
-post "/doedit":
-  createTFD()
-  readIDs()
-  if edit(c, c.postId):
-    redirect(c.genThreadUrl())
-  else:
-    body = ""
-    handleError("doedit", "Edit", true)
+  post "/dologin":
+    createTFD()
+    if login(c, @"name", @"password"):
+      finishLogin()
+    else:
+      resp c.genMain(genFormLogin(c))
 
-get "/newthread/?":
-  createTFD()
-  resp genMain(c, genFormPost(c, "donewthread", "New thread", "", "", false),
-               "New Thread - Nimrod Forum")
+  post "/doregister":
+    createTFD()
+    if c.register(@"name", @"new_password", @"antibot", @"email"):
+      discard c.login(@"name", @"new_password")
+      finishLogin()
+    else:
+      resp c.genMain(genFormRegister(c))
 
-const licenseRst = slurp("static/license.rst")
-get "/license":
-  createTFD()
-  resp genMain(c, rstToHtml(licenseRst), "Content license - Nimrod Forum")
+  post "/donewthread":
+    createTFD()
+    if newThread(c):
+      redirect(uri("/"))
+    else:
+      body = ""
+      handleError("donewthread", "New thread", false)
+
+  post "/doreply":
+    createTFD()
+    readIDs()
+    if reply(c):
+      redirect(c.genThreadUrl(pageNum = $(c.getPagesInThread+1)) & "#" & $c.postId)
+    else:
+      var count = 0
+      if c.isPreview:
+        c.pageNum = c.getPagesInThread+1
+      body = genPostsList(c, $c.threadId, count)
+      handleError("doreply", "Reply", false)
+
+  post "/doedit":
+    createTFD()
+    readIDs()
+    if edit(c, c.postId):
+      redirect(c.genThreadUrl())
+    else:
+      body = ""
+      handleError("doedit", "Edit", true)
+
+  get "/newthread/?":
+    createTFD()
+    resp genMain(c, genFormPost(c, "donewthread", "New thread", "", "", false),
+                 "New Thread - Nimrod Forum")
+
+  const licenseRst = slurp("static/license.rst")
+  get "/license":
+    createTFD()
+    resp genMain(c, rstToHtml(licenseRst), "Content license - Nimrod Forum")
 
 when isMainModule:
   docConfig = rstgen.defaultConfig()
@@ -822,6 +823,11 @@ when isMainModule:
   if paramCount() > 0:
     if paramStr(1) == "scgi":
       http = false
-  run("", port = TPort(9000), http = http)
+  
+  #run("", port = TPort(9000), http = http)
+  var settings = newSettings()
+  settings.port = TPort(8080)
+  jester.serve(settings, match)
+  runForever()
   db.close()
 
