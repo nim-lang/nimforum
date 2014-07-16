@@ -670,6 +670,9 @@ get "/postActivity.xml":
 get "/t/@threadid/?@page?/?":
   createTFD()
   parseInt(@"threadid", c.threadId, -1..1000_000)
+  if c.threadid == unselectedThread:
+    # Thread has just beed deleted
+    redirect(uri("/"))
   if @"page".len > 0:
     parseInt(@"page", c.pageNum, 0..1000_000)
     cond (c.pageNum > 0)
