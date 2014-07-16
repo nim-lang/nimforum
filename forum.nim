@@ -798,7 +798,7 @@ post "/doedit":
   createTFD()
   readIDs()
   if edit(c, c.postId):
-    redirect(c.genThreadUrl())
+    redirect(c.genThreadUrl(pageNum = $(c.getPagesInThread+1)) & "#" & $c.postId)
   else:
     body = ""
     handleError("doedit", "Edit", true)
