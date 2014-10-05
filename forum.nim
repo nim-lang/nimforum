@@ -670,6 +670,9 @@ get "/postActivity.xml":
 get "/t/@threadid/?@page?/?":
   createTFD()
   parseInt(@"threadid", c.threadId, -1..1000_000)
+  if c.threadid == unselectedThread:
+    # Thread has just beed deleted
+    redirect(uri("/"))
   if @"page".len > 0:
     parseInt(@"page", c.pageNum, 0..1000_000)
     cond (c.pageNum > 0)
@@ -798,7 +801,7 @@ post "/doedit":
   createTFD()
   readIDs()
   if edit(c, c.postId):
-    redirect(c.genThreadUrl())
+    redirect(c.genThreadUrl(pageNum = $(c.getPagesInThread+1)) & "#" & $c.postId)
   else:
     body = ""
     handleError("doedit", "Edit", true)
