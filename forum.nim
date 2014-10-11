@@ -9,7 +9,6 @@
 import
   os, strutils, times, md5, strtabs, cgi, math, db_sqlite, matchers,
   rst, rstgen, captchas, scgi, jester, asyncdispatch, asyncnet
-
 from htmlgen import tr, th, td, span
 
 const
@@ -90,14 +89,14 @@ const
 proc TextWidget(c: TForumData, name, defaultText: string, 
                 maxlength = 30, size = -1): string =
   let x = if defaultText != reuseText: defaultText
-          else: XMLencode(c.req.params[name])
+          else: xmlEncode(c.req.params[name])
   return """<input type="text" name="$1" maxlength="$2" value="$3" $4/>""" % [
     name, $maxlength, x, if size != -1: "size=\"" & $size & "\"" else: ""]
 
 proc TextAreaWidget(c: TForumData, name, defaultText: string,  
                     width = 80, height = 20): string =
   let x = if defaultText != reuseText: defaultText
-          else: XMLencode(c.req.params[name])
+          else: xmlEncode(c.req.params[name])
   return """<textarea name="$1" cols="$2" rows="$3">$4</textarea>""" % [
     name, $width, $height, x]
 
@@ -189,7 +188,7 @@ proc makePassword(password, salt: string): string =
 template `||`(x: expr): expr = (if not isNil(x): x else: "")
 
 proc validThreadId(c: TForumData): bool =
-  result = GetValue(db, sql"select id from thread where id = ?", 
+  result = getValue(db, sql"select id from thread where id = ?", 
                     $c.threadId).len > 0
   
 proc antibot(c: var TForumData): string = 
@@ -197,12 +196,12 @@ proc antibot(c: var TForumData): string =
   let b = math.random(1000)+1
   let answer = $(a+b)
   
-  Exec(db, sql"delete from antibot where ip = ?", c.req.ip)
-  let CaptchaId = TryInsertID(db, 
+  exec(db, sql"delete from antibot where ip = ?", c.req.ip)
+  let captchaId = tryInsertID(db, 
     sql"insert into antibot(ip, answer) values (?, ?)", c.req.ip, 
     answer).int mod 10_000
-  let CaptchaFile = getCaptchaFilename(CaptchaId)
-  createCaptcha(CaptchaFile, $a & "+" & $b)
+  let captchaFile = getCaptchaFilename(captchaId)
+  createCaptcha(captchaFile, $a & "+" & $b)
   result = """<img src="$1" />""" % c.req.getCaptchaUrl(captchaId)
 
 const
@@ -217,7 +216,7 @@ proc register(c: var TForumData, name, pass, antibot, email: string): bool =
   # Username validation:
   if name.len == 0 or not allCharsInSet(name, SecureChars):
     return setError(c, "name", "Invalid username!")
-  if GetValue(db, sql"select name from person where name = ?", name).len > 0:
+  if getValue(db, sql"select name from person where name = ?", name).len > 0:
     return setError(c, "name", "Username already exists!")
   
   # Password validation:
@@ -225,7 +224,7 @@ proc register(c: var TForumData, name, pass, antibot, email: string): bool =
     return setError(c, "new_password", "Invalid password!")
 
   # antibot validation:
-  let correctRes = GetValue(db, 
+  let correctRes = getValue(db, 
     sql"select answer from antibot where ip = ?", c.req.ip)
   if antibot != correctRes:
     return setError(c, "antibot", "You seem to be a bot!")
@@ -236,7 +235,7 @@ proc register(c: var TForumData, name, pass, antibot, email: string): bool =
   
   # perform registration:
   var salt = makeSalt()
-  Exec(db, sql("INSERT INTO person(name, password, email, salt, status, lastOnline) " &
+  exec(db, sql("INSERT INTO person(name, password, email, salt, status, lastOnline) " &
               "VALUES (?, ?, ?, ?, 'user', DATETIME('now'))"), name, 
               makePassword(pass, salt), email, salt)
   #  return setError(c, "", "Could not create your account!")
@@ -245,12 +244,12 @@ proc register(c: var TForumData, name, pass, antibot, email: string): bool =
 proc checkLoggedIn(c: var TForumData) = 
   let pass = c.req.cookies["sid"]
   if pass.len == 0: return
-  if ExecAffectedRows(db, 
+  if execAffectedRows(db, 
        sql("update session set lastModified = DATETIME('now') " &
            "where ip = ? and password = ?"), 
            c.req.ip, pass) > 0:
     c.userpass = pass
-    c.userid = GetValue(db, 
+    c.userid = getValue(db, 
       sql"select userid from session where ip = ? and password = ?", 
       c.req.ip, pass)
       
@@ -270,11 +269,11 @@ proc logout(c: var TForumData) =
   const query = sql"delete from session where ip = ? and password = ?"
   c.username = ""
   c.userpass = ""
-  Exec(db, query, c.req.ip, c.req.cookies["sid"])
+  exec(db, query, c.req.ip, c.req.cookies["sid"])
 
 proc incrementViews(c: var TForumData) = 
   const query = sql"update thread set views = views + 1 where id = ?"
-  Exec(db, query, $c.threadId)
+  exec(db, query, $c.threadId)
 
 proc isPreview(c: TForumData): bool =
   result = c.req.params["previewBtn"].len > 0 # TODO: Could be wrong?
@@ -363,10 +362,10 @@ proc edit(c: var TForumData, postId: int): bool =
     setPreviewData(c)
   elif c.isDelete:
     checkOwnership(c, $postId)
-    if not TryExec(db, crud(crDelete, "post"), $postId):
+    if not tryExec(db, crud(crDelete, "post"), $postId):
       return setError(c, "", "database error")
     # delete corresponding thread:
-    if ExecAffectedRows(db,
+    if execAffectedRows(db,
         sql"delete from thread where id not in (select thread from post)") > 0:
       # whole thread has been deleted, so:
       c.threadId = unselectedThread
@@ -398,7 +397,7 @@ proc newThread(c: var TForumData): bool =
     setPreviewData(c)
     c.threadID = transientThread
   else:
-    c.threadID = TryInsertID(db, query, c.req.params["subject"]).int
+    c.threadID = tryInsertID(db, query, c.req.params["subject"]).int
     if c.threadID < 0: return setError(c, "subject", "Subject already exists")
     writeToDb(c, crCreate, false)
     result = true
@@ -410,7 +409,7 @@ proc login(c: var TForumData, name, pass: string): bool =
   if name.len == 0:
     return c.setError("name", "Username cannot be nil.")
   var success = false
-  for row in FastRows(db, query, name):
+  for row in fastRows(db, query, name):
     if row[2] == makePassword(pass, row[4]):
       c.userid = row[0]
       c.username = row[1]
@@ -421,7 +420,7 @@ proc login(c: var TForumData, name, pass: string): bool =
       break
   if success:
     # create session:
-    Exec(db, 
+    exec(db, 
       sql"insert into session (ip, password, userid) values (?, ?, ?)", 
       c.req.ip, c.userpass, c.userid)
     return true
@@ -434,11 +433,12 @@ proc genActionMenu(c: var TForumData): string =
   # TODO: Make this detection better?
   if c.req.pathInfo.normalizeUri notin noHomeBtn and not c.isThreadsList:
     btns.add(("Thread List", c.req.makeUri("/", false)))
+  #echo c.loggedIn
   if c.loggedIn:
     let hasReplyBtn = c.req.pathInfo != "/donewthread" and c.req.pathInfo != "/doreply"
     if c.threadId >= 0 and hasReplyBtn:
       let replyUrl = c.genThreadUrl(action = "reply", 
-            pageNum = $(ceil(c.totalPosts / postsPerPage).int)) & "#reply"
+            pageNum = $(ceil(c.totalPosts / PostsPerPage).int)) & "#reply"
       btns.add(("Reply", replyUrl))
     btns.add(("New Thread", c.req.makeUri("/newthread", false)))
   result = c.genButtons(btns)
@@ -489,7 +489,7 @@ proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
       prevUrl = firstUrl
     else: 
       prevUrl = c.req.makeUri(firstUrl & "/" & $(c.pageNum-1))
-    totalPages = ceil(c.totalPosts / postsPerPage).int
+    totalPages = ceil(c.totalPosts / PostsPerPage).int
     lastUrl = c.req.makeUri(firstUrl & "/" & $(totalPages))
     nextUrl = c.req.makeUri(firstUrl & "/" & $(c.pageNum+1))
   
@@ -540,7 +540,7 @@ proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
 
 proc gatherTotalPostsByID(c: var TForumData, thrid: int): int =
   ## Gets the total post count of a thread.
-  result = GetValue(db, sql"select count(*) from post where thread = ?", $thrid).parseInt
+  result = getValue(db, sql"select count(*) from post where thread = ?", $thrid).parseInt
 
 proc gatherTotalPosts(c: var TForumData) =
   if c.totalPosts > 0: return
@@ -551,13 +551,13 @@ proc gatherTotalPosts(c: var TForumData) =
 
 proc getPagesInThread(c: var TForumData): int =
   c.gatherTotalPosts() # Get total post count
-  result = ceil(c.totalPosts / postsPerPage).int-1
+  result = ceil(c.totalPosts / PostsPerPage).int-1
 
 proc getPagesInThreadByID(c: var TForumData, thrid: int): int =
-  result = ceil(c.gatherTotalPostsByID(thrid) / postsPerPage).int
+  result = ceil(c.gatherTotalPostsByID(thrid) / PostsPerPage).int
 
 proc getThreadTitle(thrid: int, pageNum: int): string =
-  result = GetValue(db, sql"select name from thread where id = ?", $thrid)
+  result = getValue(db, sql"select name from thread where id = ?", $thrid)
   if pageNum notin {0,1}:
     result.add(" - Page " & $pageNum)
 
@@ -605,7 +605,7 @@ proc genProfile(c: var TForumData, ui: TUserInfo): string =
   result = ""
   result.add(htmlgen.`div`(id = "avatar", genGravatar(ui.email, 250)))
   let t2 = if ui.lastOnline != -1: getGMTime(TTime(ui.lastOnline)) 
-           else: getGMTime(GetTime())
+           else: getGMTime(getTime())
   
   result.add(htmlgen.`div`(id = "info", 
     htmlgen.table(
@@ -651,13 +651,21 @@ template createTFD(): stmt =
   if request.cookies.len > 0:
     checkLoggedIn(c)
 
+var cached = ""
+
+#var settings = newSettings()
+#settings.port = Port(5000)
+
 routes:
   get "/":
     createTFD()
     c.isThreadsList = true
     var count = 0
-    resp genMain(c, genThreadsList(c, count),
-                 additionalHeaders = genRSSHeaders(c), showRssLinks = true)
+    discard genThreadsList(c, count)
+    if cached == "":
+      cached = genMain(c, genThreadsList(c, count),
+                   additionalHeaders = genRSSHeaders(c), showRssLinks = true)
+    resp cached
 
   get "/threadActivity.xml":
     createTFD()
@@ -684,7 +692,7 @@ routes:
       var title = ""
       case @"action"
       of "reply":
-        let subject = GetValue(db,
+        let subject = getValue(db,
             sql"select header from post where id = (select max(id) from post where thread = ?)", 
             $c.threadId).prependRe
         body = genPostsList(c, $c.threadId, count)
@@ -817,7 +825,7 @@ routes:
 when isMainModule:
   docConfig = rstgen.defaultConfig()
   math.randomize()
-  db = Open(connection="nimforum.db", user="postgres", password="", 
+  db = open(connection="nimforum.db", user="postgres", password="", 
               database="nimforum")
   var http = true
   if paramCount() > 0:
@@ -825,9 +833,7 @@ when isMainModule:
       http = false
   
   #run("", port = TPort(9000), http = http)
-  var settings = newSettings()
-  settings.port = TPort(8080)
-  jester.serve(settings, match)
+  
   runForever()
   db.close()
 

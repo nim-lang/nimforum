@@ -21,21 +21,21 @@
     <th>Views</th>
     <th>Last reply</th>
   </tr>
-#  for row in Rows(db, query, $((c.pageNum-1) * ThreadsPerPage), $ThreadsPerPage):
+#  for row in rows(db, query, $((c.pageNum-1) * ThreadsPerPage), $ThreadsPerPage):
 #  inc(count)
   <tr>
     <td class="topic">
-      ${UrlButton(c, XMLencode(%name), c.genThreadUrl(threadid = %threadid))}
+      ${UrlButton(c, xmlEncode(%name), c.genThreadUrl(threadid = %threadid))}
       ${genPagenumLocalNav(c, (%threadid).parseInt)}
     </td>
     #let authorName = getValue(db, sql("select name from person where id = " &
     #  "(select author from post where id = " & 
     #  "(select min(id) from post where thread = ?))"), %threadId)
-    #let profileUrl = c.req.makeUri("profile/", false) & XMLEncode(authorName)
+    #let profileUrl = c.req.makeUri("profile/", false) & xmlEncode(authorName)
     <td class="author"><a href="$profileUrl">${authorName}</a></td>
-#    let posts = GetValue(db, sql"select count(*) from post where thread = ?", %threadId)
+#    let posts = getValue(db, sql"select count(*) from post where thread = ?", %threadId)
     <td class="posts">$posts</td>
-    <td class="views">${XMLencode(%views)}</td>
+    <td class="views">${xmlEncode(%views)}</td>
     #let latestReplyAuthor = getValue(db, sql("select name from person where id = " &
     #  "(select author from post where id = " & 
     #  "(select max(id) from post where thread = ?))"), %threadId)
@@ -44,7 +44,7 @@
     <td class="lastreply">
       <span>${formatTimestamp(latestReplyDate.parseInt())}</span><br/>
       #let replyProfileUrl = c.req.makeUri("profile/", false) &
-      #  XMLEncode(latestReplyAuthor)
+      #  xmlEncode(latestReplyAuthor)
       <span><a href="$replyProfileUrl">${latestReplyAuthor}</a></span>
     </td>
   </tr>
@@ -60,13 +60,13 @@
 <table class="post">
   <tr>
     <th colspan="2">
-      <span>${XMLEncode(title)}</span>
-      <span style="float:right;">${XMLencode(date)}</span>
+      <span>${xmlEncode(title)}</span>
+      <span style="float:right;">${xmlEncode(date)}</span>
     </th>
   </tr>
   <tr>
     <td class="left">
-      <span>${XMLencode(author)}</span>
+      <span>${xmlEncode(author)}</span>
     </td>
     <td class="content">
     #try:
@@ -92,20 +92,20 @@
 #  const userEmail = 6
 #  result = ""
 #  count = 0
-#  for row in FastRows(db, query, threadId, $((c.pageNum-1) * PostsPerPage), $PostsPerPage):
+#  for row in fastRows(db, query, threadId, $((c.pageNum-1) * PostsPerPage), $PostsPerPage):
 #    inc(count)
 <a name="${%postId}"></a>
 <table class="post">
   <tr>
     <th colspan="2">
-      <span>${XMLencode(%postHeader)}</span>
-      <span style="float:right;">${XMLencode(%postCreation)}</span>
+      <span>${xmlEncode(%postHeader)}</span>
+      <span style="float:right;">${xmlEncode(%postCreation)}</span>
     </th>
   </tr>
   <tr>
     <td class="left">
-      #let profileUrl = c.req.makeUri("profile/", false) & XMLencode(%userName)
-      <span><a href="$profileUrl">${XMLencode(%userName)}</a></span>
+      #let profileUrl = c.req.makeUri("profile/", false) & xmlEncode(%userName)
+      <span><a href="$profileUrl">${xmlEncode(%userName)}</a></span>
       <hr/>
       <a href="$profileUrl">${genGravatar(%userEmail)}</a>
       #if c.userId == %postAuthor and c.currentPost.subject.len == 0:
@@ -213,7 +213,7 @@
     <span>Out of ${stats.totalUsers} users ${stats.activeUsers.len} are online${if stats.activeUsers.len == 0: "." else: ":"}
       #for index, usr in stats.activeUsers:
       #  let profileHref = """<a href="""" & c.req.makeUri("profile/", false) &
-      #    XMLencode(usr.nick) & """">"""
+      #    xmlEncode(usr.nick) & """">"""
       #  let hrefEnd = """</a>"""
       #  if usr.isAdmin:
           #if index != 0: result.add ','
@@ -231,7 +231,7 @@
     <hr/>
     #if stats.newestMember.nick != "":
       #let profileUrl = c.req.makeUri("profile/", false) &
-      #  XMLEncode(stats.newestMember.nick)
+      #  xmlEncode(stats.newestMember.nick)
       <span>Total threads: ${stats.totalThreads} | Total posts: ${stats.totalPosts} | Newest member: <a href="$profileUrl">${stats.newestMember.nick}</a></span>
     #else:
       <span>Total threads: ${stats.totalThreads} | Total posts: ${stats.totalPosts}</span>
