@@ -8,7 +8,7 @@
 
 import
   os, strutils, times, md5, strtabs, cgi, math, db_sqlite, matchers,
-  rst, rstgen, captchas, scgi, jester, asyncdispatch, asyncnet
+  rst, rstgen, captchas, scgi, jester, asyncdispatch, asyncnet, cache
 from htmlgen import tr, th, td, span
 
 const
@@ -651,21 +651,18 @@ template createTFD(): stmt =
   if request.cookies.len > 0:
     checkLoggedIn(c)
 
-var cached = ""
-
-#var settings = newSettings()
-#settings.port = Port(5000)
+var cacheHolder = newCacheHolder()
 
 routes:
   get "/":
     createTFD()
     c.isThreadsList = true
     var count = 0
-    discard genThreadsList(c, count)
-    if cached == "":
-      cached = genMain(c, genThreadsList(c, count),
-                   additionalHeaders = genRSSHeaders(c), showRssLinks = true)
-    resp cached
+    let threadList = genThreadsList(c, count)
+    let data = cacheHolder.get("/",
+      genMain(c, threadList,
+        additionalHeaders = genRSSHeaders(c), showRssLinks = true))
+    resp data
 
   get "/threadActivity.xml":
     createTFD()
@@ -744,6 +741,7 @@ routes:
   get "/logout/?":
     createTFD()
     logout(c)
+    cacheHolder.invalidateAll()
     redirect(uri("/"))
 
   get "/register/?":
@@ -772,6 +770,7 @@ routes:
     createTFD()
     if login(c, @"name", @"password"):
       finishLogin()
+      cacheHolder.invalidateAll()
     else:
       resp c.genMain(genFormLogin(c))
 
@@ -780,12 +779,14 @@ routes:
     if c.register(@"name", @"new_password", @"antibot", @"email"):
       discard c.login(@"name", @"new_password")
       finishLogin()
+      cacheHolder.invalidateAll()
     else:
       resp c.genMain(genFormRegister(c))
 
   post "/donewthread":
     createTFD()
     if newThread(c):
+      cacheHolder.invalidate("/")
       redirect(uri("/"))
     else:
       body = ""
