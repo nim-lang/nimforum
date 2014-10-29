@@ -13,43 +13,61 @@
 #  
 #  result = ""
 #  count = 0
-<table id="threads">
-  <tr>
-    <th>Topics</th>
-    <th>Author</th>
-    <th>Posts</th>
-    <th>Views</th>
-    <th>Last reply</th>
-  </tr>
+<div id="talk-heads">
+  <div class="topic"><div>Topic</div></div>
+  <div class="reply"><div>Last</div></div>
+  <div class="detail"><div>Details</div></div>
+  <div class="author"><div>Author</div></div>
+</div>
+<div id="talk-threads">
 #  for row in rows(db, query, $((c.pageNum-1) * ThreadsPerPage), $ThreadsPerPage):
 #  inc(count)
-  <tr>
-    <td class="topic">
-      ${UrlButton(c, xmlEncode(%name), c.genThreadUrl(threadid = %threadid))}
-      ${genPagenumLocalNav(c, (%threadid).parseInt)}
-    </td>
-    #let authorName = getValue(db, sql("select name from person where id = " &
-    #  "(select author from post where id = " & 
-    #  "(select min(id) from post where thread = ?))"), %threadId)
-    #let profileUrl = c.req.makeUri("profile/", false) & xmlEncode(authorName)
-    <td class="author"><a href="$profileUrl">${authorName}</a></td>
-#    let posts = getValue(db, sql"select count(*) from post where thread = ?", %threadId)
-    <td class="posts">$posts</td>
-    <td class="views">${xmlEncode(%views)}</td>
+  <div>
+    <div class="topic">
+      <div>
+        ${UrlButton(c, xmlEncode(%name), c.genThreadUrl(threadid = %threadid))}
+        ${genPagenumLocalNav(c, (%threadid).parseInt)}
+      </div>
+    </div>
+    
     #let latestReplyAuthor = getValue(db, sql("select name from person where id = " &
     #  "(select author from post where id = " & 
     #  "(select max(id) from post where thread = ?))"), %threadId)
     #let latestReplyDate = getValue(db, sql("SELECT strftime('%s', " &
     #  "(select creation from post where id = (select max(id) from post where thread = ?)))"), %threadId)
-    <td class="lastreply">
-      <span>${formatTimestamp(latestReplyDate.parseInt())}</span><br/>
-      #let replyProfileUrl = c.req.makeUri("profile/", false) &
-      #  xmlEncode(latestReplyAuthor)
-      <span><a href="$replyProfileUrl">${latestReplyAuthor}</a></span>
-    </td>
-  </tr>
+    #let timeStr = formatTimestamp(latestReplyDate.parseInt())
+    #let replyProfileUrl = c.req.makeUri("profile/", false) &
+    #  xmlEncode(latestReplyAuthor)
+    <div class="reply">
+      <div>
+        <a href="$replyProfileUrl" title="$timeStr">$latestReplyAuthor</a>
+      </div>
+    </div>
+
+#    let posts = getValue(db, sql"select count(*) from post where thread = ?", %threadId)
+    <div class="detail">
+      <div><div>${xmlEncode(%views)}</div></div>
+      <div><div>$posts</div></div>
+    </div>
+    
+    #let authorName = getValue(db, sql("select name from person where id = " &
+    #  "(select author from post where id = " &
+    #  "(select min(id) from post where thread = ?))"), %threadId)
+    #let profileUrl = c.req.makeUri("profile/", false) & xmlEncode(authorName)
+    <div class="author">
+      <div><a href="$profileUrl">$authorName</a></div>
+    </div>
+  </div>
 #  end for
-</table>
+
+  <div>
+    <div class="topic"><div><a href="http://reign-studios.net/philipwitte/nim/forum-thread.htm">Cannot generate code for N (static[int]) in template</a></div></div>
+    <div class="reply"><div><a href="#" title="Mon, 29 Sep 2014 23:11 UTC">marcianx</a></div></div>
+    <div class="detail"><div><div>135</div></div><div><div>8</div></div></div>
+    <div class="author"><div><a href="#">marcianx</a></div></div>
+  </div>
+</div>
+
 #end proc
 #
 #
@@ -205,38 +223,14 @@
 #
 #proc genListOnline(c: var TForumData, stats: TForumStats): string =
 #  result = ""
-  <div id="whoisonline">
-    <div class="wioHeader">
-      <span>Who is online?<span>
-    </div>
-    <div class="content">
-    <span>Out of ${stats.totalUsers} users ${stats.activeUsers.len} are online${if stats.activeUsers.len == 0: "." else: ":"}
-      #for index, usr in stats.activeUsers:
-      #  let profileHref = """<a href="""" & c.req.makeUri("profile/", false) &
-      #    xmlEncode(usr.nick) & """">"""
-      #  let hrefEnd = """</a>"""
-      #  if usr.isAdmin:
-          #if index != 0: result.add ','
-          #end if
-          #result.add("""<span class="user admin"> """ & profileHref &
-          #  usr.nick & hrefEnd & """</span>""")
-      #  else:
-          #if index != 0: result.add ','
-          #end if
-          #result.add("""<span class="user"> """ & profileHref &
-          #  usr.nick & hrefEnd & """</span>""")
-      #  end if
-      #end for
-    </span>
-    <hr/>
-    #if stats.newestMember.nick != "":
-      #let profileUrl = c.req.makeUri("profile/", false) &
-      #  xmlEncode(stats.newestMember.nick)
-      <span>Total threads: ${stats.totalThreads} | Total posts: ${stats.totalPosts} | Newest member: <a href="$profileUrl">${stats.newestMember.nick}</a></span>
-    #else:
-      <span>Total threads: ${stats.totalThreads} | Total posts: ${stats.totalPosts}</span>
-    #end if
-    </div>
-  </div>
-  
+#  var active: seq[string] = @[]
+#  for i in stats.activeUsers:
+#    active.add(i.nick)
+#  end for
+#  let profileUrl = c.req.makeUri("profile/", false) &
+#      xmlEncode(stats.newestMember.nick)
+  <span class="forum-user-info" title="${active.join(", ")}">
+    <b>${stats.activeUsers.len}</b> of <b>${stats.totalUsers}</b> users online</span> &nbsp;|&nbsp;
+    <b>${stats.totalThreads}</b> threads &nbsp;|&nbsp; <b>${stats.totalPosts}</b> posts &nbsp;|&nbsp;
+    newest member: <a href="$profileUrl">${stats.newestMember.nick}</a>
 #end proc

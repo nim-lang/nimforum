@@ -11,76 +11,109 @@
 <html lang="en">
 <head>
   <title>${xmlEncode(title)}</title>
-  <link rel="stylesheet" href="${c.req.makeUri("css/normalize.css", absolute = false)}">
-  <link rel="stylesheet" href="${c.req.makeUri("css/style.css", absolute = false)}">${additional_headers}
+  <link rel="stylesheet" href="${c.req.makeUri("css/style.css", absolute = false)}">
+  <link rel="shortcut icon" href="${c.req.makeUri("favicon.ico", absolute = false)}">${additional_headers}
   <meta charset="UTF-8">
 </head>
 <body>
-  <div id="wrapper">
-    #let frontQuery = c.req.makeUri("/")
-    <div id="nimbtn">
-      <a href="${frontQuery}">Forum</a>
+  <!--- #head --->
+  #let frontQuery = c.req.makeUri("/")
+  <header id="head" class="forum">
+    <div class="wide-layout tall">
+      <div id="head-logo"></div>
+      <a id="head-logo-link" href="home.htm"></a>
+      <nav id="head-links">
+        <a href="http://nim-lang.org/">home</a>
+        <a href="http://nim-lang.org/">docs</a>
+        <a href="http://nim-lang.org/">learn</a>
+        <a href="${frontQuery}" class="active">forum</a>
+        <a href="#">download</a>
+        <a href="#">faq</a>
+      </nav>
     </div>
+  </header>
+  
+  <!--- #neck --->
+  <section id="neck">
+    <div class="wide-layout tall">
+      <div style="right: 131px;" id="glow-arrow" class="forum"></div>
+    </div>
+  </section>
+  
+  <!--- #body --->
+  <section id="body" class="forum">
+    <div id="body-border"></div>
+    <div id="body-border-left"></div>
+    <div id="body-border-right"></div>
+    <div id="body-border-bottom"></div>
+    <div id="glow-line"></div>
+    <div id="glow-line-bottom"></div>
+    <div class="talk-layout">
+      <article id="content">
+        ${content}
+        #if c.isThreadsList:
+          <div id="talk-info">
+            <div class="info">
+              <div>
+                #if c.loggedIn:
+                  #let profileUrl = c.req.makeUri("profile/", false) &
+                  #  xmlEncode(c.username)
+                  <span>Welcome <a href="$profileUrl">${c.username}!</a></span>
+                  &nbsp;|&nbsp;
+                  <!--<a href="$profileUrl">${genGravatar(c.email, 26)}</a>-->
+                #end if
+                ${c.genListOnline(stats)}
+              </div>
+            </div>
+            <div class="user">
+              <div>
+                #if c.loggedIn:
+                  <a href="${frontQuery}newthread">new thread</a>
+                  &nbsp;|&nbsp;
+                  <a href="${frontQuery}logout">logout</a>
+                #else:
+                  <a href="${frontQuery}login">login</a>
+                  &nbsp;|&nbsp;
+                  <a href="${frontQuery}register">register</a>
+                #end if
+              </div>
+            </div>
+          </div>
+        #end if
+        <div id="talk-nav">
+          ${genPagenumNav(c, stats)}
+        </div>
+      </article>
+    </div>
+  </section>
+  
+  <!--- #foot --->
+  <footer id="foot" class="forum">
+    <div class="talk-layout tall">
+      <div id="foot-links">
+        <div>
+          <h4>Documentation</h4>
+          <a href="http://reign-studios.net/philipwitte/nim/docs.htm">Stable Documentation</a>
+          <a href="http://reign-studios.net/philipwitte/nim/docs.htm">Development Documentation</a>
+          <a href="https://github.com/Araq/Nimrod">Github Issues &amp; Requests</a>
+        </div>
+        <div>
+          <h4>Community</h4>
+          <a href="http://reign-studios.net/philipwitte/nim/forum.htm">User Forum</a>
+          <a href="http://webchat.freenode.net/?channels=nimlang">Online IRC</a>
+          <a href="http://build.nimrod-lang.org/irclogs/">IRC Logs</a>
+        </div>
+      </div>
+      <div id="foot-legal">
+        <h4>Written in Nim - Powered by <a href="#">Jester</a></h4>
+        Web Design by <a href="#">Philip Witte</a> &amp; <a href="#">Dominik Picheta</a><br>
+        Copyright © 2014 - <a href="#">Andreas Rumpf</a> &amp; <a href="#">Contributors</a>
+      </div>
+    </div>
+  </footer>
 
-    <div id="header">
-      <span>Nimrod's <a href="http://nimrod-lang.org/">homepage</a></span>
-      <span><a href="http://nimrod-lang.org/documentation.html">stable docs</a></span>
-      <span><a href="http://build.nimrod-lang.org/docs/overview.html">development docs</a></span>
-      <span><a href="https://github.com/Araq/Nimrod/issues">github issues</a></span>
-      #if c.loggedIn:
-        <a href="${frontQuery}logout" class="right">Logout</a>
-        #let profileUrl = c.req.makeUri("profile/", false) &
-        #  xmlEncode(c.username)
-        <span id="welcome"><a href="${profileUrl}">$c.username</a></span>
-        <a href="$profileUrl">${genGravatar(c.email, 26)}</a>
-      #else:
-        <a href="${frontQuery}register" class="right">Register</a>
-        <a href="${frontQuery}login" class="right">Login</a>
-      #end if
-    </div>
-
-    <div id="topbar">
-       ${c.genActionMenu}
-    </div>
-
-    <div id="content">
-      $content
-      <span style="color:red">$c.errorMsg</span>
-    </div>
-    #if c.req.pathInfo.normalizeUri notin noPageNums:
-        ${c.genPagenumNav(stats)}
-    #end if
-    <div id="topbar">
-       ${c.genActionMenu}
-    </div>
-
-    #if c.isThreadsList:
-      ${c.genListOnline(stats)}
-    #end if
-    
-    #if showRssLinks:
-    <span id="rss">
-      <a href="${c.req.makeUri("/threadActivity.xml")}"
-        ><img
-          src="${c.req.makeUri("/images/Feed-icon.svg", absolute = false)}"
-          class="rssfeed"
-          >Thread activity</a>
-      <a href="${c.req.makeUri("/postActivity.xml")}"
-        ><img
-           src="${c.req.makeUri("/images/Feed-icon.svg", absolute = false)}"
-           class="rssfeed"
-          >Posts activity</a>
-    </span>
-    #end if
-    
-    <div id="footerPush"></div>
-  </div>
-  <div id="footer">
-  <span>Written in <a href="http://nimrod-lang.org/">Nimrod</a> using <a href="https://github.com/dom96/jester">Jester</a></span>
-  <span> | <a href="https://github.com/nimrod-code/nimforum">Fork on Github</a></span>
-  <span> | User contributions licensed under <a href="http://creativecommons.org/licenses/by-sa/3.0/">cc-wiki</a> with <a href="/license">attribution required</a></span>
-  <span style="float:right;">Generated in ${int((epochTime()-c.startTime)*1000.0)}ms</span>
-  </div>
+  <script src="${frontQuery}js/arrow.js"></script>
+  <script src="${frontQuery}js/forum.js"></script>
 </body>
 </html>
 #end proc

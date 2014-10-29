@@ -485,7 +485,7 @@ proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
     nextUrl = c.req.makeUri("/page/" & $(c.pageNum+1))
   else:
     firstUrl = c.req.makeUri("/t/" & $c.threadId)
-    if c.pageNum == 1: 
+    if c.pageNum == 1:
       prevUrl = firstUrl
     else: 
       prevUrl = c.req.makeUri(firstUrl & "/" & $(c.pageNum-1))
@@ -499,26 +499,13 @@ proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
   var firstTag = ""
   var prevTag = ""
   if c.pageNum == 1:
-    firstTag = span("First")
-    prevTag = span("Prev")
+    firstTag = span("<<")
+    prevTag = span("<••")
   else:
-    firstTag = htmlgen.a(href=firstUrl, "First")
-    prevTag = htmlgen.a(href=prevUrl, "Prev")
-  result.add(htmlgen.`div`(class = "left",
-                           firstTag,
-                           prevTag))
-  # Right
-  var lastTag = ""
-  var nextTag = ""
-  if c.pageNum == totalPages:
-    lastTag = span("Last")
-    nextTag = span("Next")
-  else:
-    lastTag = htmlgen.a(href=lastUrl, "Last")
-    nextTag = htmlgen.a(href=nextUrl, "Next")
-  result.add(htmlgen.`div`(class = "right",
-                           nextTag,
-                           lastTag))
+    firstTag = htmlgen.a(href=firstUrl, "<<")
+    prevTag = htmlgen.a(href=prevUrl, "<••")
+  result.add(firstTag)
+  result.add(prevTag)
   
   # Numbers
   var pages = "" # Tags
@@ -533,10 +520,19 @@ proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
         pageUrl = c.req.makeUri(firstUrl & "/" & $(i))
       
       pages.add(htmlgen.a(href = pageUrl, $(i)))
-  result.add(htmlgen.`div`(class = "middle",
-                           pages))
+  result.add(pages)
 
-  result = htmlgen.`div`(id = "pagenumbers", result)
+  # Right
+  var lastTag = ""
+  var nextTag = ""
+  if c.pageNum == totalPages:
+    lastTag = span(">>")
+    nextTag = span("••>")
+  else:
+    lastTag = htmlgen.a(href=lastUrl, ">>")
+    nextTag = htmlgen.a(href=nextUrl, "••>")
+  result.add(lastTag)
+  result.add(nextTag)
 
 proc gatherTotalPostsByID(c: var TForumData, thrid: int): int =
   ## Gets the total post count of a thread.
