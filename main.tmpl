@@ -79,10 +79,25 @@
               </div>
             </div>
           </div>
+          <div id="talk-nav">
+            ${genPagenumNav(c, stats)}
+          </div>
+        #else:
+          <div id="talk-info">
+            <div class="info-post">
+              <div>
+              ${genPagenumNav(c, stats)}
+              </div>
+            </div>
+            <div class="user-post">
+              <div>
+                #let replyUri = c.req.makeUri(c.req.path & "?action=reply#reply")
+                <a class="reply" href="$replyUri">Reply</a>
+              </div>
+            </div>
+          </div>
         #end if
-        <div id="talk-nav">
-          ${genPagenumNav(c, stats)}
-        </div>
+        
       </article>
     </div>
   </section>

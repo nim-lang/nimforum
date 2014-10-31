@@ -440,6 +440,7 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
     #talk-thread > div > .author > div > .avatar { margin-top:20px; }
     #talk-thread > div > .author > div > .avatar > img { box-shadow:0 0 12px #1cb3ec; }
     #talk-thread > div > .author > div > .name { }
+    #talk-thread > div > .author > div > .date { font-size: 8pt; color: white; }
     #talk-thread > div > .topic { width:85%; padding-bottom:10px; }
     #talk-thread > div > .topic pre {
       overflow:auto;
@@ -465,9 +466,11 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
     #talk-info > div { float:left; }
     #talk-head > .info,
     #talk-info > .info { width:80%; }
+    #talk-info > .info-post { width: 85%; }
     #talk-head > .user,
     #talk-info > .user { width:20%; background:rgba(0,0,0,.2); }
-    #talk-info > .user > div > .reply { font-weight:bold; padding-left:22px; background:url("/images/forum-reply.png") no-repeat left; }
+    #talk-info > .user-post { width: 15%; background:rgba(0,0,0,.2); }
+    #talk-info > .user-post > div > .reply { font-weight:bold; padding-left:22px; background:url("/images/forum-reply.png") no-repeat left; }
     #talk-head > div > div,
     #talk-info > div > div { padding:5px 20px; }
     #talk-head > .detail > div { float:left; margin:0; }

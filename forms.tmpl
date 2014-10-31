@@ -110,39 +110,45 @@
 #  const userEmail = 6
 #  result = ""
 #  count = 0
-#  for row in fastRows(db, query, threadId, $((c.pageNum-1) * PostsPerPage), $PostsPerPage):
+#  let posts = getAllRows(db, query, threadId, $((c.pageNum-1) * PostsPerPage), $PostsPerPage)
+<div id="talk-head">
+  <div class="info">
+    <div>
+      <a href="${c.req.makeUri("/")}"><b>forum index</b></a> &gt;
+      <a href="${c.req.makeUri("/t/" & $threadId)}">${posts[0][postHeader]}</a>
+    </div>
+  </div>
+  <div class="user detail"><div><div>???</div></div><div><div>?</div></div></div>
+</div>
+<div id="talk-thread">
+#  for row in posts:
 #    inc(count)
-<a name="${%postId}"></a>
-<table class="post">
-  <tr>
-    <th colspan="2">
-      <span>${xmlEncode(%postHeader)}</span>
-      <span style="float:right;">${xmlEncode(%postCreation)}</span>
-    </th>
-  </tr>
-  <tr>
-    <td class="left">
-      #let profileUrl = c.req.makeUri("profile/", false) & xmlEncode(%userName)
-      <span><a href="$profileUrl">${xmlEncode(%userName)}</a></span>
-      <hr/>
-      <a href="$profileUrl">${genGravatar(%userEmail)}</a>
-      #if c.userId == %postAuthor and c.currentPost.subject.len == 0:
-        <hr/>${UrlButton(c, "Edit post", c.genThreadUrl(%postId, "edit"))}
-      #elif c.isAdmin and c.currentPost.subject.len == 0:
-        <hr/><span style="color:red">
-          ${UrlButton(c, "Edit post", c.genThreadUrl(%postId, "edit"))}</span>
-      #end if
-    </td>
-    <td class="content">
-    #try:
-      ${(%postContent).rstToHtml}
-    #except EParseError:
-    #  c.errorMsg = getCurrentExceptionMsg()
-    #end
-    </td>
-  </tr>
-</table>
+  <div>
+    <div class="topic">
+      <div>
+        #try:
+          ${(%postContent).rstToHtml}
+        #except EParseError:
+        #  c.errorMsg = getCurrentExceptionMsg()
+        #end
+      </div>
+    </div>
+    <div class="author">
+      <div>
+        #let profileUrl = c.req.makeUri("profile/", false) & xmlEncode(%userName)
+        <div class="avatar">${genGravatar(%userEmail)}</div>
+        <a class="name" href="$profileUrl">marcianx</a>
+        <p class="date">${xmlEncode(%postCreation)}</p>
+        #if c.userId == %postAuthor and c.currentPost.subject.len == 0:
+          <hr/><a href="${c.genThreadUrl(%postId, "edit")}">Edit post</a>
+        #elif c.isAdmin and c.currentPost.subject.len == 0:
+          <hr/><a style="color: red;" href="${c.genThreadUrl(%postId, "edit")}">Edit post</a>
+        #end if
+      </div>
+    </div>
+  </div>
 #  end for
+</div>
 #end proc
 #
 #
