@@ -427,6 +427,10 @@ proc login(c: var TForumData, name, pass: string): bool =
   else:
     return c.setError("password", "Login failed!")
 
+proc hasReplyBtn(c: var TForumData): bool =
+  result = c.req.pathInfo != "/donewthread" and c.req.pathInfo != "/doreply"
+  return c.threadId >= 0 and result
+
 proc genActionMenu(c: var TForumData): string =
   result = ""
   var btns: seq[TStyledButton] = @[]

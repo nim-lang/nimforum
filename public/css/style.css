@@ -469,6 +469,7 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
     #talk-info > .info-post { width: 85%; }
     #talk-head > .user,
     #talk-info > .user { width:20%; background:rgba(0,0,0,.2); }
+    #talk-head > .user-post,
     #talk-info > .user-post { width: 15%; background:rgba(0,0,0,.2); }
     #talk-info > .user-post > div > .reply { font-weight:bold; padding-left:22px; background:url("/images/forum-reply.png") no-repeat left; }
     #talk-head > div > div,

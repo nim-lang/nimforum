@@ -112,13 +112,13 @@
 #  count = 0
 #  let posts = getAllRows(db, query, threadId, $((c.pageNum-1) * PostsPerPage), $PostsPerPage)
 <div id="talk-head">
-  <div class="info">
+  <div class="info-post">
     <div>
       <a href="${c.req.makeUri("/")}"><b>forum index</b></a> &gt;
       <a href="${c.req.makeUri("/t/" & $threadId)}">${posts[0][postHeader]}</a>
     </div>
   </div>
-  <div class="user detail"><div><div>???</div></div><div><div>?</div></div></div>
+  <div class="user-post detail"><div><div>???</div></div><div><div>?</div></div></div>
 </div>
 <div id="talk-thread">
 #  for row in posts:
