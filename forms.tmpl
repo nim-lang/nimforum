@@ -158,8 +158,12 @@
 <br />
 <a name="reply"></a>
 <div id="replywrapper">
-  <div id="replytop">
-    <span>${topText}</span>
+  <div id="talk-head">
+    <div class="info-post">
+      <div>
+        $topText
+      </div>
+    </div>
   </div>
   <form action="${c.req.makeUri(action, false) & "#preview"}" method="POST">
     ${FieldValid(c, "subject", "Subject:")}

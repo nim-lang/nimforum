@@ -1,5 +1,4 @@
 
-* { cursor:default; }
 a, a * { cursor:pointer; }
 
 html { margin:0; overflow-x:auto; }
@@ -98,134 +97,7 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
 		width:3px;
 		height:844px;
 		background:url("/images/glow-line-vert.png") no-repeat; }
-	
-	#slideshow { position:absolute; top:10px; left:10px; width:700px; }
-	#slideshow > div { visibility:hidden; opacity:0; position:absolute; transition:visibility 0s linear 1s, opacity 1s ease-in-out; }
-	#slideshow > div.active { visibility:visible; opacity:1; transition-delay:0s; }
-	#slideshow > div.init { transition-delay:0s; }
-	#slideshow-nav { z-index:3; position:absolute; top:110px;; right:-12px; }
-	#slideshow-nav > div { margin:5px 0; width:23px; height:23px; background:url("/images/slideshow-nav.png") no-repeat; }
-	#slideshow-nav > div:hover { background-image:url("/images/slideshow-nav_active.png"); opacity:0.5; }
-	#slideshow-nav > div.active { background-image:url("/images/slideshow-nav_active.png"); opacity:1; }
-		
-		#slide0 { margin:30px 0 0 10px; }
-		#slide0 > div { float:left; width:320px; font:10pt monospace; }
-		#slide0 > div:first-child { margin:0 40px 0 0; }
-		#slide0 > div > h2 { margin:0 0 5px 0; color:rgba(162,198,223,.78); }
-		#slide0 > div > pre {
-			margin:0;
-			padding:15px 10px;
-			line-height:14pt;
-			background:rgba(0,0,0,.4);
-			border-left:8px solid rgba(0,0,0,.3);
-			box-shadow:1px 2px 16px rgba(28,180,236,.4); }
-		
-		#slide1 { margin-top:50px; }
-		#slide1 > p {
-			padding:40px 20px 0 20px;
-			font-style:italic;
-			color:rgba(162,198,223,.78);
-			letter-spacing:1px;
-			line-height:25pt;
-			background:url("/images/quotes.png") top left no-repeat; }
-		#slide1 > div {
-			float:right;
-			margin-right:40px;
-			font-style:italic;
-			font-weight:bold;
-			color:rgba(93,155,199,.44); }
-	
-	#sidebar {
-		z-index:2;
-		position:absolute;
-		top:5px; right:0;
-		width:275px;
-		height:726px;
-		padding:210px 0 0 0;
-		background:url("/images/sidebar.png") no-repeat; }
-	#sidebar > h3 { margin:0 30px 0 30px; color:rgba(255,255,255,.5); }
-	#sidebar > h3.blue { color:rgba(28,180,236,.5); }
-	#sidebar-links,
-	#sidebar-news {
-		margin:10px 30px 50px 30px;
-		padding:10px 0;
-		background:rgba(0,0,0,.6); }
-	#sidebar-links { box-shadow:1px 2px 12px rgba(255,255,255,.4); }
-	#sidebar-news { box-shadow:1px 2px 12px rgba(28,180,236,.6); }
-	#sidebar-links > a {
-		display:block;
-		margin-left:15px;
-		padding:12px 20px 12px 45px;
-		font-weight:bold;
-		text-decoration:none;
-		letter-spacing:1px;
-		color:rgba(255,255,255,.4);
-		transition:
-			color 0.1s ease-in-out,
-			text-shadow 0.2s ease-in-out; }
-	#sidebar-news > a { transition: color 0.3s ease-in-out; }
-	#sidebar-news > a > h4 { transition: color 0.1s ease-in-out, text-shadow 0.2s ease-in-out; }
-	#sidebar-links > a:hover { color:#fff; text-shadow:0 0 6px #fff; }
-	#sidebar-news > a { display:block; padding:15px; color:rgba(255,255,255,.4); text-decoration:none; }
-	#sidebar-news > a > h4 { margin:0 0 5px 0; color:rgba(28,180,236,.5); }
-	#sidebar-news > a:hover > h4 { margin:0 0 5px 0; color:rgba(28,180,236,.8); text-shadow:0 0 6px rgba(28,180,236,.6); }
-	#sidebar-news > a:hover { color:rgba(255,255,255,1); }
-	#sidebar-news > a.blue { color:rgba(28,180,236,.5); font-weight:bold; }
-	#sidebar-news > a.blue:hover { color:#fff; }
-		
-		#links-forum { background:url("/images/more-links_forum.png") no-repeat left center; }
-		#links-github { background:url("/images/more-links_github.png") no-repeat left center; }
-		#links-editors { background:url("/images/more-links_editors.png") no-repeat left center; }
-		#links-nimbuild { background:url("/images/more-links_nimbuild.png") no-repeat left center; }
-	
-	#overview-bg {
-		position:fixed;
-		top:0;
-		bottom:0;
-		left:0;
-		width:280px;
-		background:rgba(0,0,0,0.25); }
-	#overview {
-		z-index:3;
-		position:fixed;
-		overflow:auto;
-		top:115px;
-		bottom:20px;
-		left:20px;
-		width:245px; }
-	#overview::-webkit-scrollbar { width:5px; }
-	#overview::-webkit-scrollbar-track { border-radius:2px; background:rgba(255,255,255,.03); }
-	#overview::-webkit-scrollbar-thumb { border-radius:2px; background:rgba(28,179,236,.5); }
-	#overview > div { overflow:auto; margin-bottom:40px; }
-	#overview a {
-		display:block;
-		padding:0 10px;
-		margin:2px 5px 2px 0;
-		color:rgba(255,255,255,.6);
-		background:rgba(255,255,255,0.03);
-    border-radius:2px;
-		letter-spacing:1px;
-		text-decoration:none; }
-	#overview a:hover { color:#fff; background:rgba(255,255,255,0.05); }
-	#overview > .types a { border-left:2px solid rgba(28,179,236,.4); }
-	#overview > .procs a { border-left:2px solid rgba(255,223,53,.4); }
-	#overview > .iters a { border-left:2px solid rgba(255,134,53,.4); }
-	#overview > div > h4 {
-		margin:0 5px 10px 0;
-		padding:5px 10px;
-		letter-spacing:1px;
-		color:#fff;
-		border-left:2px solid #fff;
-    border-radius:2px;
-		background:rgba(255,255,255,0.1); }
-	#overview > .types h4 { color:#1cb3ec; border-color:#1cb3ec; }
-	#overview > .procs h4 { color:#ffdf35; border-color:#ffdf35; }
-	#overview > .iters h4 { color:#ff8635; border-color:#ff8635; }
-	#overview h5 {
-		color:rgba(28,179,236,.6);
-		margin:10px 0 5px 0;
-		padding:5px 5px;
-		letter-spacing:1px; }
+
 
 #body { z-index:1; position:relative; background:rgba(220,231,248,.6); }
 #body.docs { margin:0 40px 20px 320px; }
@@ -290,101 +162,6 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
 	#content a:hover { color:#fff;  }
 	#content ul { padding-left:20px; }
 	#content li { margin-bottom:10px; text-align:justify; }
-	
-		#body.docs #content > div { margin-top:40px; padding-top:40px; border-top:1px dashed rgba(0,0,0,.25); }
-		#body.docs #content > div:first-child { margin-top:0; padding-top:0; border:none; }
-		#body.docs #content > div > h3 {
-			color:#fff;
-			margin:0 0 10px 0;
-			padding:10px 20px;
-			letter-spacing:1px;
-			border-left:8px solid #fff;
-      border-radius:3px;
-			background:rgba(0,0,0,.7);
-			box-shadow:1px 3px 12px rgba(0,0,0,.4); }
-		#body.docs #content > #types-wrap > h3 { color:#1cb3ec; border-color:#1cb3ec; }
-		#body.docs #content > #procs-wrap > h3 { color:#ffdf35; border-color:#ffdf35; }
-		#body.docs #content > #iters-wrap > h3 { color:#ff8635; border-color:#ff8635; }
-		#body.docs #content > div > div > div {
-			overflow:auto;
-			margin:10px 0;
-			border-left:8px solid #fff;
-      border-radius:3px;
-			background:rgba(0,0,0,.1); }
-		#body.docs #content > #types-wrap > div > div { border-color:rgba(28,179,236,.5); }
-		#body.docs #content > #procs-wrap > div > div { border-color:rgba(255,223,53,.5); }
-		#body.docs #content > #iters-wrap > div > div { border-color:rgba(255,134,53,.5); }
-		#body.docs #content > #procs-wrap > div > div.overload-head { margin-bottom:0; }
-		#body.docs #content > #procs-wrap > div > div.overload-tail { margin-top:0; border-top:1px dashed rgba(255,223,53,.5); }
-		#body.docs #content > #procs-wrap > div > div.overload { margin-top:0; margin-bottom:0; border-top:1px dashed rgba(255,223,53,.5); }
-		#body.docs #content > #iters-wrap > div > div.overload-head { margin-bottom:0; }
-		#body.docs #content > #iters-wrap > div > div.overload-tail { margin-top:0; border-top:1px dashed rgba(255,134,53,.5); }
-		#body.docs #content > #iters-wrap > div > div.overload { margin-top:0; margin-bottom:0; border-top:1px dashed rgba(255,134,53,.5); }
-		#body.docs #content > div > div > p { margin:20px 10px 10px 10px; }
-		
-		#body.docs #content > div > div > div > div { float:left; }
-		#body.docs #content > div > div > div > div.head { width:60%; }
-		#body.docs #content > div > div > div > div.data { width:40%; }
-    
-    #body.docs #content > h1 > .symbol {
-      padding:0 8px;
-      border-radius:5px;
-      background:rgba(206,218,233,.4); }
-    
-		#body.docs #content > div > div > div > div.head > .sign {
-			margin:0 10px 5px 10px;
-			padding:10px 10px 0 10px;
-			font-weight:bold;
-			border-bottom:1px dashed rgba(0,0,0,.25); }
-		#body.docs #content > div > div > div > div.head > .desc {
-			padding:0 20px 10px 20px;
-			color:rgba(0,0,0,.75); }
-		#body.docs #content > div > #types > div > div.head > .sign > .symbol {
-			padding:0 5px;
-			border-radius:3px;
-			background:rgba(28,179,236,.4); }
-		#body.docs #content > div > #procs > div > div.head > .sign > .symbol {
-			padding:0 5px;
-			border-radius:3px;
-			background:rgba(255,223,53,.3); }
-		#body.docs #content > div > #iters > div > div.head > .sign > .symbol {
-			padding:0 5px;
-			border-radius:3px;
-			background:rgba(255,134,53,.3); }
-			
-		#body.docs #content > div > div > div > div.data > div {
-			margin:0 20px 5px 10px;
-			padding:10px 0 0 10px;
-			font-style:italic;
-			color:rgba(0,0,0,.6);
-			border-bottom:1px dashed rgba(0,0,0,.25); }
-		#body.docs #content > div > div > div > div.data > ul { margin:0; padding:0 10px; }
-		#body.docs #content > div > div > div > div.data > ul:last-child { margin-bottom:5px; padding-bottom:10px; }
-		#body.docs #content > div > div > div > div.data > ul .symbol { padding:0 5px; border-radius:3px; background:rgba(23,192,23,.25); }
-		#body.docs #content > div > div > div > div.data > ul.pragmas .symbol { background:rgba(106,50,145,.25); }
-		#body.docs #content > div > div > div > div.data > ul > li { margin:0; padding:0 10px; list-style:none; }
-		
-		#body.docs #content pre {
-			overflow:auto;
-			margin:10px 0;
-			padding:15px 10px;
-			font-size:10pt;
-			font-style:normal;
-			line-height:14pt;
-			background:rgba(0,0,0,.75);
-			border-left:8px solid rgba(0,0,0,.3); }
-    
-    #docs-sort { float:right; font-size:75%; }
-    #docs-sort > a {
-      cursor:default;
-      margin:0 0 0 10px;
-      padding:2px 10px;
-      border-radius:5px;
-      color:rgba(0,0,0,.25);
-      background:rgba(0,0,0,.1);
-      box-shadow:inset 0 1px 8px rgba(0,0,0,.4); }
-    #docs-sort > a:hover,
-    #docs-sort > a.active { color:#000; background:rgba(0,0,0,.2); }
     
     #talk-heads { overflow:auto; margin:0 8px 0 8px; }
     #talk-heads > div { float:left; font-size:120%; font-weight:bold; }
@@ -466,6 +243,7 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
     #talk-info > div { float:left; }
     #talk-head > .info,
     #talk-info > .info { width:80%; }
+    #talk-head > .info-post,
     #talk-info > .info-post { width: 85%; }
     #talk-head > .user,
     #talk-info > .user { width:20%; background:rgba(0,0,0,.2); }
@@ -531,3 +309,123 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
 		width:202px;
 		height:319px;
 		background:url("/images/mascot.png") no-repeat; }
+
+article#content
+{
+  width: 75%;
+}
+
+div#sidebar
+{
+  background-color: rgba(255, 255, 255, 0.1);
+  
+  border-left: 8px solid rgba(0, 0, 0, 0.8);
+  border-right: 8px solid rgba(0, 0, 0, 0.8);
+  border-bottom: 8px solid rgba(0, 0, 0, 0.8);
+  border-radius: 3px;
+  
+  width: 20%;
+  
+  position: absolute;
+  right: 3%;
+  top: 5%;
+  height: 81%;
+  
+  color: #FFF;
+}
+
+div#sidebar .title
+{
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #FFF;
+  text-align: center;
+  padding: 10pt;
+}
+
+div#sidebar .content
+{
+  padding: 12pt;
+  overflow: auto;
+  
+}
+
+div#sidebar .content .button
+{
+  background-color: rgba(0,0,0,0.2);
+  text-decoration: none;
+  color: #FFF;
+  padding: 4pt;
+  float: right;
+  border-bottom: 2px solid rgba(0,0,0,0.24);
+  font-size: 11pt;
+}
+
+div#sidebar .content .button:hover
+{
+  border-bottom: 2px solid rgba(0,0,0,0.5);
+}
+
+div#sidebar .content input
+{
+  width: 99%;
+  margin-bottom: 10pt;
+  margin-top: 2pt;
+  
+  border: 1px solid #6D6D6D;
+  font-size: 12pt;
+}
+
+div#sidebar .content a.avatar img
+{
+  float: left;
+  margin-top: 5pt;
+}
+
+div#sidebar .content a.user
+{
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #1cb3ec;
+  padding: 5pt;
+  width: 93%;
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}
+
+div#sidebar .content a.user:hover
+{
+  color: #FFF;
+}
+
+div#sidebar .user .button
+{
+  float: left;
+  margin-top: 5pt;
+  margin-left: 5pt;
+  width: 52.5%;
+}
+
+div#sidebar .user .logout
+{
+  clear: left;
+  width: 52pt;
+  text-align: center;
+  margin-left: 0pt;
+}
+
+div#sidebar .content .search
+{
+  text-align: center;
+  margin: auto;
+  display: block;
+  width: 95%;
+}
+
+form
+{
+
+  border-right: 8px solid rgba(0, 0, 0, 0.2);
+
+  background-color: rgba(255, 255, 255, 0.1);
+
+}

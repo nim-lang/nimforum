@@ -55,27 +55,7 @@
           <div id="talk-info">
             <div class="info">
               <div>
-                #if c.loggedIn:
-                  #let profileUrl = c.req.makeUri("profile/", false) &
-                  #  xmlEncode(c.username)
-                  <span>Welcome <a href="$profileUrl">${c.username}!</a></span>
-                  &nbsp;|&nbsp;
-                  <!--<a href="$profileUrl">${genGravatar(c.email, 26)}</a>-->
-                #end if
                 ${c.genListOnline(stats)}
-              </div>
-            </div>
-            <div class="user">
-              <div>
-                #if c.loggedIn:
-                  <a href="${frontQuery}newthread">new thread</a>
-                  &nbsp;|&nbsp;
-                  <a href="${frontQuery}logout">logout</a>
-                #else:
-                  <a href="${frontQuery}login">login</a>
-                  &nbsp;|&nbsp;
-                  <a href="${frontQuery}register">register</a>
-                #end if
               </div>
             </div>
           </div>
@@ -99,6 +79,35 @@
         #end if
         
       </article>
+      <div id="sidebar">
+        <div class="title">Search</div>
+        <div class="content">
+          <input type="text" />
+          <a href="#" class="button search">Search</a>
+        </div>
+        #if c.loggedIn:
+          <div class="title">Your account</div>
+          <div class="content user">
+            #let profileUrl = c.req.makeUri("profile/", false) &
+            #  xmlEncode(c.username)
+            <a href="$profileUrl" class="user">${c.username}</a>
+            <a href="$profileUrl" class="avatar">${genGravatar(c.email)}</a>
+            <a href="${frontQuery}newthread" class="button">New Thread</a>
+            <a href="$profileUrl" class="button">My Profile</a>
+            
+            <a href="${frontQuery}logout" class="button logout">Logout</a>
+            
+          </div>
+        #else:
+          <div class="title">Login</div>
+          <div class="content">
+            <span>Username: </span><input type="text" />
+            <span>Password: </span><input type="password" />
+            <a href="#" class="button" style="float: left;">Register</a>
+            <a href="#" class="button">Login</a>
+          </div>
+        #end if
+      </div>
     </div>
   </section>
   
