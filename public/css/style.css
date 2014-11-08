@@ -259,6 +259,7 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
     
     #talk-nav { margin:20px 8px 0 8px; padding-top:10px; border-top:1px dashed rgba(0,0,0,0.4); text-align:center; }
     #talk-nav > a.active { text-decoration:underline !important; }
+    #talk-nav > a, #talk-nav > span { margin-left: 5pt; }
     
     .standout {
       padding:5px 30px;
@@ -312,7 +313,8 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
 
 article#content
 {
-  width: 75%;
+  width: 80%;
+  display: inline-block;
 }
 
 div#sidebar
@@ -324,12 +326,11 @@ div#sidebar
   border-bottom: 8px solid rgba(0, 0, 0, 0.8);
   border-radius: 3px;
   
-  width: 20%;
+  width: 15%;
+  margin-top: 40px;
   
-  position: absolute;
-  right: 3%;
-  top: 5%;
-  height: 81%;
+  display: inline-block;
+  float: right;
   
   color: #FFF;
 }
@@ -358,6 +359,7 @@ div#sidebar .content .button
   float: right;
   border-bottom: 2px solid rgba(0,0,0,0.24);
   font-size: 11pt;
+  margin-top: 5pt;
 }
 
 div#sidebar .content .button:hover
