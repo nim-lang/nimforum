@@ -118,21 +118,11 @@
       <a href="${c.req.makeUri("/t/" & $threadId)}">${posts[0][postHeader]}</a>
     </div>
   </div>
-  <div class="user-post detail"><div><div>???</div></div><div><div>?</div></div></div>
 </div>
 <div id="talk-thread">
 #  for row in posts:
 #    inc(count)
   <div>
-    <div class="topic">
-      <div>
-        #try:
-          ${(%postContent).rstToHtml}
-        #except EParseError:
-        #  c.errorMsg = getCurrentExceptionMsg()
-        #end
-      </div>
-    </div>
     <div class="author">
       <div>
         #let profileUrl = c.req.makeUri("profile/", false) & xmlEncode(%userName)
@@ -144,6 +134,15 @@
         #elif c.isAdmin and c.currentPost.subject.len == 0:
           <hr/><a style="color: red;" href="${c.genThreadUrl(%postId, "edit")}">Edit post</a>
         #end if
+      </div>
+    </div>
+    <div class="topic">
+      <div>
+        #try:
+          ${(%postContent).rstToHtml}
+        #except EParseError:
+        #  c.errorMsg = getCurrentExceptionMsg()
+        #end
       </div>
     </div>
   </div>
