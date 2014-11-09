@@ -26,7 +26,7 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
 
 .page-layout { margin:0 auto; width:1000px; }
 .docs-layout { margin:0 40px; }
-.talk-layout { margin:0 40px; }
+.talk-layout { margin:0 40px; min-height: 700px; }
 .wide-layout { margin:0 auto; }
 
 #head { height:100px; background:url("/images/head.png") repeat-x bottom; }
@@ -167,11 +167,11 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
     #talk-heads > div { float:left; font-size:120%; font-weight:bold; }
     #talk-heads > .topic { width:55%; }
     #talk-heads > .detail { width:15%; }
-    #talk-heads > .author { width:15%; }
-    #talk-heads > .reply { width:15%; }
+    #talk-heads > .activity { width:15%; }
+    #talk-heads > .users { width:15%; }
     #talk-heads > div > div { margin:0 10px 10px 10px; padding:0 10px 10px 10px; border-bottom:1px dashed rgba(0,0,0,0.4); }
     #talk-heads > .topic > div { margin-left:0; }
-    #talk-heads > .author > div { margin-right:0; }
+    #talk-heads > .activity > div { margin-right:0; }
     
     #talk-thread  > div,
     #talk-threads > div {
@@ -186,21 +186,35 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
     #talk-thread  > div:nth-child(odd) { background:rgba(255,255,255,0.1); }
     #talk-threads > div:nth-child(odd) { background:rgba(0,0,0,0.2); }
     #talk-thread  > div > div,
-    #talk-threads > div > div { float:left; }
+    #talk-threads > div > div
+    {
+      float:left;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      font-size: 10pt;
+    }
     #talk-thread  > div > div > div,
-    #talk-threads > div > div > div { margin:10px 20px; }
+    #talk-threads > div > div > div { margin: 5px 20px; }
     #talk-threads > div > .topic { width:55%; }
-    #talk-threads > div > .reply { width:15%; overflow:hidden; }
+    #talk-threads > div > .users { width:15%; overflow:hidden; }
+    #talk-threads > div > .users > div > img
+    {
+      margin-bottom: -4pt;
+      cursor: help;
+    }
     #talk-threads > div > .detail { width:15%; overflow:hidden; }
-    #talk-thread  > div > .author,
-    #talk-threads > div > .author {
+    #talk-thread  > div > .activity,
+    #talk-threads > div > .activity {
       position:absolute;
       right:0;
       top:0;
       bottom:0;
       width:15%;
       overflow:hidden;
-      background:rgba(0,0,0,0.8); }
+      background:rgba(0,0,0,0.8);
+      color: white;
+    }
     #talk-thread  > div > .author a,
     #talk-threads > div > .author a { color:#1cb3ec !important; }
     #talk-thread  > div > .author a:hover,
@@ -208,10 +222,10 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
     #talk-threads > div > .topic .pages { float:right; }
     #talk-threads > div > .topic > div > a { font-weight:bold; }
     #talk-threads > div > .detail > div { float:left; margin:0; }
-    #talk-threads > div > .detail > div > div { margin-left:20px; padding:10px 10px 10px 22px; }
+    #talk-threads > div > .detail > div > div { margin-left:20px; padding: 5px 5px 5px 22px; }
     #talk-threads > div > .detail > div { width:50%; }
-    #talk-threads > div > .detail > div:first-child > div { background:url("/images/forum-views.png") no-repeat left; }
-    #talk-threads > div > .detail > div:last-child > div { background:url("/images/forum-posts.png") no-repeat left; }
+    #talk-threads > div > .detail > div:first-child > div { background:url("/images/forum-views.png") no-repeat left; cursor: help; }
+    #talk-threads > div > .detail > div:last-child > div { background:url("/images/forum-posts.png") no-repeat left; cursor: help; }
     
     #talk-thread > div {  margin:20px 0; min-height:150px; box-shadow:1px 3px 12px rgba(0,0,0,.4) }
     #talk-thread > div > .author > div > .avatar { margin-top:20px; }

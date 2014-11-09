@@ -143,15 +143,50 @@ proc genButtons(c: var TForumData, btns: seq[TStyledButton]): string =
       result.add(("""<a class="$3active button" href="$1$4">$2</a>""") % [
         btns[i].link, btns[i].text, class, anchor])
 
+proc toInterval(diff: int64): TimeInterval =
+  var remaining = diff
+  let years = remaining div 31536000
+  remaining -= years * 31536000
+  let months = remaining div 2592000
+  remaining -= months * 2592000
+  let days = remaining div 86400
+  remaining -= days * 86400
+  let hours = remaining div 3600
+  remaining -= hours * 3600
+  let minutes = remaining div 60
+  remaining -= minutes * 60
+  #assert false
+  result = initInterval(0, remaining.int, minutes.int, hours.int, days.int,
+                        months.int, years.int)
+
 proc formatTimestamp(t: int): string =
-  let t2 = getGMTime(TTime(t))
-  return t2.format("ddd',' d MMM yyyy HH':'mm 'UTC'")
+  let t2 = TTime(t)
+  let now = getTime()
+  let diff = (now - t2).toInterval()
+  if diff.years > 0:
+    return getGMTime(t2).format("MMMM d',' yyyy")
+  elif diff.months > 0:
+    return $diff.months & (if diff.months > 1: " months ago" else: " month ago")
+  elif diff.days > 0:
+    return $diff.days & (if diff.days > 1: " days ago" else: " day ago")
+  elif diff.hours > 0:
+    return $diff.hours & (if diff.hours > 1: " hours ago" else: " hour ago")
+  elif diff.minutes > 0:
+    return $diff.minutes &
+        (if diff.minutes > 1: " minutes ago" else: " minute ago")
+  elif diff.seconds > 0:
+    return $diff.seconds &
+        (if diff.seconds > 1: " seconds ago" else: " second ago")
+  else:
+    return "less than a second ago"
+
+proc getGravatarUrl(email: string, size = 80): string =
+  let emailMD5 = email.toLower.toMD5
+  return ("http://www.gravatar.com/avatar/" & $emailMD5 & "?s=" & $size &
+     "&d=identicon")
 
 proc genGravatar(email: string, size: int = 80): string =
-  let emailMD5 = email.toLower.toMD5
-  result = "<img src=\"$1\" />" % 
-    ("http://www.gravatar.com/avatar/" & $emailMD5 & "?s=" & $size &
-     "&d=identicon")
+  result = "<img src=\"$1\" />" % getGravatarUrl(email, size)
 
 proc randomSalt(): string =
   result = ""
@@ -535,8 +570,8 @@ proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
   else:
     lastTag = htmlgen.a(href=lastUrl, ">>")
     nextTag = htmlgen.a(href=nextUrl, "••>")
-  result.add(lastTag)
   result.add(nextTag)
+  result.add(lastTag)
 
 proc gatherTotalPostsByID(c: var TForumData, thrid: int): int =
   ## Gets the total post count of a thread.

@@ -15,9 +15,9 @@
 #  count = 0
 <div id="talk-heads">
   <div class="topic"><div>Topic</div></div>
-  <div class="reply"><div>Last</div></div>
+  <div class="users"><div>Users</div></div>
   <div class="detail"><div>Details</div></div>
-  <div class="author"><div>Author</div></div>
+  <div class="activity"><div>Activity</div></div>
 </div>
 <div id="talk-threads">
 #  for row in rows(db, query, $((c.pageNum-1) * ThreadsPerPage), $ThreadsPerPage):
@@ -25,47 +25,44 @@
   <div>
     <div class="topic">
       <div>
-        ${UrlButton(c, xmlEncode(%name), c.genThreadUrl(threadid = %threadid))}
+        <a href="${c.genThreadUrl(threadid = %threadid)}"
+           title="${xmlEncode(%name)}">${xmlEncode(%name)}</a>
         ${genPagenumLocalNav(c, (%threadid).parseInt)}
+      </div>
+    </div>
+
+    #let users = getAllRows(db,
+    #  sql("select distinct name, email from person where id in " & 
+    #      "(select author from post where thread = ?)"), %threadId)
+    <div class="users">
+      <div>
+        #for i in 0 .. min(6, users.len-1):
+        <img src="${getGravatarUrl(users[i][1], 20)}" title="${users[i][0]}">
+        #end for
       </div>
     </div>
     
     #let latestReplyAuthor = getValue(db, sql("select name from person where id = " &
     #  "(select author from post where id = " & 
     #  "(select max(id) from post where thread = ?))"), %threadId)
-    #let latestReplyDate = getValue(db, sql("SELECT strftime('%s', " &
-    #  "(select creation from post where id = (select max(id) from post where thread = ?)))"), %threadId)
-    #let timeStr = formatTimestamp(latestReplyDate.parseInt())
+
     #let replyProfileUrl = c.req.makeUri("profile/", false) &
     #  xmlEncode(latestReplyAuthor)
-    <div class="reply">
-      <div>
-        <a href="$replyProfileUrl" title="$timeStr">$latestReplyAuthor</a>
-      </div>
-    </div>
 
 #    let posts = getValue(db, sql"select count(*) from post where thread = ?", %threadId)
     <div class="detail">
-      <div><div>${xmlEncode(%views)}</div></div>
-      <div><div>$posts</div></div>
+      <div><div title="Views">${xmlEncode(%views)}</div></div>
+      <div><div title="Posts">$posts</div></div>
     </div>
-    
-    #let authorName = getValue(db, sql("select name from person where id = " &
-    #  "(select author from post where id = " &
-    #  "(select min(id) from post where thread = ?))"), %threadId)
-    #let profileUrl = c.req.makeUri("profile/", false) & xmlEncode(authorName)
-    <div class="author">
-      <div><a href="$profileUrl">$authorName</a></div>
+
+    #let latestReplyDate = getValue(db, sql("SELECT strftime('%s', " &
+    #  "(select creation from post where id = (select max(id) from post where thread = ?)))"), %threadId)
+    #let timeStr = formatTimestamp(latestReplyDate.parseInt())
+    <div class="activity">
+      <div>$timeStr</div>
     </div>
   </div>
 #  end for
-
-  <div>
-    <div class="topic"><div><a href="http://reign-studios.net/philipwitte/nim/forum-thread.htm">Cannot generate code for N (static[int]) in template</a></div></div>
-    <div class="reply"><div><a href="#" title="Mon, 29 Sep 2014 23:11 UTC">marcianx</a></div></div>
-    <div class="detail"><div><div>135</div></div><div><div>8</div></div></div>
-    <div class="author"><div><a href="#">marcianx</a></div></div>
-  </div>
 </div>
 
 #end proc
