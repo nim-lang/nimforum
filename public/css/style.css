@@ -26,7 +26,7 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
 
 .page-layout { margin:0 auto; width:1000px; }
 .docs-layout { margin:0 40px; }
-.talk-layout { margin:0 40px; min-height: 700px; }
+.talk-layout { margin:0 40px; }
 .wide-layout { margin:0 auto; }
 
 #head { height:100px; background:url("/images/head.png") repeat-x bottom; }
@@ -101,7 +101,7 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
 
 #body { z-index:1; position:relative; background:rgba(220,231,248,.6); }
 #body.docs { margin:0 40px 20px 320px; }
-#body.forum { margin:0 40px 20px 40px; }
+#body.forum { margin:0 40px 20px 40px; min-height: 700px; }
 	
 	#body-border {
 		position:absolute;
@@ -204,12 +204,8 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
       cursor: help;
     }
     #talk-threads > div > .detail { width:15%; overflow:hidden; }
-    #talk-thread  > div > .activity,
-    #talk-threads > div > .activity {
-      position:absolute;
-      right:0;
-      top:0;
-      bottom:0;
+    #talk-thread  > div > .author,
+    #talk-threads > div > .author {
       width:15%;
       overflow:hidden;
       background:rgba(0,0,0,0.8);
