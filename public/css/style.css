@@ -153,7 +153,7 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
 		height:3px;
 		background:url("/images/glow-line2.png") no-repeat right; }
 	
-	#content { padding:40px 0; line-height:150%; }
+	#content { padding:40px 0; }
 	#content.page { width:680px; min-height:800px; padding-left:20px; }
 	#content h1 { font-size:20pt; letter-spacing:1px; color:rgba(0,0,0,.75); }
 	#content h2 { font-size:16pt; letter-spacing:1px; color:rgba(0,0,0,.7); margin-top:40px; }
@@ -182,7 +182,12 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
       border:8px solid rgba(0,0,0,.8);
       border-top:none;
       border-bottom:none;
-      background:rgba(0,0,0,0.1); }
+      background:rgba(0,0,0,0.1);
+    }
+    #talk-threads > div
+    {
+      line-height: 150%;
+    }
     #talk-thread  > div:nth-child(odd) { background:rgba(255,255,255,0.1); }
     #talk-threads > div:nth-child(odd) { background:rgba(0,0,0,0.2); }
     #talk-thread  > div > div,
@@ -196,6 +201,19 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
     }
     #talk-thread  > div > div > div,
     #talk-threads > div > div > div { margin: 5px 20px; }
+    #talk-thread > div > .topic
+    {
+      margin-top: 25pt;
+      white-space: normal;
+    }
+    #talk-thread > div > .topic > div > span.date
+    {
+      position: absolute;
+      top: 5px;
+      right: 10pt;
+      border-bottom: 1px dashed;
+      color: #3D3D3D;
+    }
     #talk-threads > div > .topic { width:55%; }
     #talk-threads > div > .users { width:15%; overflow:hidden; }
     #talk-threads > div > .users > div > img
@@ -205,11 +223,15 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
     }
     #talk-threads > div > .detail { width:15%; overflow:hidden; }
     #talk-thread  > div > .author,
-    #talk-threads > div > .author {
+    #talk-threads > div > .activity {
       width:15%;
       overflow:hidden;
       background:rgba(0,0,0,0.8);
       color: white;
+    }
+    #talk-thread > div > .author {
+      height: 100%;
+      position: absolute;
     }
     #talk-thread  > div > .author a,
     #talk-threads > div > .author a { color:#1cb3ec !important; }
@@ -225,10 +247,9 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
     
     #talk-thread > div {  margin:20px 0; min-height:150px; box-shadow:1px 3px 12px rgba(0,0,0,.4) }
     #talk-thread > div > .author > div > .avatar { margin-top:20px; }
-    #talk-thread > div > .author > div > .avatar > img { box-shadow:0 0 12px #1cb3ec; }
     #talk-thread > div > .author > div > .name { }
     #talk-thread > div > .author > div > .date { font-size: 8pt; color: white; }
-    #talk-thread > div > .topic { width:85%; padding-bottom:10px; }
+    #talk-thread > div > .topic { width:85%; padding-bottom:10px; margin-left: 15%; }
     #talk-thread > div > .topic pre {
       overflow:auto;
       margin:0;

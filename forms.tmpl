@@ -124,8 +124,7 @@
       <div>
         #let profileUrl = c.req.makeUri("profile/", false) & xmlEncode(%userName)
         <div class="avatar">${genGravatar(%userEmail)}</div>
-        <a class="name" href="$profileUrl">marcianx</a>
-        <p class="date">${xmlEncode(%postCreation)}</p>
+        <a class="name" href="$profileUrl">${xmlEncode(%userName)}</a>
         #if c.userId == %postAuthor and c.currentPost.subject.len == 0:
           <hr/><a href="${c.genThreadUrl(%postId, "edit")}">Edit post</a>
         #elif c.isAdmin and c.currentPost.subject.len == 0:
@@ -140,6 +139,7 @@
         #except EParseError:
         #  c.errorMsg = getCurrentExceptionMsg()
         #end
+        <span class="date">${xmlEncode(%postCreation)}</span>
       </div>
     </div>
   </div>
