@@ -423,3 +423,66 @@ a.button:hover {
   border: solid 1px #077A9C;
   color: #ffffff;
 }
+
+/* highlighting current post */
+
+.post.current {
+	background-color: #fefff3;
+}
+
+/* full-text search */
+
+#content .post th {
+  vertical-align: top;
+}
+
+#content .post th b {
+  border-bottom: 1px dotted #ffffff;
+}
+.titleHeader {
+  margin-right: 1em;
+  color: #ddd;
+  border-bottom: 1px dotted #aaa;
+}
+.searchResult th a {
+  color: #bbddff;
+  text-decoration: inherit;
+}
+
+.searchForm {
+  float: right;
+  margin-top: 0px;
+  margin-right: 1em;
+  margin-bottom: 0px;
+  margin-left: 1em;
+}
+
+.searchForm input {
+  vertical-align: top;
+}
+
+.searchHelp { 
+  color: #000000 !important;
+  float: right;
+  font-size: 11px;
+  left: -57px;
+  position: relative;
+  text-decoration: none;
+  text-shadow: #FFFF00 1px 1px 2px;
+  cursor: help;
+}
+
+.clear {
+  clear: both;
+  height: 1px;
+}
+
+/* page numbers form */
+
+#pagenumbers form {
+  display: inline;
+}
+
+#pagenumbers input {
+  margin: 0 .2em
+}
