@@ -94,8 +94,9 @@
 #  count = 0
 #  for row in FastRows(db, query, threadId, $((c.pageNum-1) * PostsPerPage), $PostsPerPage):
 #    inc(count)
+#    let currentPost = if %postId == $c.postId: " current" else: ""
 <a name="${%postId}"></a>
-<table class="post">
+<table class="post ${currentPost}">
   <tr>
     <th colspan="2">
       <span>${XMLencode(%postHeader)}</span>
@@ -240,3 +241,101 @@
   </div>
   
 #end proc
+#
+#
+#proc genSearchResults(c: var TForumData,
+#                       results: iterator: db_sqlite.TRow {.closure, tags: [FReadDB].},
+#                       count: var int): string =
+#  const threadId = 0
+#  const threadName = 1
+#  const postId = 2
+#  const postHeader = 3
+#  const postContent = 4
+#  const userName = 5
+#  const postCreation = 6
+#  const postAuthor = 7
+#  const userEmail = 8
+#  const what = 9
+#  result = ""
+#  count = 0
+#  var whCount: array[bool, int]
+<div>
+  Search results for: <i style="color: #332299">${XMLencode(c.search.replace("&quot;","\""))}</i>.
+</div>
+#  template user =
+      #let profileUrl = c.req.makeUri("profile/", false) & XMLencode(%userName)
+      <a href="$profileUrl">${genGravatar(%userEmail, 26)}</a>
+      <span style="padding: 0 24px"><a href="$profileUrl">${XMLencode(%userName)}</a></span>
+#  end template
+#  for row in results():
+#    inc(count)
+#    let isThread = %what == "0"
+#    inc(whCount[isThread])
+#    let postUrl = c.genThreadUrl(%postId,"",%threadId,"0")
+#    let threadUrl = c.genThreadUrl("","",%threadId)
+#    var headersDiffer = false
+<a name="${%postId}"></a>
+<table class="post searchResult">
+  <tr>
+#    if isThread:
+    <td class="left" width="4%">
+#      user()
+    </td>
+#    end if
+    <th width="4%">
+      <span>${XMLencode(%postCreation)}</span>
+    </th>
+#    if %threadName != %postHeader and "Re: " & %threadName != %postHeader:
+#      headersDiffer = true
+    <th ${if isThread: "" else: """width="50%"""" & (if %postHeader == "": """colspan="2"""" else: "")}>
+      <a href="${threadUrl}">
+        <span class="titleHeader">Thread:</span>
+        <span style="font-size: 1.2em">${%threadName}</span>
+      </a>
+    </th>
+#    end if
+#    if not headersDiffer or %postHeader != "":
+    <th ${if headersDiffer: "" else: """colspan="2""""}>
+      <a href="${postUrl}">
+        <span class="titleHeader">Post:</span>
+        <span>${%postHeader}</span>
+      </a>
+    </th>
+#    end if
+  </tr>
+#    if not isThread:
+  <tr>
+    <td class="left">
+      #user()
+      #if c.userId == %postAuthor and c.currentPost.subject.len == 0:
+        <hr/>${UrlButton(c, "Edit post", c.genThreadUrl(%postId, "edit", %threadId))}
+      #elif c.isAdmin and c.currentPost.subject.len == 0:
+        <hr/><span style="color: red">
+          ${UrlButton(c, "Edit post", c.genThreadUrl(%postId, "edit", %threadId))}</span>
+      #end if
+    </td>
+    <td class="content" colspan="2">
+    #try:
+      ${%postContent}
+    #except EParseError:
+    #  c.errorMsg = getCurrentExceptionMsg()
+    #end
+    </td>
+  </tr>
+#    end if
+</table>
+#  end for
+#  if c.pageNum > 1:
+<form action="/search/${$(c.pageNum-1)}" method="post">
+  <input type="hidden" name="q" value="${c.search}">
+  <input type="submit" value="Previous ${threadsPerPage} results">
+</form>
+#  end if
+#  if whCount[true] == threadsPerPage or whCount[false] == threadsPerPage:
+<form action="/search/${$(c.pageNum+1)}" method="post">
+  <input type="hidden" name="q" value="${c.search}">
+  <input type="submit" value="Next ${threadsPerPage} results (if any)">
+</form>
+#  end if
+#end proc
+#
