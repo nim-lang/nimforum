@@ -772,7 +772,12 @@ routes:
       finishLogin()
       cacheHolder.invalidateAll()
     else:
-      resp c.genMain(genFormLogin(c))
+      c.isThreadsList = true
+      var count = 0
+      let threadList = genThreadsList(c, count)
+      let data = genMain(c, threadList,
+          additionalHeaders = genRSSHeaders(c), showRssLinks = true)
+      resp data
 
   post "/doregister":
     createTFD()

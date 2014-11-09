@@ -101,10 +101,18 @@
         #else:
           <div class="title">Login</div>
           <div class="content">
-            <span>Username: </span><input type="text" />
-            <span>Password: </span><input type="password" />
+            <form name="login" action="${frontQuery}dologin" method="POST">
+              <span>Username: </span><input type="text" name="name" />
+              <span>Password: </span><input type="password" name="password" />
+              <input type="submit" style="display: none;"
+                     id="hdnLogin" value="Login" />
+            </form>
+            #if c.errorMsg != "":
+              <span class="error">$c.errorMsg</span>
+            #end if
             <a href="#" class="button" style="float: left;">Register</a>
-            <a href="#" class="button">Login</a>
+            <a href="#" onclick="document.forms['login'].submit()"
+               class="button">Login</a>
           </div>
         #end if
       </div>

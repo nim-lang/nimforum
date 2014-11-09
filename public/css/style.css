@@ -423,7 +423,20 @@ div#sidebar .content .search
   width: 95%;
 }
 
-form
+div#sidebar .content span.error
+{
+  float: left;
+  width: 100%;
+  color: #FF4848;
+  text-align: center;
+  font-size: 10pt;
+  background-color: rgba(0,0,0,0.8);
+  padding: 5pt 0pt;
+  font-weight: bold;
+}
+
+
+article#content form
 {
 
   border-right: 8px solid rgba(0, 0, 0, 0.2);
