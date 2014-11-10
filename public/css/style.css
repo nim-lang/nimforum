@@ -9,15 +9,16 @@ body {
 	font:13pt "arial";
 	background:#152534 url("/images/bg.jpg") no-repeat fixed center top; }
 
-pre { color:#5997AF;}
+pre { color: #ffffff;}
 pre, pre * { cursor:text; }
-pre .cmt { color:#6D6D6D; font-style:italic; }
-pre .kwd { color:#43A8CF; font-weight:bold; }
-pre .typ { color:#128B7D; font-weight:bold; }
+pre .Comment { color:#6D6D6D; font-style:italic; }
+pre .Keyword { color:#43A8CF; font-weight:bold; }
+pre .Type { color:#128B7D; font-weight:bold; }
+pre .Operator { font-weight: bold; }
 pre .atr { color:#128B7D; font-weight:bold; font-style:italic; }
 pre .def { color:#CAD6E4; font-weight:bold; font-style:italic; }
-pre .prg { color:#854D6A; font-weight:bold; font-style:italic; }
-pre .val { color:#8AB647; font-style:italic; }
+pre .StringLit { color:#854D6A; font-weight:bold; font-style:italic; }
+pre .DecNumber, pre .FloatNumber { color:#8AB647; font-style:italic; }
 pre .tab { border-left:1px dotted rgba(67,168,207,0.4); }
 pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
 
