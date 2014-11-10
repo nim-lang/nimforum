@@ -435,7 +435,6 @@ div#sidebar .user .button
 {
   float: left;
   margin-top: 5pt;
-  margin-left: 5pt;
   width: 52.5%;
 }
 
@@ -445,6 +444,11 @@ div#sidebar .user .logout
   width: 52pt;
   text-align: center;
   margin-left: 0pt;
+}
+
+div#sidebar .user .avatar > img
+{
+  margin-right: 5pt;
 }
 
 div#sidebar .content .search
