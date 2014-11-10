@@ -290,7 +290,8 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
     
     #talk-nav { margin:20px 8px 0 8px; padding-top:10px; border-top:1px dashed rgba(0,0,0,0.4); text-align:center; }
     #talk-nav > a.active { text-decoration:underline !important; }
-    #talk-nav > a, #talk-nav > span { margin-left: 5pt; }
+    #talk-nav > a, #talk-nav > span, #talk-info > .info-post > div > a,
+    #talk-info > .info-post > div > span { margin-left: 5pt; }
     
     .standout {
       padding:5px 30px;
