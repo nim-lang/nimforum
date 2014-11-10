@@ -252,14 +252,16 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
     #talk-thread > div > .author > div > .date { font-size: 8pt; color: white; }
     #talk-thread > div > .topic { width:85%; padding-bottom:10px; margin-left: 15%; }
     #talk-thread > div > .topic pre {
-      overflow:auto;
-      margin:0;
-      padding:15px 10px;
-      font-size:10pt;
-      font-style:normal;
-      line-height:14pt;
-      background:rgba(0,0,0,.75);
-      border-left:8px solid rgba(0,0,0,.3); }
+        overflow:auto;
+        margin:0;
+        padding:15px 10px;
+        font-size:10pt;
+        font-style:normal;
+        line-height:14pt;
+        background:rgba(0,0,0,.75);
+        border-left:8px solid rgba(0,0,0,.3);
+        margin-bottom: 10pt;
+    }
     
     #talk-head,
     #talk-info {
