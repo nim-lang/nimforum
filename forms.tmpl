@@ -68,30 +68,30 @@
 #end proc
 #
 #
-#proc genPostPreview(c: var TForumData, 
+#proc genPostPreview(c: var TForumData,
 #                    title, content, author, date: string): string =
 #  result = ""
 <a name="preview"></a>
-<table class="post">
-  <tr>
-    <th colspan="2">
-      <span>${xmlEncode(title)}</span>
-      <span style="float:right;">${xmlEncode(date)}</span>
-    </th>
-  </tr>
-  <tr>
-    <td class="left">
-      <span>${xmlEncode(author)}</span>
-    </td>
-    <td class="content">
-    #try:
-      ${content.rstToHtml}
-    #except EParseError:
-    #  c.errorMsg = getCurrentExceptionMsg()
-    #end
-    </td>
-  </tr>
-</table>
+<div id="talk-thread">
+  <div>
+    <div class="author">
+      <div>
+        #let profileUrl = c.req.makeUri("profile/", false) & xmlEncode(author)
+        <a class="name" href="$profileUrl">${xmlEncode(author)}</a>
+      </div>
+    </div>
+    <div class="topic">
+      <div>
+        #try:
+          ${content.rstToHtml}
+        #except EParseError:
+        #  c.errorMsg = getCurrentExceptionMsg()
+        #end
+        <span class="date">${xmlEncode(date)}</span>
+      </div>
+    </div>
+  </div>
+</div>
 #end proc
 #
 #
@@ -157,6 +157,7 @@
   <div id="talk-head">
     <div class="info-post">
       <div>
+        <a href="${c.req.makeUri("/")}"><b>forum index</b></a> &gt;
         $topText
       </div>
     </div>
