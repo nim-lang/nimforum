@@ -59,9 +59,11 @@
               </div>
             </div>
           </div>
+          #if not c.noPagenumumNav:
           <div id="talk-nav">
             ${genPagenumNav(c, stats)}
           </div>
+          #end if
         #elif hasReplyBtn(c):
           <div id="talk-info">
             <div class="info-post">
@@ -82,8 +84,19 @@
       <div id="sidebar">
         <div class="title">Search</div>
         <div class="content">
-          <input type="text" />
-          <a href="#" class="button search">Search</a>
+          #if isFTSAvailable:
+            <a href="/search-help" target="_blank" class="searchHelp">?</a>
+            <form method="post" action="/search" class="searchForm">
+              <input type="text" name="q" maxlength="255" value="${c.search}" title="Search this forum" />
+              <input type="submit" value="Search" class="button search">
+            </form>
+          #else:
+            <form method="get" action="http://www.google.com/search" target="_blank" class="searchForm">
+              <input type="text" name="q" maxlength="255" value="${c.search}" title="Search this forum" />
+              <input type="submit" value="Search" class="button search">
+              <input type="hidden"  name="sitesearch" value="http://forum.nimrod-lang.org" />
+            </form>
+          #end if
         </div>
         #if c.loggedIn:
           <div class="title">Your account</div>

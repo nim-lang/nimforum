@@ -119,6 +119,7 @@
 <div id="talk-thread">
 #  for row in posts:
 #    inc(count)
+  <a name="${%postId}"></a>
   <div>
     <div class="author">
       <div>
@@ -240,3 +241,97 @@
     <b>${stats.totalThreads}</b> threads &nbsp;|&nbsp; <b>${stats.totalPosts}</b> posts &nbsp;|&nbsp;
     newest member: <a href="$profileUrl">${stats.newestMember.nick}</a>
 #end proc
+#
+#
+#
+#
+#proc genSearchResults(c: var TForumData,
+#                       results: iterator: db_sqlite.TRow {.closure, tags: [FReadDB].},
+#                       count: var int): string =
+#  const threadId = 0
+#  const threadName = 1
+#  const postId = 2
+#  const postHeader = 3
+#  const postContent = 4
+#  const userName = 5
+#  const postCreation = 6
+#  const postAuthor = 7
+#  const userEmail = 8
+#  const what = 9
+#  result = ""
+#  count = 0
+#  var whCount: array[bool, int]
+<div id="talk-head">
+  <div class="info-post">
+    <div>
+        Search results for: <i style="color: #332299">${xmlEncode(c.search.replace("&quot;","\""))}</i>.
+    </div>
+  </div>
+</div>
+<div id="talk-thread" class="searchResults">
+#  for row in results():
+#    inc(count)
+#    let isThread = %what == "0"
+#    inc(whCount[isThread])
+#    let postUrl = c.genThreadUrl(%postId,"",%threadId,"0")
+#    let threadUrl = c.genThreadUrl("","",%threadId)
+#    var headersDiffer = false
+  <div>
+    <div class="author">
+      <div>
+        #let profileUrl = c.req.makeUri("profile/", false) & xmlEncode(%userName)
+        <div><a href="$profileUrl">${genGravatar(%userEmail, 40)}</a></div>
+        <div style="padding: 8px 0"><a href="$profileUrl">${xmlEncode(%userName)}</a></div>
+        #if c.userId == %postAuthor and c.currentPost.subject.len == 0:
+          <hr/><a href="${c.genThreadUrl(%postId, "edit", %threadId)}">Edit post</a>
+        #elif c.isAdmin and c.currentPost.subject.len == 0:
+          <hr/><a style="color: red;" href="${c.genThreadUrl(%postId, "edit", %threadId)}">Edit post</a>
+        #end if
+      </div>
+    </div>
+    <div class="topic">
+      <div>
+        #if %threadName != %postHeader and "Re: " & %threadName != %postHeader:
+        #headersDiffer = true
+        <h4>
+          <a href="${threadUrl}">
+            <span class="titleHeader">Thread:</span>
+            <span style="font-size: 1.2em">${%threadName}</span>
+          </a>
+        </h4>
+        #end if
+        #if not headersDiffer or %postHeader != "":
+        <h5>
+          <a href="${postUrl}">
+            <span class="titleHeader">Post:</span>
+            <span>${%postHeader}</span>
+          </a>
+        </h5>
+        #end if
+        #if not isThread:
+          #try:
+            ${(%postContent)}
+          #except EParseError:
+          #  c.errorMsg = getCurrentExceptionMsg()
+          #end
+        #end if
+        <span class="date">${xmlEncode(%postCreation)}</span>
+      </div>
+    </div>
+  </div>
+#  end for
+</div>
+#  if c.pageNum > 1:
+<form action="/search/${$(c.pageNum-1)}" method="post" class="searchNav">
+  <input type="hidden" name="q" value="${c.search}">
+  <input type="submit" value="Previous ${ThreadsPerPage} results">
+</form>
+#  end if
+#  if whCount[true] == ThreadsPerPage or whCount[false] == ThreadsPerPage:
+<form action="/search/${$(c.pageNum+1)}" method="post" class="searchNav">
+  <input type="hidden" name="q" value="${c.search}">
+  <input type="submit" value="Next ${ThreadsPerPage} results (if any)">
+</form>
+#  end if
+#end proc
+#
