@@ -496,3 +496,8 @@ hr
 {
   border: 1px solid #3D3D3D;
 }
+
+.activity .isoDate
+{
+  display: none;
+}

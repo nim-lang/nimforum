@@ -59,7 +59,10 @@
     #  "(select creation from post where id = (select max(id) from post where thread = ?)))"), %threadId)
     #let timeStr = formatTimestamp(latestReplyDate.parseInt())
     <div class="activity">
-      <div>$timeStr</div>
+      <div>
+        <span class="isoDate">$timeStr</span>
+        $timeStr
+      </div>
     </div>
   </div>
 #  end for
