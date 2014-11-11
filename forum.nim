@@ -606,6 +606,18 @@ proc gatherUserInfo(c: var TForumData, nick: string, ui: var TUserInfo): bool =
 
 proc genProfile(c: var TForumData, ui: TUserInfo): string =
   result = ""
+
+  result.add(htmlgen.`div`(id = "talk-head",
+    htmlgen.`div`(class="info-post",
+      htmlgen.`div`(
+        htmlgen.a(href = c.req.makeUri("/"),
+          span(style = "font-weight: bold;", "forum index")
+          ),
+          " > " & ui.nick & "'s profile"
+        )
+      )
+    )
+  )
   result.add(htmlgen.`div`(id = "avatar", genGravatar(ui.email, 250)))
   let t2 = if ui.lastOnline != -1: getGMTime(TTime(ui.lastOnline)) 
            else: getGMTime(getTime())

@@ -188,8 +188,15 @@
 #
 #proc genFormRegister(c: var TForumData): string =
 #  result = ""
+<div id="talk-head">
+    <div class="info-post">
+      <div>
+        <a href="${c.req.makeUri("/")}"><b>forum index</b></a> &gt;
+        Register
+      </div>
+    </div>
+</div>
 <form action="${c.req.makeUri("/doregister", false)}" method="POST">
-  <b>Register</b><br />
   <table border="0">
     <tr>
       <td>${FieldValid(c, "name", "Username:")}</td>
