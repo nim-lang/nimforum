@@ -15,9 +15,9 @@ const
   unselectedThread = -1
   transientThread = 0
 
-  ThreadsPerPage = 2
-  PostsPerPage = 3
-  MaxPagesFromCurrent = 2
+  ThreadsPerPage = 15
+  PostsPerPage = 10
+  MaxPagesFromCurrent = 8
   noPageNums = ["/login", "/register", "/dologin", "/doregister", "/profile"]
   noHomeBtn = ["/", "/login", "/register", "/dologin", "/doregister", "/profile"]
 
