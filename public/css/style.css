@@ -501,3 +501,84 @@ hr
 {
   display: none;
 }
+
+
+/* highlighting current post */
+
+.post.current {
+	background-color: #fefff3;
+}
+
+/* full-text search */
+
+.searchResults h4 b,
+.searchResults h5 b {
+  border-bottom: 1px dotted #ffffff;
+}
+.titleHeader {
+  margin-right: 1em;
+  color: #ddd;
+}
+
+.searchForm {
+  margin-top: 0px;
+  margin-right: 1em;
+  margin-bottom: 0px;
+  margin-left: 1em;
+}
+
+.searchHelp { 
+  color: #000000 !important;
+  float: right;
+  font-size: 11px;
+  left: -17px;
+  top: 3px;
+  position: relative;
+  text-decoration: none;
+  text-shadow: #FFFF00 1px 1px 2px;
+  cursor: help;
+}
+
+#talk-thread.searchResults > div > div > div {
+  margin: 15px 8px;
+}
+
+form.searchNav {
+  display: inline;
+  border: none !important;
+  background: transparent !important;
+}
+
+.searchNav input {
+  background: #858C97;
+  color: #000000;
+  border: 1px solid #333;
+}
+
+.clear {
+  clear: both;
+  height: 1px;
+}
+
+/* page numbers form */
+
+.pagenumJump {
+  display: inline;
+  border-width: 0px !important;
+}
+
+.pagenumJump input {
+  margin: 0 .2em;
+  width: 3.2em;
+  background: #d0d6e3;
+  padding: 1px 2px;
+  border-width: 0px;
+}
+
+.pagenumJump .jump {
+  border-width: 0px;
+  margin: 0;
+  background: transparent;
+  width: auto;
+  cursor: pointer;
+}

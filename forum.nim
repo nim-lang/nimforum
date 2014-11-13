@@ -8,7 +8,7 @@
 
 import
   os, strutils, times, md5, strtabs, cgi, math, db_sqlite, matchers,
-  rst, rstgen, captchas, scgi, jester, asyncdispatch, asyncnet, cache
+  rst, rstgen, captchas, scgi, jester, asyncdispatch, asyncnet, cache, sequtils
 from htmlgen import tr, th, td, span
 
 const
@@ -17,13 +17,14 @@ const
 
   ThreadsPerPage = 15
   PostsPerPage = 10
+  MaxPagesFromCurrent = 8
   noPageNums = ["/login", "/register", "/dologin", "/doregister", "/profile"]
   noHomeBtn = ["/", "/login", "/register", "/dologin", "/doregister", "/profile"]
 
 type
   TCrud = enum crCreate, crRead, crUpdate, crDelete
 
-  TSession = object of TObject
+  TSession = object of RootObj
     threadid: int
     postid: int
     userName, userPass, email: string
@@ -42,6 +43,8 @@ type
     isThreadsList: bool
     pageNum: int
     totalPosts: int
+    search: string
+    noPagenumumNav: bool
   
   TStyledButton = tuple[text: string, link: string]
 
@@ -61,7 +64,8 @@ type
 
 var
   db: TDbConn
-  docConfig: PStringTable
+  docConfig: StringTableRef
+  isFTSAvailable: bool
   
 proc init(c: var TForumData) = 
   c.userPass = ""
@@ -75,6 +79,8 @@ proc init(c: var TForumData) =
   c.loginErrorMsg = ""
   c.invalidField = ""
   c.currentPost = (subject: "", content: "")
+  
+  c.search = ""
 
 proc loggedIn(c: TForumData): bool = 
   result = c.userName.len > 0
@@ -114,6 +120,8 @@ proc genThreadUrl(c: TForumData, postId = "", action = "", threadid = "", pageNu
     result.add("?action=" & action)
     if postId != "":
       result.add("&postid=" & postid)
+  elif postId != "":
+    result.add("/" & postId & "#" & postId)
   result = c.req.makeUri(result, absolute = false)
 
 proc FormSession(c: var TForumData, nextAction: string): string =
@@ -153,7 +161,8 @@ proc getGravatarUrl(email: string, size = 80): string =
      "&d=identicon")
 
 proc genGravatar(email: string, size: int = 80): string =
-  result = "<img src=\"$1\" />" % getGravatarUrl(email, size)
+  result = "<img width=\"$1\" height=\"$2\" src=\"$3\" />" % 
+            [$size, $size, getGravatarUrl(email, size)]
 
 proc randomSalt(): string =
   result = ""
@@ -179,7 +188,7 @@ proc makeSalt(): string =
   ## Creates a salt using a cryptographically secure random number generator.
   try:
     result = devRandomSalt()
-  except EIO:
+  except IOError:
     result = randomSalt()
 
 proc makePassword(password, salt: string): string =
@@ -354,6 +363,8 @@ template setPreviewData(c: expr) {.immediate, dirty.} =
 template writeToDb(c, cr, setPostId: expr) =
   let retID = insertID(db, crud(cr, "post", "author", "ip", "header", "content", "thread"),
        c.userId, c.req.ip, subject, content, $c.threadId, "")
+  discard tryExec(db, crud(cr, "post_fts", "id", "header", "content"),
+       retID.int, subject, content)
   if setPostId:
     c.postId = retID.int
 
@@ -366,16 +377,20 @@ proc edit(c: var TForumData, postId: int): bool =
     checkOwnership(c, $postId)
     if not tryExec(db, crud(crDelete, "post"), $postId):
       return setError(c, "", "database error")
+    discard tryExec(db, crud(crDelete, "post_fts"), $postId)
     # delete corresponding thread:
     if execAffectedRows(db,
         sql"delete from thread where id not in (select thread from post)") > 0:
       # whole thread has been deleted, so:
       c.threadId = unselectedThread
+      discard tryExec(db, sql"delete from thread_fts where id not in (select thread from post)")
     result = true
   else:
     checkOwnership(c, $postId)
     retrPost(c)
     exec(db, crud(crUpdate, "post", "header", "content"),
+         subject, content, $postId)
+    exec(db, crud(crUpdate, "post_fts", "header", "content"),
          subject, content, $postId)
     result = true
   
@@ -401,7 +416,11 @@ proc newThread(c: var TForumData): bool =
   else:
     c.threadID = tryInsertID(db, query, c.req.params["subject"]).int
     if c.threadID < 0: return setError(c, "subject", "Subject already exists")
+    discard tryExec(db, crud(crCreate, "thread_fts", "id", "name"),
+                        c.threadID, c.req.params["subject"])
     writeToDb(c, crCreate, false)
+    discard tryExec(db, sql"insert into post_fts(post_fts) values('optimize')")
+    discard tryExec(db, sql"insert into post_fts(thread_fts) values('optimize')")
     result = true
 
 proc login(c: var TForumData, name, pass: string): bool = 
@@ -468,7 +487,7 @@ proc getStats(c: var TForumData, simple: bool): TForumStats =
       sql"select id, name, admin, strftime('%s', lastOnline), strftime('%s', creation) from person"
     for row in fastRows(db, getUsersQuery):
       let secs = if row[3] == "": 0 else: row[3].parseint
-      let lastOnlineSeconds = getTime() - TTime(secs)
+      let lastOnlineSeconds = getTime() - Time(secs)
       if lastOnlineSeconds < (60 * 5): # 5 minutes
         result.activeUsers.add((row[1], row[0].parseInt, row[2].parseBool))
       if row[4].parseInt > newestMemberCreation:
@@ -511,12 +530,17 @@ proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
   else:
     firstTag = htmlgen.a(href=firstUrl, "<<")
     prevTag = htmlgen.a(href=prevUrl, "<••")
+    prevTag.add(htmlgen.link(rel="previous", href=prevUrl))
   result.add(firstTag)
   result.add(prevTag)
   
   # Numbers
   var pages = "" # Tags
-  for i in 1..totalPages:
+  # cutting numbers to the left and to the right tp MaxPagesFromCurrent
+  let firstToShow = max(1, c.pageNum - MaxPagesFromCurrent)
+  let lastToShow  = min(totalPages, c.pageNum + MaxPagesFromCurrent)
+  if firstToShow > 1: pages.add(span("..."))
+  for i in firstToShow .. lastToShow:
     if i == c.pageNum:
       pages.add(span($(i)))
     else:
@@ -527,6 +551,16 @@ proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
         pageUrl = c.req.makeUri(firstUrl & "/" & $(i))
       
       pages.add(htmlgen.a(href = pageUrl, $(i)))
+  if lastToShow < totalPages: pages.add(span("..."))
+  # a number input for quick jump to a page
+  pages.add(htmlgen.form(
+    action = c.req.makeUri(if c.isThreadsList: "/page" else: firstUrl),
+    class  = "pagenumJump",
+    when false: htmlgen.input(`type` = "number", name = "page", value = $c.pageNum, max = $totalPages)
+    else: "<input type=\"number\" name=\"page\" value=\"$1\" min=\"1\" max=\"$2\" />" %
+            [$c.pageNum, $totalPages],
+    htmlgen.input(`type` = "submit", value = "&#9658;", title = "Go to the page", class = "jump") ))
+  # max attribute for inputs not supported in htmlgen
   result.add(pages)
 
   # Right
@@ -538,6 +572,7 @@ proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
   else:
     lastTag = htmlgen.a(href=lastUrl, ">>")
     nextTag = htmlgen.a(href=nextUrl, "••>")
+    nextTag.add(htmlgen.link(rel="next",href=nextUrl))
   result.add(nextTag)
   result.add(lastTag)
 
@@ -619,7 +654,7 @@ proc genProfile(c: var TForumData, ui: TUserInfo): string =
     )
   )
   result.add(htmlgen.`div`(id = "avatar", genGravatar(ui.email, 250)))
-  let t2 = if ui.lastOnline != -1: getGMTime(TTime(ui.lastOnline)) 
+  let t2 = if ui.lastOnline != -1: getGMTime(Time(ui.lastOnline)) 
            else: getGMTime(getTime())
   
   result.add(htmlgen.`div`(id = "info", 
@@ -688,14 +723,19 @@ routes:
     createTFD()
     resp genPostsRSS(c), "application/atom+xml"
 
-  get "/t/@threadid/?@page?/?":
+  get "/t/@threadid/?@page?/?@postid?/?":
     createTFD()
     parseInt(@"threadid", c.threadId, -1..1000_000)
-    if @"page".len > 0:
-      parseInt(@"page", c.pageNum, 0..1000_000)
-      cond (c.pageNum > 0)
     if (@"postid").len > 0:
       parseInt(@"postid", c.postId, -1..1000_000)
+    if @"page".len > 0:
+      parseInt(@"page", c.pageNum, 0..1000_000)
+    # for direct links to posts (with no thread id passed); used in search results
+    if c.pageNum == 0 and c.postId > 0:
+      const sqlGetPostsUnder = sql"select count(*) from post where thread = ? and id < ?"
+      let postsUnder = db.getValue(sqlGetPostsUnder, c.threadId, c.postId).parseInt
+      c.pageNum = (postsUnder div PostsPerPage) + 1
+    cond (c.pageNum > 0)
     var count = 0
     var pSubject = getThreadTitle(c.threadid, c.pageNum)
     cond validThreadId(c)
@@ -719,6 +759,7 @@ routes:
         let content = ||row[1]
         body = genFormPost(c, "doedit", "Edit", header, content, true)
         title = "Editing post"
+      else: discard
       resp c.genMain(body, title & " - Nimrod Forum")
     else:
       incrementViews(c)
@@ -726,7 +767,7 @@ routes:
       cond count != 0
       resp genMain(c, posts, pSubject & " - Nimrod Forum")
 
-  get "/page/@page/?":
+  get "/page/?@page?/?":
     createTFD()
     c.isThreadsList = true
     cond (@"page" != "")
@@ -779,7 +820,8 @@ routes:
       body.add genPostPreview(c, @"subject", @"content", 
                               c.userName, $getGMTime(getTime()))
     body.add genFormPost(c, action, topText, reuseText, reuseText, isEdit)
-    resp genMain(c, body(), "Nimrod Forum - Error")
+    resp genMain(c, body(), "Nimrod Forum - " & 
+                            (if c.isPreview: "Preview" else: "Error"))
 
   post "/dologin":
     createTFD()
@@ -828,7 +870,7 @@ routes:
     createTFD()
     readIDs()
     if edit(c, c.postId):
-      redirect(c.genThreadUrl())
+      redirect(c.genThreadUrl(pageNum = "0", postId = $c.postId))
     else:
       body = ""
       handleError("doedit", "Edit", true)
@@ -843,11 +885,58 @@ routes:
     createTFD()
     resp genMain(c, rstToHtml(licenseRst), "Content license - Nimrod Forum")
 
+  post "/search/?@page?":
+    if not isFTSAvailable:
+      redirect(uri("/"))
+    createTFD()
+    c.isThreadsList  = true
+    c.noPagenumumNav = true
+    var count = 0
+    var q = @"q"
+    for i in 0 .. q.len-1:
+      if   q[i].int < 32: q[i] = ' '
+      elif q[i] == '\'':  q[i] = '"'
+    c.search = q.replace("\"","&quot;");
+    if @"page".len > 0:
+      parseInt(@"page", c.pageNum, 0..1000_000)
+      cond (c.pageNum > 0)
+    iterator searchResults(): db_sqlite.TRow {.closure, tags: [FReadDB].} =
+      const queryFT = "fts.sql".slurp.sql
+      for rowFT in fastRows(db, queryFT,
+                    [q,q,$ThreadsPerPage,$c.pageNum,$ThreadsPerPage,q,
+                     q,q,$ThreadsPerPage,$c.pageNum,$ThreadsPerPage,q]):
+        yield rowFT
+    resp genMain(c, genSearchResults(c, searchResults, count),
+                 additionalHeaders = genRSSHeaders(c), showRssLinks = true)
+
+  # tries first to read html, then to read rst, convert ot html, cache and return
+  template textPage(path: string): stmt =
+    createTFD()
+    #c.isThreadsList = true
+    var page = ""
+    if existsFile(path):
+      page = readFile(path)
+    else:
+      let basePath = 
+        if path[path.high] == '/': path & "index"
+        elif path.endsWith(".html"): path[-5 .. -1]
+        else: path
+      if existsFile(basePath & ".html"):
+        page = readFile(basePath & ".html")
+      elif existsFile(basePath & ".rst"):
+        page = readFile(basePath & ".rst").rstToHtml
+        writeFile(basePath & ".html", page)
+    resp genMain(c, page)
+  get "/search-help":
+    textPage "static/search-help"
+
 when isMainModule:
   docConfig = rstgen.defaultConfig()
   math.randomize()
   db = open(connection="nimforum.db", user="postgres", password="", 
               database="nimforum")
+  isFTSAvailable = db.getAllRows(sql("SELECT name FROM sqlite_master WHERE " &
+      "type='table' AND name='post_fts'")).len == 1
   var http = true
   if paramCount() > 0:
     if paramStr(1) == "scgi":
