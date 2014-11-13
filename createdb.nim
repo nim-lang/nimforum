@@ -86,8 +86,35 @@ create table if not exists antibot(
 );""", []):
   echo "antibot table already exists"
 
+# -------------------- Search --------------------------------------------------
+
+if not db.tryExec(sql"""
+    CREATE VIRTUAL TABLE thread_fts USING fts4 (
+      id INTEGER PRIMARY KEY,
+      name VARCHAR(100) NOT NULL
+    );""", []):
+  echo "thread_fts table already exists or fts4 not supported"
+else:
+  db.exec(sql"""
+    INSERT INTO thread_fts
+    SELECT id, name FROM thread;
+  """, [])
+if not db.tryExec(sql"""
+    CREATE VIRTUAL TABLE post_fts USING fts4 (
+      id INTEGER PRIMARY KEY,
+      header VARCHAR(100) NOT NULL,
+      content VARCHAR(1000) NOT NULL
+    );""", []):
+  echo "post_fts table already exists or fts4 not supported"
+else:
+  db.exec(sql"""
+    INSERT INTO post_fts
+    SELECT id, header, content FROM post;
+  """, [])
+
+
+# ------------------------------------------------------------------------------
+
 #discard stdin.readline()
 
 close(db)
-
-
