@@ -118,10 +118,8 @@ proc genThreadUrl(c: TForumData, postId = "", action = "", threadid = "", pageNu
     result.add("/" & pageNum)
   if action != "":
     result.add("?action=" & action)
-    if postId != "":
-      result.add("&postid=" & postid)
   elif postId != "":
-    result.add("/" & postId & "#" & postId)
+    result.add("#" & postId)
   result = c.req.makeUri(result, absolute = false)
 
 proc FormSession(c: var TForumData, nextAction: string): string =
@@ -723,18 +721,11 @@ routes:
     createTFD()
     resp genPostsRSS(c), "application/atom+xml"
 
-  get "/t/@threadid/?@page?/?@postid?/?":
+  get "/t/@threadid/?@page?/?":
     createTFD()
     parseInt(@"threadid", c.threadId, -1..1000_000)
-    if (@"postid").len > 0:
-      parseInt(@"postid", c.postId, -1..1000_000)
     if @"page".len > 0:
       parseInt(@"page", c.pageNum, 0..1000_000)
-    # for direct links to posts (with no thread id passed); used in search results
-    if c.pageNum == 0 and c.postId > 0:
-      const sqlGetPostsUnder = sql"select count(*) from post where thread = ? and id < ?"
-      let postsUnder = db.getValue(sqlGetPostsUnder, c.threadId, c.postId).parseInt
-      c.pageNum = (postsUnder div PostsPerPage) + 1
     cond (c.pageNum > 0)
     var count = 0
     var pSubject = getThreadTitle(c.threadid, c.pageNum)
@@ -886,8 +877,7 @@ routes:
     resp genMain(c, rstToHtml(licenseRst), "Content license - Nimrod Forum")
 
   post "/search/?@page?":
-    if not isFTSAvailable:
-      redirect(uri("/"))
+    cond isFTSAvailable
     createTFD()
     c.isThreadsList  = true
     c.noPagenumumNav = true
