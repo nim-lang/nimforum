@@ -699,17 +699,14 @@ template createTFD(): stmt =
   if request.cookies.len > 0:
     checkLoggedIn(c)
 
-var cacheHolder = newCacheHolder()
-
 routes:
   get "/":
     createTFD()
     c.isThreadsList = true
     var count = 0
     let threadList = genThreadsList(c, count)
-    let data = cacheHolder.get("/",
-      genMain(c, threadList,
-        additionalHeaders = genRSSHeaders(c), showRssLinks = true))
+    let data = genMain(c, threadList,
+        additionalHeaders = genRSSHeaders(c), showRssLinks = true)
     resp data
 
   get "/threadActivity.xml":
@@ -788,7 +785,6 @@ routes:
   get "/logout/?":
     createTFD()
     logout(c)
-    cacheHolder.invalidateAll()
     redirect(uri("/"))
 
   get "/register/?":
@@ -818,7 +814,6 @@ routes:
     createTFD()
     if login(c, @"name", @"password"):
       finishLogin()
-      cacheHolder.invalidateAll()
     else:
       c.isThreadsList = true
       var count = 0
@@ -832,14 +827,12 @@ routes:
     if c.register(@"name", @"new_password", @"antibot", @"email"):
       discard c.login(@"name", @"new_password")
       finishLogin()
-      cacheHolder.invalidateAll()
     else:
       resp c.genMain(genFormRegister(c))
 
   post "/donewthread":
     createTFD()
     if newThread(c):
-      cacheHolder.invalidate("/")
       redirect(uri("/"))
     else:
       body = ""
