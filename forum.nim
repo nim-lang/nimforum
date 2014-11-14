@@ -118,6 +118,8 @@ proc genThreadUrl(c: TForumData, postId = "", action = "", threadid = "", pageNu
     result.add("/" & pageNum)
   if action != "":
     result.add("?action=" & action)
+    if postId != "":
+      result.add("&postid=" & postid)
   elif postId != "":
     result.add("#" & postId)
   result = c.req.makeUri(result, absolute = false)
@@ -718,11 +720,13 @@ routes:
     createTFD()
     resp genPostsRSS(c), "application/atom+xml"
 
-  get "/t/@threadid/?@page?/?":
+  get "/t/@threadid/?@page?/?@postid?/?":
     createTFD()
     parseInt(@"threadid", c.threadId, -1..1000_000)
     if @"page".len > 0:
       parseInt(@"page", c.pageNum, 0..1000_000)
+    if @"postid".len > 0:
+      parseInt(@"postid", c.postId, 0..1000_000)
     cond (c.pageNum > 0)
     var count = 0
     var pSubject = getThreadTitle(c.threadid, c.pageNum)
@@ -854,7 +858,7 @@ routes:
     createTFD()
     readIDs()
     if edit(c, c.postId):
-      redirect(c.genThreadUrl(pageNum = "0", postId = $c.postId))
+      redirect(c.genThreadUrl(postId = $c.postId))
     else:
       body = ""
       handleError("doedit", "Edit", true)
