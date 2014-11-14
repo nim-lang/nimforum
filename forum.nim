@@ -552,15 +552,6 @@ proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
       
       pages.add(htmlgen.a(href = pageUrl, $(i)))
   if lastToShow < totalPages: pages.add(span("..."))
-  # a number input for quick jump to a page
-  pages.add(htmlgen.form(
-    action = c.req.makeUri(if c.isThreadsList: "/page" else: firstUrl),
-    class  = "pagenumJump",
-    when false: htmlgen.input(`type` = "number", name = "page", value = $c.pageNum, max = $totalPages)
-    else: "<input type=\"number\" name=\"page\" value=\"$1\" min=\"1\" max=\"$2\" />" %
-            [$c.pageNum, $totalPages],
-    htmlgen.input(`type` = "submit", value = "&#9658;", title = "Go to the page", class = "jump") ))
-  # max attribute for inputs not supported in htmlgen
   result.add(pages)
 
   # Right
@@ -617,7 +608,7 @@ proc genPagenumLocalNav(c: var TForumData, thrid: int): string =
     else:
       inc(i)
 
-  result = htmlgen.`div`(class = "localnums", result)
+  result = htmlgen.span(class = "pages", result)
 
 proc gatherUserInfo(c: var TForumData, nick: string, ui: var TUserInfo): bool =
   ui.nick = nick

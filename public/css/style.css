@@ -195,7 +195,6 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
     #talk-threads > div > div
     {
       float:left;
-      white-space: nowrap;
       text-overflow: ellipsis;
       overflow: hidden;
       font-size: 10pt;
@@ -239,7 +238,15 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
     #talk-thread  > div > .author a:hover,
     #talk-threads > div > .author a:hover { color:#fff !important; }
     #talk-threads > div > .topic .pages { float:right; }
-    #talk-threads > div > .topic > div > a { font-weight:bold; }
+    #talk-threads > div > .topic .pages > a
+    {
+      margin-right: 5pt;
+    }
+    #talk-threads > div > .topic > div > a
+    {
+      font-weight:bold; 
+      white-space: nowrap;
+    }
     #talk-threads > div > .detail > div { float:left; margin:0; }
     #talk-threads > div > .detail > div > div { margin-left:20px; padding: 5px 5px 5px 22px; }
     #talk-threads > div > .detail > div { width:50%; }
@@ -558,27 +565,4 @@ form.searchNav {
 .clear {
   clear: both;
   height: 1px;
-}
-
-/* page numbers form */
-
-.pagenumJump {
-  display: inline;
-  border-width: 0px !important;
-}
-
-.pagenumJump input {
-  margin: 0 .2em;
-  width: 3.2em;
-  background: #d0d6e3;
-  padding: 1px 2px;
-  border-width: 0px;
-}
-
-.pagenumJump .jump {
-  border-width: 0px;
-  margin: 0;
-  background: transparent;
-  width: auto;
-  cursor: pointer;
 }
