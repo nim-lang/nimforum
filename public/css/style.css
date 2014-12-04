@@ -218,7 +218,7 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
       color: #3D3D3D;
     }
     #talk-threads > div > .topic { width:45%; }
-    #talk-threads > div > .users { width:15%; overflow:hidden; }
+    #talk-threads > div > .users { width:15%; overflow:hidden; height: 30px; }
     #talk-threads > div > .users > div > img
     {
       margin-bottom: -4pt;
@@ -592,4 +592,9 @@ form.searchNav {
 .clear {
   clear: both;
   height: 1px;
+}
+
+img.smiley {
+  width: 16px;
+  height: 16px;
 }

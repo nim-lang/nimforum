@@ -939,6 +939,7 @@ routes:
 
 when isMainModule:
   docConfig = rstgen.defaultConfig()
+  docConfig["doc.smiley_format"] = "/images/smilieys/$1.png"
   math.randomize()
   db = open(connection="nimforum.db", user="postgres", password="", 
               database="nimforum")
