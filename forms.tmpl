@@ -122,7 +122,7 @@
 #  for row in posts:
 #    inc(count)
   <a name="${%postId}"></a>
-  <div>
+  <div id="${%postId}">
     <div class="author">
       <div>
         #let profileUrl = c.req.makeUri("profile/", false) & xmlEncode(%userName)

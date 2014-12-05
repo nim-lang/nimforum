@@ -539,8 +539,8 @@ hr
 
 /* highlighting current post */
 
-.post.current {
-	background-color: #fefff3;
+div:target {
+  background: rgba(255, 255, 240, 0.25) !important;
 }
 
 /* full-text search */
