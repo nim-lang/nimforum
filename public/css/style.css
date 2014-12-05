@@ -200,7 +200,7 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
       float:left;
       text-overflow: ellipsis;
       overflow: hidden;
-      font-size: 10pt;
+      font-size: 13pt;
     }
     #talk-thread  > div > div > div,
     #talk-threads > div > div > div { margin: 5px 10px; }
@@ -595,6 +595,8 @@ form.searchNav {
 }
 
 img.smiley {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+  margin: 0;
 }
