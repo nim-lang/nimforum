@@ -203,7 +203,7 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
       font-size: 13pt;
     }
     #talk-thread  > div > div > div,
-    #talk-threads > div > div > div { margin: 5px 10px; }
+    #talk-threads > div > div > div { margin: 15px 10px; }
     #talk-thread > div > .topic
     {
       margin-top: 15pt;
