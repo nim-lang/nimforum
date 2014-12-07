@@ -166,8 +166,12 @@
     </div>
   </div>
   <form action="${c.req.makeUri(action, false) & "#preview"}" method="POST">
-    ${FieldValid(c, "subject", "Subject:")}
-    ${TextWidget(c, "subject", title, maxlength=100)}
+    #if action == "doreply":
+      <input type="hidden" name="subject" value="${title}"/>
+    #else:
+      ${FieldValid(c, "subject", "Subject:")}
+      ${TextWidget(c, "subject", title, maxlength=100)}
+    #end if
     <br />
     ${FieldValid(c, "content", "Content:")}<br />
     ${TextAreaWidget(c, "content", content, width=100, height=20)}<br />
