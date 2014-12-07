@@ -319,9 +319,18 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
     #talk-info > .user { width:20%; background:rgba(0,0,0,.2); }
     #talk-head > .user-post,
     #talk-info > .user-post { width: 15%; background:rgba(0,0,0,.2); }
-    #talk-info > .user-post > div > .reply { font-weight:bold; padding-left:22px; background:url("/images/forum-reply.png") no-repeat left; }
+    #talk-info > .user-post .reply { font-weight:bold; padding-left:22px; background:url("/images/forum-reply.png") no-repeat left; }
+    #talk-info > .user-post a span
+    {
+      color: #CEDAE9 !important;
+    }
+    #talk-info > .user-post > a > div:hover > span
+    {
+      color: #fff !important;
+    }
     #talk-head > div > div,
-    #talk-info > div > div { padding:5px 20px; color: #1a1a1a; }
+    #talk-info > div > div,
+    #talk-info > div > a > div { padding:5px 20px; color: #1a1a1a; }
     #talk-head > div > div { color: #353535; }
     #talk-head > .detail > div { float:left; margin:0; }
     #talk-head > .detail > div > div { padding-left:22px; }

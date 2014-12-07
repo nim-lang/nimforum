@@ -72,10 +72,12 @@
               </div>
             </div>
             <div class="user-post">
-              <div>
-                #let replyUri = c.req.makeUri(c.req.path & "?action=reply#reply")
-                <a class="reply" href="$replyUri">Reply</a>
-              </div>
+              #let replyUri = c.req.makeUri(c.req.path & "?action=reply#reply")
+              <a href="$replyUri">
+                <div>
+                  <span class="reply">Reply</span>
+                </div>
+              </a>
             </div>
           </div>
         #end if
