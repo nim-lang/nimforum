@@ -17,10 +17,14 @@ pre .Type { color:#128B7D; font-weight:bold; }
 pre .Operator { font-weight: bold; }
 pre .atr { color:#128B7D; font-weight:bold; font-style:italic; }
 pre .def { color:#CAD6E4; font-weight:bold; font-style:italic; }
-pre .StringLit { color:#854D6A; font-weight:bold; font-style:italic; }
+pre .StringLit { color:#854D6A; font-weight:bold; }
 pre .DecNumber, pre .FloatNumber { color:#8AB647; }
 pre .tab { border-left:1px dotted rgba(67,168,207,0.4); }
 pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
+pre .EscapeSequence
+{
+  color: #C08D12;
+}
 
 .tall { height:100%; }
 .pre { padding:0 5px; font: 11pt "DejaVu Sans Mono",monospace; background:rgba(255,255,255,.30); border-radius:3px; }
