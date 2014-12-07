@@ -228,8 +228,8 @@ proc makePassword(password, salt: string, comparingTo = ""): string =
   when defined(windows):
     result = getMD5(salt & getMD5(password))
   else:
-    let salt = if comparingTo != "": comparingTo else: genSalt(8)
-    result = hash(getMD5(salt & getMD5(password)), comparingTo)
+    let bcryptSalt = if comparingTo != "": comparingTo else: genSalt(8)
+    result = hash(getMD5(salt & getMD5(password)), bcryptSalt)
 
 # -----------------------------------------------------------------------------
 template `||`(x: expr): expr = (if not isNil(x): x else: "")
