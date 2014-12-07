@@ -228,7 +228,7 @@ proc makePassword(password, salt: string): string =
   when defined(windows):
     result = getMD5(salt & getMD5(password))
   else:
-    result = hash(getMD5(salt & getMD5(password)))
+    result = hash(getMD5(salt & getMD5(password)), genSalt(8))
 
 # -----------------------------------------------------------------------------
 template `||`(x: expr): expr = (if not isNil(x): x else: "")
