@@ -9,6 +9,10 @@
 import
   os, strutils, times, md5, strtabs, cgi, math, db_sqlite, matchers,
   rst, rstgen, captchas, scgi, jester, asyncdispatch, asyncnet, cache, sequtils
+
+when not defined(windows):
+  import bcrypt # TODO
+
 from htmlgen import tr, th, td, span
 
 const
@@ -221,7 +225,10 @@ proc makeSalt(): string =
 
 proc makePassword(password, salt: string): string =
   ## Creates an MD5 hash by combining password and salt.
-  result = getMD5(salt & getMD5(password))
+  when defined(windows):
+    result = getMD5(salt & getMD5(password))
+  else:
+    result = hash(getMD5(salt & getMD5(password)))
 
 # -----------------------------------------------------------------------------
 template `||`(x: expr): expr = (if not isNil(x): x else: "")
