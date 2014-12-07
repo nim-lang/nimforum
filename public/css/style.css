@@ -208,6 +208,10 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
       margin-top: 15pt;
       white-space: normal;
     }
+    #talk-thread > div > .topic > div
+    {
+      margin-left: 15px;
+    }
     #talk-thread > div > .topic > div > span.date
     {
       position: absolute;
