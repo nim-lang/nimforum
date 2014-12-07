@@ -223,12 +223,13 @@ proc makeSalt(): string =
   except IOError:
     result = randomSalt()
 
-proc makePassword(password, salt: string): string =
+proc makePassword(password, salt: string, comparingTo = ""): string =
   ## Creates an MD5 hash by combining password and salt.
   when defined(windows):
     result = getMD5(salt & getMD5(password))
   else:
-    result = hash(getMD5(salt & getMD5(password)), genSalt(8))
+    let salt = if comparingTo != "": comparingTo else: genSalt(8)
+    result = hash(getMD5(salt & getMD5(password)), comparingTo)
 
 # -----------------------------------------------------------------------------
 template `||`(x: expr): expr = (if not isNil(x): x else: "")
@@ -466,7 +467,7 @@ proc login(c: var TForumData, name, pass: string): bool =
     return c.setError("name", "Username cannot be nil.")
   var success = false
   for row in fastRows(db, query, name):
-    if row[2] == makePassword(pass, row[4]):
+    if row[2] == makePassword(pass, row[4], row[2]):
       c.userid = row[0]
       c.username = row[1]
       c.userpass = row[2]
