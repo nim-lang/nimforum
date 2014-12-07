@@ -14,10 +14,24 @@
 #  result = ""
 #  count = 0
 <div id="talk-heads">
-  <div class="topic"><div>Topic</div></div>
+  <div class="topic">
+    <div>
+      Topic
+      <a href="${c.req.makeUri("/threadActivity.xml")}">
+        <img src="/images/Feed-icon.svg" class="rssfeed">
+      </a>
+    </div>
+  </div>
   <div class="users"><div>Users</div></div>
   <div class="detail"><div>Details</div></div>
-  <div class="activity"><div>Activity</div></div>
+  <div class="activity">
+    <div>
+      Activity
+      <a href="${c.req.makeUri("/threadActivity.xml")}">
+        <img src="/images/Feed-icon.svg" class="rssfeed">
+      </a>
+    </div>
+  </div>
 </div>
 <div id="talk-threads">
 #  for row in rows(db, query, $((c.pageNum-1) * ThreadsPerPage), $ThreadsPerPage):

@@ -618,3 +618,9 @@ img.smiley {
   vertical-align: middle;
   margin: 0;
 }
+
+img.rssfeed {
+  width: 16px;
+  float: right;
+  margin-top: 10px;
+}
