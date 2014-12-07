@@ -496,7 +496,7 @@ div#sidebar .content .search
   width: 95%;
 }
 
-div#sidebar .content span.error
+span.error
 {
   float: left;
   width: 100%;
@@ -508,6 +508,12 @@ div#sidebar .content span.error
   font-weight: bold;
 }
 
+section#body #content span.error
+{
+  width: 25%;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
 
 article#content form
 {

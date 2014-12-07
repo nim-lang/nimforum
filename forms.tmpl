@@ -180,6 +180,11 @@
   #  if isEdit:
     <input type="checkbox" name="delete" value="Delete">Delete Post<br />
   #  end if
+    #if c.errorMsg != "":
+      <div style="float: left; width: 100%;">
+        <span class="error">$c.errorMsg</span>
+      </div>
+    #end if
     <br/>
     <input type="submit" name="previewBtn" value="Preview" />
     <input type="submit" name="postBtn" value="Submit" />
@@ -219,6 +224,11 @@
       <td>${TextWidget(c, "antibot", "", maxlength=4)}</td>
     </tr>
   </table>
+  #if c.errorMsg != "":
+      <div style="float: left; width: 100%;">
+        <span class="error">$c.errorMsg</span>
+      </div>
+  #end if
   <input type="submit" value="Register">
 </form>
 #end proc
