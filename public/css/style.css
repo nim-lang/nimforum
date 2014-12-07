@@ -192,7 +192,6 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
       line-height: 150%;
       background:rgba(0,0,0,0.1);
     }
-    #talk-thread  > div:nth-child(odd) { background:rgba(255,255,255,0.1); }
     #talk-threads > div:nth-child(odd) { background:rgba(0,0,0,0.2); }
     #talk-thread  > div > div,
     #talk-threads > div > div
@@ -558,7 +557,7 @@ hr
 /* highlighting current post */
 
 div:target {
-  background: rgba(255, 255, 240, 0.25) !important;
+  background: rgba(139, 218, 255, 0.25) !important;
 }
 
 /* full-text search */
@@ -569,7 +568,17 @@ div:target {
 }
 .titleHeader {
   margin-right: 1em;
-  color: #ddd;
+  color: #121212;
+  font-weight: bold;
+}
+
+.postTitle b {
+  border-bottom: 1px solid #D7300C;
+}
+
+.postTitle a:hover {
+  text-decoration: none !important;
+  border-bottom: 1px solid #D7300C;
 }
 
 .searchForm {

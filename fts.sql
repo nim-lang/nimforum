@@ -43,7 +43,7 @@ SELECT
             THEN snippet(post_fts, '<b>', '</b>', '...', what)
             ELSE post_fts.header END AS header,
         CASE what WHEN 2
-            THEN snippet(post_fts, '<b>', '</b>', '...', what, -45)
+            THEN snippet(post_fts, '**', '**', '...', what, -45)
             ELSE SUBSTR(post_fts.content, 1, 200) END AS content,
         person.name AS author,
         cdate,

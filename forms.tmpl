@@ -329,26 +329,17 @@
     </div>
     <div class="topic">
       <div>
-        #if %threadName != %postHeader and "Re: " & %threadName != %postHeader:
-        #headersDiffer = true
-        <h4>
-          <a href="${threadUrl}">
-            <span class="titleHeader">Thread:</span>
-            <span style="font-size: 1.2em">${%threadName}</span>
-          </a>
-        </h4>
-        #end if
-        #if not headersDiffer or %postHeader != "":
-        <h5>
+        #if %postHeader != "":
+        <div class="postTitle">
+          <span class="titleHeader">Post:</span>
           <a href="${postUrl}">
-            <span class="titleHeader">Post:</span>
             <span>${%postHeader}</span>
           </a>
-        </h5>
+        </div>
         #end if
         #if not isThread:
           #try:
-            ${(%postContent)}
+            ${(%postContent).rstToHtml}
           #except EParseError:
           #  c.errorMsg = getCurrentExceptionMsg()
           #end
