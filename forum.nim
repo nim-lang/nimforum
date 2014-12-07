@@ -479,6 +479,10 @@ proc login(c: var TForumData, name, pass: string): bool =
 proc hasReplyBtn(c: var TForumData): bool =
   result = c.req.pathInfo != "/donewthread" and c.req.pathInfo != "/doreply"
   result = result and c.req.params["action"] != "reply"
+  # If the user is not logged in and there are no page numbers then we shouldn't
+  # generate the div.
+  let pages = ceil(c.totalPosts / PostsPerPage).int
+  result = result and (pages > 1 or c.loggedIn)
   return c.threadId >= 0 and result
 
 proc genActionMenu(c: var TForumData): string =
