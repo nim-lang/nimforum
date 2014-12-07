@@ -274,7 +274,7 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
     #talk-threads > div > .detail > div:first-child > div { background:url("/images/forum-views.png") no-repeat left; cursor: help; }
     #talk-threads > div > .detail > div:last-child > div { background:url("/images/forum-posts.png") no-repeat left; cursor: help; }
     
-    #talk-thread > div {  margin:20px 0; min-height:150px; padding-bottom: 10pt; }
+    #talk-thread > div {  margin:20px 0; min-height:160px; padding-bottom: 10pt; }
     #talk-thread > div > .author > div > .avatar { margin-top:20px; }
     #talk-thread > div > .author > div > .name { }
     #talk-thread > div > .author > div > .date { font-size: 8pt; color: white; }
