@@ -6,7 +6,7 @@ body {
 	overflow-x:hidden;
 	min-width:1030px;
 	margin:0;
-	font:13pt "arial";
+	font: 13pt Helvetica,Arial,sans-serif;
 	background:#152534 url("/images/bg.jpg") no-repeat fixed center top; }
 
 pre { color: #F5F5F5;}
@@ -23,7 +23,7 @@ pre .tab { border-left:1px dotted rgba(67,168,207,0.4); }
 pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
 
 .tall { height:100%; }
-.pre { padding:0 5px; font:11pt monospace; background:rgba(255,255,255,.30); border-radius:3px; }
+.pre { padding:0 5px; font: 11pt "DejaVu Sans Mono",monospace; background:rgba(255,255,255,.30); border-radius:3px; }
 
 .page-layout { margin:0 auto; width:1000px; }
 .docs-layout { margin:0 40px; }
@@ -289,6 +289,7 @@ pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
         background:rgba(0,0,0,.75);
         border-left:8px solid rgba(0,0,0,.3);
         margin-bottom: 10pt;
+        font-family: "DejaVu Sans Mono", monospace;
     }
     #talk-thread > div > .topic a, #talk-thread > div > .topic a:visited
     {
