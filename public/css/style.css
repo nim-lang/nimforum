@@ -9,7 +9,7 @@ body {
 	font:13pt "arial";
 	background:#152534 url("/images/bg.jpg") no-repeat fixed center top; }
 
-pre { color: #ffffff;}
+pre { color: #F5F5F5;}
 pre, pre * { cursor:text; }
 pre .Comment { color:#6D6D6D; font-style:italic; }
 pre .Keyword { color:#43A8CF; font-weight:bold; }
