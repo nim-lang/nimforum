@@ -521,6 +521,18 @@ article#content form > input, article#content form > textarea
   border: 1px solid #6D6D6D;
 }
 
+article#content form > input[type=text]
+{
+  width: 70%;
+  min-width: 500px;
+}
+
+article#content form > textarea
+{
+  width: 100%;
+  height: 200px;
+}
+
 article#content form > input:focus, article#content form > textarea:focus
 {
   border: 1px solid #1cb3ec;

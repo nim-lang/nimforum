@@ -99,12 +99,11 @@ proc TextWidget(c: TForumData, name, defaultText: string,
   return """<input type="text" name="$1" maxlength="$2" value="$3" $4/>""" % [
     name, $maxlength, x, if size != -1: "size=\"" & $size & "\"" else: ""]
 
-proc TextAreaWidget(c: TForumData, name, defaultText: string,  
-                    width = 80, height = 20): string =
+proc TextAreaWidget(c: TForumData, name, defaultText: string): string =
   let x = if defaultText != reuseText: defaultText
           else: xmlEncode(c.req.params[name])
-  return """<textarea name="$1" cols="$2" rows="$3">$4</textarea>""" % [
-    name, $width, $height, x]
+  return """<textarea name="$1">$2</textarea>""" % [
+    name, x]
 
 proc FieldValid(c: TForumData, name, text: string): string = 
   if name == c.invalidField: 
