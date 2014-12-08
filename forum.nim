@@ -103,6 +103,11 @@ proc TextWidget(c: TForumData, name, defaultText: string,
   return """<input type="text" name="$1" maxlength="$2" value="$3" $4/>""" % [
     name, $maxlength, x, if size != -1: "size=\"" & $size & "\"" else: ""]
 
+proc HiddenField(c: TForumData, name, defaultText: string): string =
+  let x = if defaultText != reuseText: defaultText
+          else: xmlEncode(c.req.params[name])
+  return """<input type="hidden" name="$1" value="$2"/>""" % [name, x]
+
 proc TextAreaWidget(c: TForumData, name, defaultText: string): string =
   let x = if defaultText != reuseText: defaultText
           else: xmlEncode(c.req.params[name])

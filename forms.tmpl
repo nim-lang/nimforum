@@ -181,7 +181,7 @@
   </div>
   <form action="${c.req.makeUri(action, false) & "#preview"}" method="POST">
     #if action == "doreply":
-      <input type="hidden" name="subject" value="${title}"/>
+      ${HiddenField(c, "subject", title)}
     #else:
       ${FieldValid(c, "subject", "Subject:")}
       ${TextWidget(c, "subject", title, maxlength=100)}
