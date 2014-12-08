@@ -342,6 +342,7 @@
             ${(%postContent).rstToHtml}
           #except EParseError:
           #  c.errorMsg = getCurrentExceptionMsg()
+             ${xmlEncode(%postContent)}
           #end
         #end if
         <span class="date">${xmlEncode(%postCreation)}</span>
