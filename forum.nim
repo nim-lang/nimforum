@@ -759,6 +759,11 @@ routes:
   get "/t/@threadid/?@page?/?@postid?/?":
     createTFD()
     parseInt(@"threadid", c.threadId, -1..1000_000)
+
+    if c.threadId == unselectedThread:
+      # Thread has just been deleted.
+      redirect(uri("/"))
+
     if @"page".len > 0:
       parseInt(@"page", c.pageNum, 0..1000_000)
     if @"postid".len > 0:
