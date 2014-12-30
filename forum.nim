@@ -894,7 +894,8 @@ routes:
     createTFD()
     readIDs()
     if edit(c, c.postId):
-      redirect(c.genThreadUrl(postId = $c.postId))
+      redirect(c.genThreadUrl(postId = $c.postId,
+                              pageNum = $(c.getPagesInThread+1)))
     else:
       body = ""
       handleError("doedit", "Edit", true)
