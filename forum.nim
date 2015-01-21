@@ -426,7 +426,7 @@ proc edit(c: var TForumData, postId: int): bool =
       c.threadId = unselectedThread
       discard tryExec(db, sql"delete from thread_fts where id not in (select thread from post)")
     else:
-      # Update corresponding threads modified field.
+      # Update corresponding thread's modified field.
       let getModifiedSql = "(select creation from post where post.thread = ?" &
           " order by creation desc limit 1)"
       let updateSql = sql("update thread set modified=" & getModifiedSql &
@@ -441,6 +441,11 @@ proc edit(c: var TForumData, postId: int): bool =
          subject, content, $postId)
     exec(db, crud(crUpdate, "post_fts", "header", "content"),
          subject, content, $postId)
+    # Check if post is the first post of the thread.
+    let rows = db.getAllRows(sql("select id, thread, creation from post " &
+        "where thread = ? order by creation asc"), $c.threadId)
+    if rows[0][0] == $postId:
+      exec(db, crud(crUpdate, "thread", "name"), subject, $c.threadId)
     result = true
   
 proc reply(c: var TForumData): bool = 
