@@ -425,6 +425,14 @@ proc edit(c: var TForumData, postId: int): bool =
       # whole thread has been deleted, so:
       c.threadId = unselectedThread
       discard tryExec(db, sql"delete from thread_fts where id not in (select thread from post)")
+    else:
+      # Update corresponding threads modified field.
+      let getModifiedSql = "(select creation from post where post.thread = ?" &
+          " order by creation desc limit 1)"
+      let updateSql = sql("update thread set modified=" & getModifiedSql &
+          " where id = ?")
+      if not tryExec(db, updateSql, $c.threadId, $c.threadId):
+        return setError(c, "", "database error")
     result = true
   else:
     checkOwnership(c, $postId)
