@@ -285,7 +285,8 @@
 #
 #proc genSearchResults(c: var TForumData,
 #                       results: iterator: db_sqlite.TRow {.closure, tags: [FReadDB].},
-#                       count: var int): string =
+#                       count: var int,
+#                       getPostsPage: proc(post, thread: int): string): string =
 #  const threadId = 0
 #  const threadName = 1
 #  const postId = 2
@@ -311,7 +312,7 @@
 #    inc(count)
 #    let isThread = %what == "0"
 #    inc(whCount[isThread])
-#    let postUrl = c.genThreadUrl(%postId,"",%threadId,"")
+#    let postUrl = c.genThreadUrl(%postId,"",%threadId,getPostsPage(parseInt(%postId),parseInt(%threadId)))
 #    let threadUrl = c.genThreadUrl("","",%threadId)
 #    var headersDiffer = false
   <div>
