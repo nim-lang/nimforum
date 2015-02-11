@@ -446,7 +446,39 @@ proc reply(c: var TForumData): bool =
     exec(db, sql"update thread set modified = DATETIME('now') where id = ?",
          $c.threadId)
     result = true
-  
+
+## Returns true, if subj contains all the words of some line
+## of *black_list.txt*.
+## Words in *black_list.txt* are whitespace-separated.
+## Words can end with ``*``, then they are treated as words beginnings.
+proc inBlackList(subj: string): bool =
+  const NonAlphaNum = AllChars - IdentChars - {'\0'}
+  let words = subj.toLower.split(NonAlphaNum)
+  try:
+    # black-list can be modified without Forum restart
+    for bline in lines("black_list.txt"):
+      let bwords = bline.toLower.split
+      echo bwords
+      let count = bwords.len
+      var same = 0
+      for bword in bwords:
+        if bword[bword.high] == '*':
+          let bwordBgn = bword[0 .. bword.high-1]
+          for word in words:
+            if word.startsWith(bwordBgn):
+              inc same
+        else:
+          for word in words:
+            if word == bword:
+              inc same
+      echo same, " ", count
+      if same == count:
+        return true
+    result = false
+  except:
+    echo getCurrentExceptionMsg()
+    result = false
+
 proc newThread(c: var TForumData): bool =
   const query = sql"insert into thread(name, views, modified) values (?, 0, DATETIME('now'))"
   checkLogin(c)
@@ -454,6 +486,8 @@ proc newThread(c: var TForumData): bool =
   if c.isPreview:
     setPreviewData(c)
     c.threadID = transientThread
+  elif inBlackList(c.req.params["subject"]):
+    result = true
   else:
     c.threadID = tryInsertID(db, query, c.req.params["subject"]).int
     if c.threadID < 0: return setError(c, "subject", "Subject already exists")
