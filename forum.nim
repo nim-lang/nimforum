@@ -1,6 +1,6 @@
 #
 #
-#              The Nimrod Forum
+#              The Nim Forum
 #        (c) Copyright 2012 Andreas Rumpf, Dominik Picheta
 #        Look at license.txt for more info.
 #        All rights reserved.
@@ -867,12 +867,12 @@ routes:
         body = genFormPost(c, "doedit", "Edit", header, content, true)
         title = "Editing post"
       else: discard
-      resp c.genMain(body, title & " - Nimrod Forum")
+      resp c.genMain(body, title & " - Nim Forum")
     else:
       incrementViews(c)
       let posts = genPostsList(c, $c.threadId, count)
       cond count != 0
-      resp genMain(c, posts, pSubject & " - Nimrod Forum")
+      resp genMain(c, posts, pSubject & " - Nim Forum")
 
   get "/page/?@page?/?":
     createTFD()
@@ -884,7 +884,7 @@ routes:
     let list = genThreadsList(c, count)
     if count == 0:
       pass()
-    resp genMain(c, list, "Page " & $c.pageNum & " - Nimrod Forum",
+    resp genMain(c, list, "Page " & $c.pageNum & " - Nim Forum",
                  genRSSHeaders(c), showRssLinks = true)
 
   get "/profile/@nick/?":
@@ -893,13 +893,13 @@ routes:
     var userinfo: TUserInfo
     if gatherUserInfo(c, @"nick", userinfo):
       resp genMain(c, c.genProfile(userinfo),
-                   @"nick" & "'s profile - Nimrod Forum")
+                   @"nick" & "'s profile - Nim Forum")
     else:
       halt()
 
   get "/login/?":
     createTFD()
-    resp genMain(c, genFormLogin(c), "Log in - Nimrod Forum")
+    resp genMain(c, genFormLogin(c), "Log in - Nim Forum")
 
   get "/logout/?":
     createTFD()
@@ -908,7 +908,7 @@ routes:
 
   get "/register/?":
     createTFD()
-    resp genMain(c, genFormRegister(c), "Register - Nimrod Forum")
+    resp genMain(c, genFormRegister(c), "Register - Nim Forum")
 
   template readIDs(): stmt =
     # Retrieve the threadid, postid and pagenum
@@ -926,7 +926,7 @@ routes:
       body.add genPostPreview(c, @"subject", @"content", 
                               c.userName, $getGMTime(getTime()))
     body.add genFormPost(c, action, topText, reuseText, reuseText, isEdit)
-    resp genMain(c, body(), "Nimrod Forum - " & 
+    resp genMain(c, body(), "Nim Forum - " & 
                             (if c.isPreview: "Preview" else: "Error"))
 
   post "/dologin":
@@ -982,7 +982,7 @@ routes:
   get "/newthread/?":
     createTFD()
     resp genMain(c, genFormPost(c, "donewthread", "New thread", "", "", false),
-                 "New Thread - Nimrod Forum")
+                 "New Thread - Nim Forum")
 
   get "/setUserStatus/?":
     createTFD()
@@ -1045,7 +1045,7 @@ routes:
   const licenseRst = slurp("static/license.rst")
   get "/license":
     createTFD()
-    resp genMain(c, rstToHtml(licenseRst), "Content license - Nimrod Forum")
+    resp genMain(c, rstToHtml(licenseRst), "Content license - Nim Forum")
 
   post "/search/?@page?":
     cond isFTSAvailable
