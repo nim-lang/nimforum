@@ -124,6 +124,8 @@
 #  result = ""
 #  count = 0
 #  let posts = getAllRows(db, query, threadId, $((c.pageNum-1) * PostsPerPage), $PostsPerPage)
+#  if posts.len < 1: return ""
+#  end if
 <div id="talk-head">
   <div class="info-post">
     <div>
