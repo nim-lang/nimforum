@@ -1,6 +1,6 @@
 #
 #
-#              The Nimrod Forum
+#              The Nim Forum
 #        (c) Copyright 2012 Andreas Rumpf, Dominik Picheta
 #        Look at license.txt for more info.
 #        All rights reserved.
@@ -8,7 +8,10 @@
 
 import
   os, strutils, times, md5, strtabs, cgi, math, db_sqlite, matchers,
-  rst, rstgen, captchas, sockets, scgi, jester
+  rst, rstgen, captchas, scgi, jester, asyncdispatch, asyncnet, cache, sequtils
+
+when not defined(windows):
+  import bcrypt # TODO
 
 from htmlgen import tr, th, td, span
 
@@ -18,13 +21,15 @@ const
 
   ThreadsPerPage = 15
   PostsPerPage = 10
+  MaxPagesFromCurrent = 8
   noPageNums = ["/login", "/register", "/dologin", "/doregister", "/profile"]
   noHomeBtn = ["/", "/login", "/register", "/dologin", "/doregister", "/profile"]
+  banReasonDeactivated = "DEACTIVATED"
 
 type
   TCrud = enum crCreate, crRead, crUpdate, crDelete
 
-  TSession = object of TObject
+  TSession = object of RootObj
     threadid: int
     postid: int
     userName, userPass, email: string
@@ -33,7 +38,7 @@ type
   TPost = tuple[subject, content: string]
 
   TForumData = object of TSession
-    req: TRequest
+    req: PRequest
     userid: string
     actionContent: string
     errorMsg, loginErrorMsg: string
@@ -43,6 +48,8 @@ type
     isThreadsList: bool
     pageNum: int
     totalPosts: int
+    search: string
+    noPagenumumNav: bool
   
   TStyledButton = tuple[text: string, link: string]
 
@@ -59,10 +66,12 @@ type
     threads: int
     lastOnline: int
     email: string
+    ban: string
 
 var
   db: TDbConn
-  docConfig: PStringTable
+  docConfig: StringTableRef
+  isFTSAvailable: bool
   
 proc init(c: var TForumData) = 
   c.userPass = ""
@@ -76,6 +85,8 @@ proc init(c: var TForumData) =
   c.loginErrorMsg = ""
   c.invalidField = ""
   c.currentPost = (subject: "", content: "")
+  
+  c.search = ""
 
 proc loggedIn(c: TForumData): bool = 
   result = c.userName.len > 0
@@ -90,16 +101,20 @@ const
 proc TextWidget(c: TForumData, name, defaultText: string, 
                 maxlength = 30, size = -1): string =
   let x = if defaultText != reuseText: defaultText
-          else: XMLencode(c.req.params[name])
+          else: xmlEncode(c.req.params[name])
   return """<input type="text" name="$1" maxlength="$2" value="$3" $4/>""" % [
     name, $maxlength, x, if size != -1: "size=\"" & $size & "\"" else: ""]
 
-proc TextAreaWidget(c: TForumData, name, defaultText: string,  
-                    width = 80, height = 20): string =
+proc HiddenField(c: TForumData, name, defaultText: string): string =
   let x = if defaultText != reuseText: defaultText
-          else: XMLencode(c.req.params[name])
-  return """<textarea name="$1" cols="$2" rows="$3">$4</textarea>""" % [
-    name, $width, $height, x]
+          else: xmlEncode(c.req.params[name])
+  return """<input type="hidden" name="$1" value="$2"/>""" % [name, x]
+
+proc TextAreaWidget(c: TForumData, name, defaultText: string): string =
+  let x = if defaultText != reuseText: defaultText
+          else: xmlEncode(c.req.params[name])
+  return """<textarea name="$1">$2</textarea>""" % [
+    name, x]
 
 proc FieldValid(c: TForumData, name, text: string): string = 
   if name == c.invalidField: 
@@ -115,6 +130,8 @@ proc genThreadUrl(c: TForumData, postId = "", action = "", threadid = "", pageNu
     result.add("?action=" & action)
     if postId != "":
       result.add("&postid=" & postid)
+  elif postId != "":
+    result.add("#" & postId)
   result = c.req.makeUri(result, absolute = false)
 
 proc FormSession(c: var TForumData, nextAction: string): string =
@@ -144,15 +161,47 @@ proc genButtons(c: var TForumData, btns: seq[TStyledButton]): string =
       result.add(("""<a class="$3active button" href="$1$4">$2</a>""") % [
         btns[i].link, btns[i].text, class, anchor])
 
+proc toInterval(diff: int64): TimeInterval =
+  var remaining = diff
+  let years = remaining div 31536000
+  remaining -= years * 31536000
+  let months = remaining div 2592000
+  remaining -= months * 2592000
+  let days = remaining div 86400
+  remaining -= days * 86400
+  let hours = remaining div 3600
+  remaining -= hours * 3600
+  let minutes = remaining div 60
+  remaining -= minutes * 60
+  result = initInterval(0, remaining.int, minutes.int, hours.int, days.int,
+                        months.int, years.int)
+
 proc formatTimestamp(t: int): string =
-  let t2 = getGMTime(TTime(t))
-  return t2.format("ddd',' d MMM yyyy HH':'mm 'UTC'")
+  let t2 = Time(t)
+  let now = getTime()
+  let diff = (now - t2).toInterval()
+  if diff.years > 0:
+    return getGMTime(t2).format("MMMM d',' yyyy")
+  elif diff.months > 0:
+    return $diff.months & (if diff.months > 1: " months ago" else: " month ago")
+  elif diff.days > 0:
+    return $diff.days & (if diff.days > 1: " days ago" else: " day ago")
+  elif diff.hours > 0:
+    return $diff.hours & (if diff.hours > 1: " hours ago" else: " hour ago")
+  elif diff.minutes > 0:
+    return $diff.minutes &
+        (if diff.minutes > 1: " minutes ago" else: " minute ago")
+  else:
+    return "just now"
+
+proc getGravatarUrl(email: string, size = 80): string =
+  let emailMD5 = email.toLower.toMD5
+  return ("http://www.gravatar.com/avatar/" & $emailMD5 & "?s=" & $size &
+     "&d=identicon")
 
 proc genGravatar(email: string, size: int = 80): string =
-  let emailMD5 = email.toLower.toMD5
-  result = "<img src=\"$1\" />" % 
-    ("http://www.gravatar.com/avatar/" & $emailMD5 & "?s=" & $size &
-     "&d=identicon")
+  result = "<img width=\"$1\" height=\"$2\" src=\"$3\" />" % 
+            [$size, $size, getGravatarUrl(email, size)]
 
 proc randomSalt(): string =
   result = ""
@@ -176,20 +225,32 @@ proc devRandomSalt(): string =
 
 proc makeSalt(): string =
   ## Creates a salt using a cryptographically secure random number generator.
+  ##
+  ## Ensures that the resulting salt contains no ``\0``.
   try:
     result = devRandomSalt()
-  except EIO:
+  except IOError:
     result = randomSalt()
 
-proc makePassword(password, salt: string): string =
+  var newResult = ""
+  for i in 0 .. <result.len:
+    if result[i] != '\0':
+      newResult.add result[i]
+  return newResult
+
+proc makePassword(password, salt: string, comparingTo = ""): string =
   ## Creates an MD5 hash by combining password and salt.
-  result = getMD5(salt & getMD5(password))
+  when defined(windows):
+    result = getMD5(salt & getMD5(password))
+  else:
+    let bcryptSalt = if comparingTo != "": comparingTo else: genSalt(8)
+    result = hash(getMD5(salt & getMD5(password)), bcryptSalt)
 
 # -----------------------------------------------------------------------------
 template `||`(x: expr): expr = (if not isNil(x): x else: "")
 
 proc validThreadId(c: TForumData): bool =
-  result = GetValue(db, sql"select id from thread where id = ?", 
+  result = getValue(db, sql"select id from thread where id = ?", 
                     $c.threadId).len > 0
   
 proc antibot(c: var TForumData): string = 
@@ -197,12 +258,12 @@ proc antibot(c: var TForumData): string =
   let b = math.random(1000)+1
   let answer = $(a+b)
   
-  Exec(db, sql"delete from antibot where ip = ?", c.req.ip)
-  let CaptchaId = TryInsertID(db, 
+  exec(db, sql"delete from antibot where ip = ?", c.req.ip)
+  let captchaId = tryInsertID(db, 
     sql"insert into antibot(ip, answer) values (?, ?)", c.req.ip, 
     answer).int mod 10_000
-  let CaptchaFile = getCaptchaFilename(CaptchaId)
-  createCaptcha(CaptchaFile, $a & "+" & $b)
+  let captchaFile = getCaptchaFilename(captchaId)
+  createCaptcha(captchaFile, $a & "+" & $b)
   result = """<img src="$1" />""" % c.req.getCaptchaUrl(captchaId)
 
 const
@@ -217,7 +278,7 @@ proc register(c: var TForumData, name, pass, antibot, email: string): bool =
   # Username validation:
   if name.len == 0 or not allCharsInSet(name, SecureChars):
     return setError(c, "name", "Invalid username!")
-  if GetValue(db, sql"select name from person where name = ?", name).len > 0:
+  if getValue(db, sql"select name from person where name = ?", name).len > 0:
     return setError(c, "name", "Username already exists!")
   
   # Password validation:
@@ -225,7 +286,7 @@ proc register(c: var TForumData, name, pass, antibot, email: string): bool =
     return setError(c, "new_password", "Invalid password!")
 
   # antibot validation:
-  let correctRes = GetValue(db, 
+  let correctRes = getValue(db, 
     sql"select answer from antibot where ip = ?", c.req.ip)
   if antibot != correctRes:
     return setError(c, "antibot", "You seem to be a bot!")
@@ -236,8 +297,9 @@ proc register(c: var TForumData, name, pass, antibot, email: string): bool =
   
   # perform registration:
   var salt = makeSalt()
-  Exec(db, sql("INSERT INTO person(name, password, email, salt, status, lastOnline) " &
-              "VALUES (?, ?, ?, ?, 'user', DATETIME('now'))"), name, 
+  exec(db,
+    sql("INSERT INTO person(name, password, email, salt, status, lastOnline, " &
+        "ban) VALUES (?, ?, ?, ?, 'user', DATETIME('now'), '')"), name,
               makePassword(pass, salt), email, salt)
   #  return setError(c, "", "Could not create your account!")
   return true
@@ -245,12 +307,12 @@ proc register(c: var TForumData, name, pass, antibot, email: string): bool =
 proc checkLoggedIn(c: var TForumData) = 
   let pass = c.req.cookies["sid"]
   if pass.len == 0: return
-  if ExecAffectedRows(db, 
+  if execAffectedRows(db, 
        sql("update session set lastModified = DATETIME('now') " &
            "where ip = ? and password = ?"), 
            c.req.ip, pass) > 0:
     c.userpass = pass
-    c.userid = GetValue(db, 
+    c.userid = getValue(db, 
       sql"select userid from session where ip = ? and password = ?", 
       c.req.ip, pass)
       
@@ -270,11 +332,11 @@ proc logout(c: var TForumData) =
   const query = sql"delete from session where ip = ? and password = ?"
   c.username = ""
   c.userpass = ""
-  Exec(db, query, c.req.ip, c.req.cookies["sid"])
+  exec(db, query, c.req.ip, c.req.cookies["sid"])
 
 proc incrementViews(c: var TForumData) = 
   const query = sql"update thread set views = views + 1 where id = ?"
-  Exec(db, query, $c.threadId)
+  exec(db, query, $c.threadId)
 
 proc isPreview(c: TForumData): bool =
   result = c.req.params["previewBtn"].len > 0 # TODO: Could be wrong?
@@ -353,6 +415,8 @@ template setPreviewData(c: expr) {.immediate, dirty.} =
 template writeToDb(c, cr, setPostId: expr) =
   let retID = insertID(db, crud(cr, "post", "author", "ip", "header", "content", "thread"),
        c.userId, c.req.ip, subject, content, $c.threadId, "")
+  discard tryExec(db, crud(cr, "post_fts", "id", "header", "content"),
+       retID.int, subject, content)
   if setPostId:
     c.postId = retID.int
 
@@ -363,19 +427,36 @@ proc edit(c: var TForumData, postId: int): bool =
     setPreviewData(c)
   elif c.isDelete:
     checkOwnership(c, $postId)
-    if not TryExec(db, crud(crDelete, "post"), $postId):
+    if not tryExec(db, crud(crDelete, "post"), $postId):
       return setError(c, "", "database error")
+    discard tryExec(db, crud(crDelete, "post_fts"), $postId)
     # delete corresponding thread:
-    if ExecAffectedRows(db,
+    if execAffectedRows(db,
         sql"delete from thread where id not in (select thread from post)") > 0:
       # whole thread has been deleted, so:
       c.threadId = unselectedThread
+      discard tryExec(db, sql"delete from thread_fts where id not in (select thread from post)")
+    else:
+      # Update corresponding thread's modified field.
+      let getModifiedSql = "(select creation from post where post.thread = ?" &
+          " order by creation desc limit 1)"
+      let updateSql = sql("update thread set modified=" & getModifiedSql &
+          " where id = ?")
+      if not tryExec(db, updateSql, $c.threadId, $c.threadId):
+        return setError(c, "", "database error")
     result = true
   else:
     checkOwnership(c, $postId)
     retrPost(c)
     exec(db, crud(crUpdate, "post", "header", "content"),
          subject, content, $postId)
+    exec(db, crud(crUpdate, "post_fts", "header", "content"),
+         subject, content, $postId)
+    # Check if post is the first post of the thread.
+    let rows = db.getAllRows(sql("select id, thread, creation from post " &
+        "where thread = ? order by creation asc"), $c.threadId)
+    if rows[0][0] == $postId:
+      exec(db, crud(crUpdate, "thread", "name"), subject, $c.threadId)
     result = true
   
 proc reply(c: var TForumData): bool = 
@@ -398,20 +479,30 @@ proc newThread(c: var TForumData): bool =
     setPreviewData(c)
     c.threadID = transientThread
   else:
-    c.threadID = TryInsertID(db, query, c.req.params["subject"]).int
+    c.threadID = tryInsertID(db, query, c.req.params["subject"]).int
     if c.threadID < 0: return setError(c, "subject", "Subject already exists")
+    discard tryExec(db, crud(crCreate, "thread_fts", "id", "name"),
+                        c.threadID, c.req.params["subject"])
     writeToDb(c, crCreate, false)
+    discard tryExec(db, sql"insert into post_fts(post_fts) values('optimize')")
+    discard tryExec(db, sql"insert into post_fts(thread_fts) values('optimize')")
     result = true
 
 proc login(c: var TForumData, name, pass: string): bool = 
   # get form data:
   const query = 
-    sql"select id, name, password, email, salt, admin from person where name = ?"
+    sql"select id, name, password, email, salt, admin, ban from person where name = ?"
   if name.len == 0:
     return c.setError("name", "Username cannot be nil.")
   var success = false
-  for row in FastRows(db, query, name):
-    if row[2] == makePassword(pass, row[4]):
+  for row in fastRows(db, query, name):
+    if row[2] == makePassword(pass, row[4], row[2]):
+      case row[6]
+      of "": discard
+      of banReasonDeactivated:
+        return c.setError("name", "Your account has been deactivated.")
+      else:
+        return c.setError("name", "You have been banned: " & row[6])
       c.userid = row[0]
       c.username = row[1]
       c.userpass = row[2]
@@ -421,12 +512,26 @@ proc login(c: var TForumData, name, pass: string): bool =
       break
   if success:
     # create session:
-    Exec(db, 
+    exec(db,
       sql"insert into session (ip, password, userid) values (?, ?, ?)", 
       c.req.ip, c.userpass, c.userid)
     return true
   else:
     return c.setError("password", "Login failed!")
+
+proc setBan(c: var TForumData, nick, reason: string): bool =
+  const query =
+    sql("update person set ban = ? where name = ?")
+  return tryExec(db, query, reason, nick)
+
+proc hasReplyBtn(c: var TForumData): bool =
+  result = c.req.pathInfo != "/donewthread" and c.req.pathInfo != "/doreply"
+  result = result and c.req.params["action"] != "reply"
+  # If the user is not logged in and there are no page numbers then we shouldn't
+  # generate the div.
+  let pages = ceil(c.totalPosts / PostsPerPage).int
+  result = result and (pages > 1 or c.loggedIn)
+  return c.threadId >= 0 and result
 
 proc genActionMenu(c: var TForumData): string =
   result = ""
@@ -434,11 +539,12 @@ proc genActionMenu(c: var TForumData): string =
   # TODO: Make this detection better?
   if c.req.pathInfo.normalizeUri notin noHomeBtn and not c.isThreadsList:
     btns.add(("Thread List", c.req.makeUri("/", false)))
+  #echo c.loggedIn
   if c.loggedIn:
     let hasReplyBtn = c.req.pathInfo != "/donewthread" and c.req.pathInfo != "/doreply"
     if c.threadId >= 0 and hasReplyBtn:
       let replyUrl = c.genThreadUrl(action = "reply", 
-            pageNum = $(ceil(c.totalPosts / postsPerPage).int)) & "#reply"
+            pageNum = $(ceil(c.totalPosts / PostsPerPage).int)) & "#reply"
       btns.add(("Reply", replyUrl))
     btns.add(("New Thread", c.req.makeUri("/newthread", false)))
   result = c.genButtons(btns)
@@ -461,7 +567,7 @@ proc getStats(c: var TForumData, simple: bool): TForumStats =
       sql"select id, name, admin, strftime('%s', lastOnline), strftime('%s', creation) from person"
     for row in fastRows(db, getUsersQuery):
       let secs = if row[3] == "": 0 else: row[3].parseint
-      let lastOnlineSeconds = getTime() - TTime(secs)
+      let lastOnlineSeconds = getTime() - Time(secs)
       if lastOnlineSeconds < (60 * 5): # 5 minutes
         result.activeUsers.add((row[1], row[0].parseInt, row[2].parseBool))
       if row[4].parseInt > newestMemberCreation:
@@ -485,11 +591,11 @@ proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
     nextUrl = c.req.makeUri("/page/" & $(c.pageNum+1))
   else:
     firstUrl = c.req.makeUri("/t/" & $c.threadId)
-    if c.pageNum == 1: 
+    if c.pageNum == 1:
       prevUrl = firstUrl
     else: 
       prevUrl = c.req.makeUri(firstUrl & "/" & $(c.pageNum-1))
-    totalPages = ceil(c.totalPosts / postsPerPage).int
+    totalPages = ceil(c.totalPosts / PostsPerPage).int
     lastUrl = c.req.makeUri(firstUrl & "/" & $(totalPages))
     nextUrl = c.req.makeUri(firstUrl & "/" & $(c.pageNum+1))
   
@@ -499,30 +605,22 @@ proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
   var firstTag = ""
   var prevTag = ""
   if c.pageNum == 1:
-    firstTag = span("First")
-    prevTag = span("Prev")
+    firstTag = span("<<")
+    prevTag = span("<••")
   else:
-    firstTag = htmlgen.a(href=firstUrl, "First")
-    prevTag = htmlgen.a(href=prevUrl, "Prev")
-  result.add(htmlgen.`div`(class = "left",
-                           firstTag,
-                           prevTag))
-  # Right
-  var lastTag = ""
-  var nextTag = ""
-  if c.pageNum == totalPages:
-    lastTag = span("Last")
-    nextTag = span("Next")
-  else:
-    lastTag = htmlgen.a(href=lastUrl, "Last")
-    nextTag = htmlgen.a(href=nextUrl, "Next")
-  result.add(htmlgen.`div`(class = "right",
-                           nextTag,
-                           lastTag))
+    firstTag = htmlgen.a(href=firstUrl, "<<")
+    prevTag = htmlgen.a(href=prevUrl, "<••")
+    prevTag.add(htmlgen.link(rel="previous", href=prevUrl))
+  result.add(firstTag)
+  result.add(prevTag)
   
   # Numbers
   var pages = "" # Tags
-  for i in 1..totalPages:
+  # cutting numbers to the left and to the right tp MaxPagesFromCurrent
+  let firstToShow = max(1, c.pageNum - MaxPagesFromCurrent)
+  let lastToShow  = min(totalPages, c.pageNum + MaxPagesFromCurrent)
+  if firstToShow > 1: pages.add(span("..."))
+  for i in firstToShow .. lastToShow:
     if i == c.pageNum:
       pages.add(span($(i)))
     else:
@@ -533,14 +631,25 @@ proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
         pageUrl = c.req.makeUri(firstUrl & "/" & $(i))
       
       pages.add(htmlgen.a(href = pageUrl, $(i)))
-  result.add(htmlgen.`div`(class = "middle",
-                           pages))
+  if lastToShow < totalPages: pages.add(span("..."))
+  result.add(pages)
 
-  result = htmlgen.`div`(id = "pagenumbers", result)
+  # Right
+  var lastTag = ""
+  var nextTag = ""
+  if c.pageNum == totalPages:
+    lastTag = span(">>")
+    nextTag = span("••>")
+  else:
+    lastTag = htmlgen.a(href=lastUrl, ">>")
+    nextTag = htmlgen.a(href=nextUrl, "••>")
+    nextTag.add(htmlgen.link(rel="next",href=nextUrl))
+  result.add(nextTag)
+  result.add(lastTag)
 
 proc gatherTotalPostsByID(c: var TForumData, thrid: int): int =
   ## Gets the total post count of a thread.
-  result = GetValue(db, sql"select count(*) from post where thread = ?", $thrid).parseInt
+  result = getValue(db, sql"select count(*) from post where thread = ?", $thrid).parseInt
 
 proc gatherTotalPosts(c: var TForumData) =
   if c.totalPosts > 0: return
@@ -551,13 +660,13 @@ proc gatherTotalPosts(c: var TForumData) =
 
 proc getPagesInThread(c: var TForumData): int =
   c.gatherTotalPosts() # Get total post count
-  result = ceil(c.totalPosts / postsPerPage).int-1
+  result = ceil(c.totalPosts / PostsPerPage).int-1
 
 proc getPagesInThreadByID(c: var TForumData, thrid: int): int =
-  result = ceil(c.gatherTotalPostsByID(thrid) / postsPerPage).int
+  result = ceil(c.gatherTotalPostsByID(thrid) / PostsPerPage).int
 
 proc getThreadTitle(thrid: int, pageNum: int): string =
-  result = GetValue(db, sql"select name from thread where id = ?", $thrid)
+  result = getValue(db, sql"select name from thread where id = ?", $thrid)
   if pageNum notin {0,1}:
     result.add(" - Page " & $pageNum)
 
@@ -579,7 +688,7 @@ proc genPagenumLocalNav(c: var TForumData, thrid: int): string =
     else:
       inc(i)
 
-  result = htmlgen.`div`(class = "localnums", result)
+  result = htmlgen.span(class = "pages", result)
 
 proc gatherUserInfo(c: var TForumData, nick: string, ui: var TUserInfo): bool =
   ui.nick = nick
@@ -600,12 +709,28 @@ proc gatherUserInfo(c: var TForumData, nick: string, ui: var TUserInfo): bool =
   let lastOnlineDBVal = getValue(db, lastOnlineQuery, uid)
   ui.lastOnline = if lastOnlineDBVal != "": lastOnlineDBVal.parseInt else: -1
   ui.email = getValue(db, sql"select email from person where id = ?", uid)
+  ui.ban = getValue(db, sql"select ban from person where id = ?", uid)
+
+proc genSetUserStatusUrl(c: var TForumData, nick: string, typ: string): string =
+  c.req.makeUri("/setUserStatus?nick=$1&type=$2" % [nick, typ])
 
 proc genProfile(c: var TForumData, ui: TUserInfo): string =
   result = ""
+
+  result.add(htmlgen.`div`(id = "talk-head",
+    htmlgen.`div`(class="info-post",
+      htmlgen.`div`(
+        htmlgen.a(href = c.req.makeUri("/"),
+          span(style = "font-weight: bold;", "forum index")
+          ),
+          " > " & ui.nick & "'s profile"
+        )
+      )
+    )
+  )
   result.add(htmlgen.`div`(id = "avatar", genGravatar(ui.email, 250)))
-  let t2 = if ui.lastOnline != -1: getGMTime(TTime(ui.lastOnline)) 
-           else: getGMTime(GetTime())
+  let t2 = if ui.lastOnline != -1: getGMTime(Time(ui.lastOnline)) 
+           else: getGMTime(getTime())
   
   result.add(htmlgen.`div`(id = "info", 
     htmlgen.table(
@@ -625,6 +750,41 @@ proc genProfile(c: var TForumData, ui: TUserInfo): string =
         th("Last Online"),
         td(if ui.lastOnline != -1: t2.format("dd/MM/yy HH':'mm 'UTC'")
            else: "Never")
+      ),
+      tr(
+        th("Status"),
+        td(case ui.ban
+           of banReasonDeactivated:
+             "Deactivated"
+           of "":
+             "Active"
+           else:
+             "Banned: " & ui.ban
+        )
+      ),
+      tr(
+        th(""),
+        td(if c.isAdmin and ui.ban != banReasonDeactivated:
+             if ui.ban == "":
+               htmlgen.a(
+                 href=c.genSetUserStatusUrl(ui.nick, "ban"),
+                     "Ban user")
+             else:
+               htmlgen.a(href=c.genSetUserStatusUrl(ui.nick, "unban"),
+                     "Unban user")
+           else: "")
+      ),
+      tr(
+        th(""),
+        td(if c.userName == ui.nick or c.isAdmin:
+             if ui.ban == "":
+               htmlgen.a(href=c.genSetUserStatusUrl(ui.nick, "deactivate"),
+                  "Deactivate user")
+             elif ui.ban == banReasonDeactivated:
+               htmlgen.a(href=c.genSetUserStatusUrl(ui.nick, "activate"),
+                  "Activate user")
+             else: ""
+           else: "")
       )
     )
   ))
@@ -651,180 +811,301 @@ template createTFD(): stmt =
   if request.cookies.len > 0:
     checkLoggedIn(c)
 
-get "/":
-  createTFD()
-  c.isThreadsList = true
-  var count = 0
-  resp genMain(c, genThreadsList(c, count),
-               additionalHeaders = genRSSHeaders(c), showRssLinks = true)
+routes:
+  get "/":
+    createTFD()
+    c.isThreadsList = true
+    var count = 0
+    let threadList = genThreadsList(c, count)
+    let data = genMain(c, threadList,
+        additionalHeaders = genRSSHeaders(c), showRssLinks = true)
+    resp data
 
-get "/threadActivity.xml":
-  createTFD()
-  c.isThreadsList = true
-  resp genThreadsRSS(c), "application/atom+xml"
+  get "/threadActivity.xml":
+    createTFD()
+    c.isThreadsList = true
+    resp genThreadsRSS(c), "application/atom+xml"
 
-get "/postActivity.xml":
-  createTFD()
-  resp genPostsRSS(c), "application/atom+xml"
+  get "/postActivity.xml":
+    createTFD()
+    resp genPostsRSS(c), "application/atom+xml"
 
-get "/t/@threadid/?@page?/?":
-  createTFD()
-  parseInt(@"threadid", c.threadId, -1..1000_000)
-  if c.threadid == unselectedThread:
-    # Thread has just beed deleted
-    redirect(uri("/"))
-  if @"page".len > 0:
+  get "/t/@threadid/?@page?/?@postid?/?":
+    createTFD()
+    parseInt(@"threadid", c.threadId, -1..1000_000)
+
+    if c.threadId == unselectedThread:
+      # Thread has just been deleted.
+      redirect(uri("/"))
+
+    if @"page".len > 0:
+      parseInt(@"page", c.pageNum, 0..1000_000)
+    if @"postid".len > 0:
+      parseInt(@"postid", c.postId, 0..1000_000)
+    cond (c.pageNum > 0)
+    var count = 0
+    var pSubject = getThreadTitle(c.threadid, c.pageNum)
+    cond validThreadId(c)
+    gatherTotalPosts(c)
+    if (@"action").len > 0:
+      var title = ""
+      case @"action"
+      of "reply":
+        let subject = getValue(db,
+            sql"select header from post where id = (select max(id) from post where thread = ?)", 
+            $c.threadId).prependRe
+        body = genPostsList(c, $c.threadId, count)
+        cond count != 0
+        body.add genFormPost(c, "doreply", "Reply", subject, "", false)
+        title = "Replying to thread: " & pSubject
+      of "edit":
+        cond c.postId != -1
+        const query = sql"select header, content from post where id = ?"
+        let row = getRow(db, query, $c.postId)
+        let header = ||row[0]
+        let content = ||row[1]
+        body = genFormPost(c, "doedit", "Edit", header, content, true)
+        title = "Editing post"
+      else: discard
+      resp c.genMain(body, title & " - Nim Forum")
+    else:
+      incrementViews(c)
+      let posts = genPostsList(c, $c.threadId, count)
+      cond count != 0
+      resp genMain(c, posts, pSubject & " - Nim Forum")
+
+  get "/page/?@page?/?":
+    createTFD()
+    c.isThreadsList = true
+    cond (@"page" != "")
     parseInt(@"page", c.pageNum, 0..1000_000)
     cond (c.pageNum > 0)
-  if (@"postid").len > 0:
-    parseInt(@"postid", c.postId, -1..1000_000)
-  var count = 0
-  var pSubject = getThreadTitle(c.threadid, c.pageNum)
-  cond validThreadId(c)
-  gatherTotalPosts(c)
-  if (@"action").len > 0:
-    var title = ""
-    case @"action"
-    of "reply":
-      let subject = GetValue(db,
-          sql"select header from post where id = (select max(id) from post where thread = ?)", 
-          $c.threadId).prependRe
-      body = genPostsList(c, $c.threadId, count)
-      cond count != 0
-      body.add genFormPost(c, "doreply", "Reply", subject, "", false)
-      title = "Replying to thread: " & pSubject
-    of "edit":
-      cond c.postId != -1
-      const query = sql"select header, content from post where id = ?"
-      let row = getRow(db, query, $c.postId)
-      let header = ||row[0]
-      let content = ||row[1]
-      body = genFormPost(c, "doedit", "Edit", header, content, true)
-      title = "Editing post"
-    resp c.genMain(body, title & " - Nimrod Forum")
-  else:
-    incrementViews(c)
-    let posts = genPostsList(c, $c.threadId, count)
-    cond count != 0
-    resp genMain(c, posts, pSubject & " - Nimrod Forum")
-
-get "/page/@page/?":
-  createTFD()
-  c.isThreadsList = true
-  cond (@"page" != "")
-  parseInt(@"page", c.pageNum, 0..1000_000)
-  cond (c.pageNum > 0)
-  var count = 0
-  let list = genThreadsList(c, count)
-  if count == 0:
-    pass()
-  resp genMain(c, list, "Page " & $c.pageNum & " - Nimrod Forum",
-               genRSSHeaders(c), showRssLinks = true)
-
-get "/profile/@nick/?":
-  createTFD()
-  cond (@"nick" != "")
-  var userinfo: TUserInfo
-  if gatherUserInfo(c, @"nick", userinfo):
-    resp genMain(c, c.genProfile(userinfo),
-                 @"nick" & "'s profile - Nimrod Forum")
-  else:
-    halt()
-
-get "/login/?":
-  createTFD()
-  resp genMain(c, genFormLogin(c), "Log in - Nimrod Forum")
-
-get "/logout/?":
-  createTFD()
-  logout(c)
-  redirect(uri("/"))
-
-get "/register/?":
-  createTFD()
-  resp genMain(c, genFormRegister(c), "Register - Nimrod Forum")
-
-template readIDs(): stmt =
-  # Retrieve the threadid, postid and pagenum
-  if (@"threadid").len > 0:
-    parseInt(@"threadid", c.threadId, -1..1000_000)
-  if (@"postid").len > 0:
-    parseInt(@"postid", c.postId, -1..1000_000)
-
-template finishLogin(): stmt = 
-  setCookie("sid", c.userpass, daysForward(7))
-  redirect(uri("/"))
-
-template handleError(action: string, topText: string, isEdit: bool): stmt =
-  if c.isPreview:
-    body.add genPostPreview(c, @"subject", @"content", 
-                            c.userName, $getGMTime(getTime()))
-  body.add genFormPost(c, action, topText, reuseText, reuseText, isEdit)
-  resp genMain(c, body(), "Nimrod Forum - Error")
-
-post "/dologin":
-  createTFD()
-  if login(c, @"name", @"password"):
-    finishLogin()
-  else:
-    resp c.genMain(genFormLogin(c))
-
-post "/doregister":
-  createTFD()
-  if c.register(@"name", @"new_password", @"antibot", @"email"):
-    discard c.login(@"name", @"new_password")
-    finishLogin()
-  else:
-    resp c.genMain(genFormRegister(c))
-
-post "/donewthread":
-  createTFD()
-  if newThread(c):
-    redirect(uri("/"))
-  else:
-    body = ""
-    handleError("donewthread", "New thread", false)
-
-post "/doreply":
-  createTFD()
-  readIDs()
-  if reply(c):
-    redirect(c.genThreadUrl(pageNum = $(c.getPagesInThread+1)) & "#" & $c.postId)
-  else:
     var count = 0
+    let list = genThreadsList(c, count)
+    if count == 0:
+      pass()
+    resp genMain(c, list, "Page " & $c.pageNum & " - Nim Forum",
+                 genRSSHeaders(c), showRssLinks = true)
+
+  get "/profile/@nick/?":
+    createTFD()
+    cond (@"nick" != "")
+    var userinfo: TUserInfo
+    if gatherUserInfo(c, @"nick", userinfo):
+      resp genMain(c, c.genProfile(userinfo),
+                   @"nick" & "'s profile - Nim Forum")
+    else:
+      halt()
+
+  get "/login/?":
+    createTFD()
+    resp genMain(c, genFormLogin(c), "Log in - Nim Forum")
+
+  get "/logout/?":
+    createTFD()
+    logout(c)
+    redirect(uri("/"))
+
+  get "/register/?":
+    createTFD()
+    resp genMain(c, genFormRegister(c), "Register - Nim Forum")
+
+  template readIDs(): stmt =
+    # Retrieve the threadid, postid and pagenum
+    if (@"threadid").len > 0:
+      parseInt(@"threadid", c.threadId, -1..1000_000)
+    if (@"postid").len > 0:
+      parseInt(@"postid", c.postId, -1..1000_000)
+
+  template finishLogin(): stmt = 
+    setCookie("sid", c.userpass, daysForward(7))
+    redirect(uri("/"))
+
+  template handleError(action: string, topText: string, isEdit: bool): stmt =
     if c.isPreview:
-      c.pageNum = c.getPagesInThread+1
-    body = genPostsList(c, $c.threadId, count)
-    handleError("doreply", "Reply", false)
+      body.add genPostPreview(c, @"subject", @"content", 
+                              c.userName, $getGMTime(getTime()))
+    body.add genFormPost(c, action, topText, reuseText, reuseText, isEdit)
+    resp genMain(c, body(), "Nim Forum - " & 
+                            (if c.isPreview: "Preview" else: "Error"))
 
-post "/doedit":
-  createTFD()
-  readIDs()
-  if edit(c, c.postId):
-    redirect(c.genThreadUrl(pageNum = $(c.getPagesInThread+1)) & "#" & $c.postId)
-  else:
-    body = ""
-    handleError("doedit", "Edit", true)
+  post "/dologin":
+    createTFD()
+    if login(c, @"name", @"password"):
+      finishLogin()
+    else:
+      c.isThreadsList = true
+      var count = 0
+      let threadList = genThreadsList(c, count)
+      let data = genMain(c, threadList,
+          additionalHeaders = genRSSHeaders(c), showRssLinks = true)
+      resp data
 
-get "/newthread/?":
-  createTFD()
-  resp genMain(c, genFormPost(c, "donewthread", "New thread", "", "", false),
-               "New Thread - Nimrod Forum")
+  post "/doregister":
+    createTFD()
+    if c.register(@"name", @"new_password", @"antibot", @"email"):
+      discard c.login(@"name", @"new_password")
+      finishLogin()
+    else:
+      resp c.genMain(genFormRegister(c))
 
-const licenseRst = slurp("static/license.rst")
-get "/license":
-  createTFD()
-  resp genMain(c, rstToHtml(licenseRst), "Content license - Nimrod Forum")
+  post "/donewthread":
+    createTFD()
+    if newThread(c):
+      redirect(uri("/"))
+    else:
+      body = ""
+      handleError("donewthread", "New thread", false)
+
+  post "/doreply":
+    createTFD()
+    readIDs()
+    if reply(c):
+      redirect(c.genThreadUrl(pageNum = $(c.getPagesInThread+1)) & "#" & $c.postId)
+    else:
+      var count = 0
+      if c.isPreview:
+        c.pageNum = c.getPagesInThread+1
+      body = genPostsList(c, $c.threadId, count)
+      handleError("doreply", "Reply", false)
+
+  post "/doedit":
+    createTFD()
+    readIDs()
+    if edit(c, c.postId):
+      redirect(c.genThreadUrl(postId = $c.postId,
+                              pageNum = $(c.getPagesInThread+1)))
+    else:
+      body = ""
+      handleError("doedit", "Edit", true)
+
+  get "/newthread/?":
+    createTFD()
+    resp genMain(c, genFormPost(c, "donewthread", "New thread", "", "", false),
+                 "New Thread - Nim Forum")
+
+  get "/setUserStatus/?":
+    createTFD()
+    cond (@"nick" != "")
+    cond (@"type" != "")
+    var formBody = "<input type=\"hidden\" name=\"nick\" value=\"" &
+                      @"nick" & "\">"
+    var del = false
+    var content = ""
+    echo("Got type: ", @"type")
+    case @"type"
+    of "ban":
+      formBody.add "<input type='text' name='reason' />" &
+          "<input type='submit' name='banBtn' value='Ban' />"
+      content =
+        htmlgen.p("Please enter a reason for banning this user:")
+    of "unban":
+      formBody.add "<input type='submit' name='unbanBtn' value='Unban' />"
+      content =
+        htmlgen.p("Are you sure you wish to unban ", htmlgen.b(@"nick"),
+          "?")
+      del = true
+    of "deactivate":
+      formBody.add "<input type='hidden' name='reason' value='" &
+          banReasonDeactivated & "' />" &
+          "<input type='submit' name='actBtn' value='Deactivate' />"
+      content =
+        htmlgen.p("Are you sure you wish to deactivate ", htmlgen.b(@"nick"),
+          "?")
+    of "activate":
+      formBody.add "<input type='submit' name='actBtn' value='Activate' />"
+      content =
+        htmlgen.p("Are you sure you wish to activate ", htmlgen.b(@"nick"),
+          "?")
+      del = true
+    formBody.add "<input type='hidden' name='del' value='" & $del & "'/>"
+    content = htmlgen.form(action = c.req.makeUri("/dosetban"),
+        `method` = "POST", formBody) & content
+    resp genMain(c, content, "Set user status - Nim Forum")
+
+  post "/dosetban":
+    createTFD()
+    cond (@"nick" != "")
+    if not c.isAdmin and @"nick" != c.userName:
+      resp genMain(c, "You cannot ban this user.", "Error - Nim Forum")
+    if @"reason" == "" and @"del" != "true":
+      resp genMain(c, "Invalid ban reason.", "Error - Nim Forum")
+    let result =
+      if @"del" == "true":
+        # Remove the ban.
+        setBan(c, @"nick", "")
+      else:
+        setBan(c, @"nick", @"reason")
+    if result:
+      redirect(c.req.makeUri("/profile/" & @"nick"))
+    else:
+      resp genMain(c, "Failed to change the ban status of user.",
+          "Error - Nim Forum")
+
+  const licenseRst = slurp("static/license.rst")
+  get "/license":
+    createTFD()
+    resp genMain(c, rstToHtml(licenseRst), "Content license - Nim Forum")
+
+  post "/search/?@page?":
+    cond isFTSAvailable
+    createTFD()
+    c.isThreadsList  = true
+    c.noPagenumumNav = true
+    var count = 0
+    var q = @"q"
+    for i in 0 .. q.len-1:
+      if   q[i].int < 32: q[i] = ' '
+      elif q[i] == '\'':  q[i] = '"'
+    c.search = q.replace("\"","&quot;");
+    if @"page".len > 0:
+      parseInt(@"page", c.pageNum, 0..1000_000)
+      cond (c.pageNum > 0)
+    iterator searchResults(): db_sqlite.TRow {.closure, tags: [FReadDB].} =
+      const queryFT = "fts.sql".slurp.sql
+      for rowFT in fastRows(db, queryFT,
+                    [q,q,$ThreadsPerPage,$c.pageNum,$ThreadsPerPage,q,
+                     q,q,$ThreadsPerPage,$c.pageNum,$ThreadsPerPage,q]):
+        yield rowFT
+    resp genMain(c, genSearchResults(c, searchResults, count),
+                 additionalHeaders = genRSSHeaders(c), showRssLinks = true)
+
+  # tries first to read html, then to read rst, convert ot html, cache and return
+  template textPage(path: string): stmt =
+    createTFD()
+    #c.isThreadsList = true
+    var page = ""
+    if existsFile(path):
+      page = readFile(path)
+    else:
+      let basePath = 
+        if path[path.high] == '/': path & "index"
+        elif path.endsWith(".html"): path[-5 .. -1]
+        else: path
+      if existsFile(basePath & ".html"):
+        page = readFile(basePath & ".html")
+      elif existsFile(basePath & ".rst"):
+        page = readFile(basePath & ".rst").rstToHtml
+        writeFile(basePath & ".html", page)
+    resp genMain(c, page)
+  get "/search-help":
+    textPage "static/search-help"
 
 when isMainModule:
   docConfig = rstgen.defaultConfig()
+  docConfig["doc.smiley_format"] = "/images/smilieys/$1.png"
   math.randomize()
-  db = Open(connection="nimforum.db", user="postgres", password="", 
+  db = open(connection="nimforum.db", user="postgres", password="", 
               database="nimforum")
+  isFTSAvailable = db.getAllRows(sql("SELECT name FROM sqlite_master WHERE " &
+      "type='table' AND name='post_fts'")).len == 1
   var http = true
   if paramCount() > 0:
     if paramStr(1) == "scgi":
       http = false
-  run("", port = TPort(9000), http = http)
+  
+  #run("", port = TPort(9000), http = http)
+  
+  runForever()
   db.close()
 

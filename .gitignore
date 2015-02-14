@@ -1,6 +1,7 @@
 # Wildcard patterns.
 *.swp
 nimcache/
+*.db
 
 # Specific paths
 /createdb

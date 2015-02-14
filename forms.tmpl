@@ -13,70 +13,101 @@
 #  
 #  result = ""
 #  count = 0
-<table id="threads">
-  <tr>
-    <th>Topics</th>
-    <th>Author</th>
-    <th>Posts</th>
-    <th>Views</th>
-    <th>Last reply</th>
-  </tr>
-#  for row in Rows(db, query, $((c.pageNum-1) * ThreadsPerPage), $ThreadsPerPage):
+<div id="talk-heads">
+  <div class="topic">
+    <div>
+      Topic
+      <a href="${c.req.makeUri("/threadActivity.xml")}">
+        <img src="/images/Feed-icon.svg" class="rssfeed">
+      </a>
+    </div>
+  </div>
+  <div class="users"><div>Users</div></div>
+  <div class="detail"><div>Details</div></div>
+  <div class="activity">
+    <div>
+      Activity
+      <a href="${c.req.makeUri("/postActivity.xml")}">
+        <img src="/images/Feed-icon.svg" class="rssfeed">
+      </a>
+    </div>
+  </div>
+</div>
+<div id="talk-threads">
+#  for row in rows(db, query, $((c.pageNum-1) * ThreadsPerPage), $ThreadsPerPage):
 #  inc(count)
-  <tr>
-    <td class="topic">
-      ${UrlButton(c, XMLencode(%name), c.genThreadUrl(threadid = %threadid))}
-      ${genPagenumLocalNav(c, (%threadid).parseInt)}
-    </td>
-    #let authorName = getValue(db, sql("select name from person where id = " &
-    #  "(select author from post where id = " & 
-    #  "(select min(id) from post where thread = ?))"), %threadId)
-    #let profileUrl = c.req.makeUri("profile/", false) & XMLEncode(authorName)
-    <td class="author"><a href="$profileUrl">${authorName}</a></td>
-#    let posts = GetValue(db, sql"select count(*) from post where thread = ?", %threadId)
-    <td class="posts">$posts</td>
-    <td class="views">${XMLencode(%views)}</td>
+  <div>
+    <div class="topic">
+      <div>
+        <a href="${c.genThreadUrl(threadid = %threadid)}"
+           title="${xmlEncode(%name)}">${xmlEncode(%name)}</a>
+        ${genPagenumLocalNav(c, (%threadid).parseInt)}
+      </div>
+    </div>
+
+    #let users = getAllRows(db,
+    #  sql("select distinct name, email from person where id in " & 
+    #      "(select author from post where thread = ?)"), %threadId)
+    <div class="users">
+      <div>
+        #for i in 0 .. min(6, users.len-1):
+        <img src="${getGravatarUrl(users[i][1], 20)}" title="${users[i][0]}">
+        #end for
+      </div>
+    </div>
+    
     #let latestReplyAuthor = getValue(db, sql("select name from person where id = " &
     #  "(select author from post where id = " & 
     #  "(select max(id) from post where thread = ?))"), %threadId)
+
+    #let replyProfileUrl = c.req.makeUri("profile/", false) &
+    #  xmlEncode(latestReplyAuthor)
+
+#    let posts = getValue(db, sql"select count(*) from post where thread = ?", %threadId)
+    <div class="detail">
+      <div><div title="Views">${xmlEncode(%views)}</div></div>
+      <div><div title="Posts">$posts</div></div>
+    </div>
+
     #let latestReplyDate = getValue(db, sql("SELECT strftime('%s', " &
     #  "(select creation from post where id = (select max(id) from post where thread = ?)))"), %threadId)
-    <td class="lastreply">
-      <span>${formatTimestamp(latestReplyDate.parseInt())}</span><br/>
-      #let replyProfileUrl = c.req.makeUri("profile/", false) &
-      #  XMLEncode(latestReplyAuthor)
-      <span><a href="$replyProfileUrl">${latestReplyAuthor}</a></span>
-    </td>
-  </tr>
+    #let timeStr = formatTimestamp(latestReplyDate.parseInt())
+    <div class="activity">
+      <div>
+        <a href="$replyProfileUrl">$latestReplyAuthor</a> replied $timeStr
+      </div>
+    </div>
+  </div>
 #  end for
-</table>
+</div>
+
 #end proc
 #
 #
-#proc genPostPreview(c: var TForumData, 
+#proc genPostPreview(c: var TForumData,
 #                    title, content, author, date: string): string =
 #  result = ""
 <a name="preview"></a>
-<table class="post">
-  <tr>
-    <th colspan="2">
-      <span>${XMLEncode(title)}</span>
-      <span style="float:right;">${XMLencode(date)}</span>
-    </th>
-  </tr>
-  <tr>
-    <td class="left">
-      <span>${XMLencode(author)}</span>
-    </td>
-    <td class="content">
-    #try:
-      ${content.rstToHtml}
-    #except EParseError:
-    #  c.errorMsg = getCurrentExceptionMsg()
-    #end
-    </td>
-  </tr>
-</table>
+<div id="talk-thread">
+  <div>
+    <div class="author">
+      <div>
+        #let profileUrl = c.req.makeUri("profile/", false) & xmlEncode(author)
+        <a class="name" href="$profileUrl">${xmlEncode(author)}</a>
+      </div>
+    </div>
+    <div class="topic">
+      <div>
+        #try:
+          ${content.rstToHtml}
+        #except EParseError:
+        #  c.errorMsg = getCurrentExceptionMsg()
+        #end
+        <span class="date">${xmlEncode(date)}</span>
+      </div>
+    </div>
+  </div>
+</div>
 #end proc
 #
 #
@@ -92,39 +123,47 @@
 #  const userEmail = 6
 #  result = ""
 #  count = 0
-#  for row in FastRows(db, query, threadId, $((c.pageNum-1) * PostsPerPage), $PostsPerPage):
+#  let posts = getAllRows(db, query, threadId, $((c.pageNum-1) * PostsPerPage), $PostsPerPage)
+#  if posts.len < 1: return ""
+#  end if
+<div id="talk-head">
+  <div class="info-post">
+    <div>
+      <a href="${c.req.makeUri("/")}"><b>forum index</b></a> &gt;
+      <a href="${c.req.makeUri("/t/" & $threadId)}">${posts[0][postHeader]}</a>
+    </div>
+  </div>
+</div>
+<div id="talk-thread">
+#  for row in posts:
 #    inc(count)
-<a name="${%postId}"></a>
-<table class="post">
-  <tr>
-    <th colspan="2">
-      <span>${XMLencode(%postHeader)}</span>
-      <span style="float:right;">${XMLencode(%postCreation)}</span>
-    </th>
-  </tr>
-  <tr>
-    <td class="left">
-      #let profileUrl = c.req.makeUri("profile/", false) & XMLencode(%userName)
-      <span><a href="$profileUrl">${XMLencode(%userName)}</a></span>
-      <hr/>
-      <a href="$profileUrl">${genGravatar(%userEmail)}</a>
-      #if c.userId == %postAuthor and c.currentPost.subject.len == 0:
-        <hr/>${UrlButton(c, "Edit post", c.genThreadUrl(%postId, "edit"))}
-      #elif c.isAdmin and c.currentPost.subject.len == 0:
-        <hr/><span style="color:red">
-          ${UrlButton(c, "Edit post", c.genThreadUrl(%postId, "edit"))}</span>
-      #end if
-    </td>
-    <td class="content">
-    #try:
-      ${(%postContent).rstToHtml}
-    #except EParseError:
-    #  c.errorMsg = getCurrentExceptionMsg()
-    #end
-    </td>
-  </tr>
-</table>
+  <a name="${%postId}"></a>
+  <div id="${%postId}">
+    <div class="author">
+      <div>
+        #let profileUrl = c.req.makeUri("profile/", false) & xmlEncode(%userName)
+        <div class="avatar">${genGravatar(%userEmail)}</div>
+        <a class="name" href="$profileUrl">${xmlEncode(%userName)}</a>
+        #if c.userId == %postAuthor and c.currentPost.subject.len == 0:
+          <hr/><a href="${c.genThreadUrl(%postId, "edit")}">Edit post</a>
+        #elif c.isAdmin and c.currentPost.subject.len == 0:
+          <hr/><a style="color: red;" href="${c.genThreadUrl(%postId, "edit")}">Edit post</a>
+        #end if
+      </div>
+    </div>
+    <div class="topic">
+      <div>
+        #try:
+          ${(%postContent).rstToHtml}
+        #except EParseError:
+        #  c.errorMsg = getCurrentExceptionMsg()
+        #end
+        <span class="date">${xmlEncode(%postCreation)}</span>
+      </div>
+    </div>
+  </div>
 #  end for
+</div>
 #end proc
 #
 #
@@ -134,25 +173,39 @@
 <br />
 <a name="reply"></a>
 <div id="replywrapper">
-  <div id="replytop">
-    <span>${topText}</span>
+  <div id="talk-head">
+    <div class="info-post">
+      <div>
+        <a href="${c.req.makeUri("/")}"><b>forum index</b></a> &gt;
+        $topText
+      </div>
+    </div>
   </div>
   <form action="${c.req.makeUri(action, false) & "#preview"}" method="POST">
-    ${FieldValid(c, "subject", "Subject:")}
-    ${TextWidget(c, "subject", title, maxlength=100)}
-    <br />
+    #if action == "doreply":
+      ${HiddenField(c, "subject", title)}
+    #else:
+      ${FieldValid(c, "subject", "Subject:")}
+      ${TextWidget(c, "subject", title, maxlength=100)}
+      <br />
+    #end if
     ${FieldValid(c, "content", "Content:")}<br />
-    ${TextAreaWidget(c, "content", content, width=100, height=20)}<br />
+    ${TextAreaWidget(c, "content", content)}<br />
     ${FormSession(c, action)}
 
   #  if isEdit:
     <input type="checkbox" name="delete" value="Delete">Delete Post<br />
   #  end if
+    #if c.errorMsg != "":
+      <div style="float: left; width: 100%;">
+        <span class="error">$c.errorMsg</span>
+      </div>
+    #end if
     <br/>
     <input type="submit" name="previewBtn" value="Preview" />
     <input type="submit" name="postBtn" value="Submit" />
   
-    <a href="http://nimrod-lang.org/rst.html">Syntax Cheatsheet</a>
+    <a href="http://nim-lang.org/rst.html">Syntax Cheatsheet</a>
   </form>
 </div>
 #end proc
@@ -160,8 +213,15 @@
 #
 #proc genFormRegister(c: var TForumData): string =
 #  result = ""
+<div id="talk-head">
+    <div class="info-post">
+      <div>
+        <a href="${c.req.makeUri("/")}"><b>forum index</b></a> &gt;
+        Register
+      </div>
+    </div>
+</div>
 <form action="${c.req.makeUri("/doregister", false)}" method="POST">
-  <b>Register</b><br />
   <table border="0">
     <tr>
       <td>${FieldValid(c, "name", "Username:")}</td>
@@ -180,6 +240,11 @@
       <td>${TextWidget(c, "antibot", "", maxlength=4)}</td>
     </tr>
   </table>
+  #if c.errorMsg != "":
+      <div style="float: left; width: 100%;">
+        <span class="error">$c.errorMsg</span>
+      </div>
+  #end if
   <input type="submit" value="Register">
 </form>
 #end proc
@@ -205,38 +270,100 @@
 #
 #proc genListOnline(c: var TForumData, stats: TForumStats): string =
 #  result = ""
-  <div id="whoisonline">
-    <div class="wioHeader">
-      <span>Who is online?<span>
-    </div>
-    <div class="content">
-    <span>Out of ${stats.totalUsers} users ${stats.activeUsers.len} are online${if stats.activeUsers.len == 0: "." else: ":"}
-      #for index, usr in stats.activeUsers:
-      #  let profileHref = """<a href="""" & c.req.makeUri("profile/", false) &
-      #    XMLencode(usr.nick) & """">"""
-      #  let hrefEnd = """</a>"""
-      #  if usr.isAdmin:
-          #if index != 0: result.add ','
-          #end if
-          #result.add("""<span class="user admin"> """ & profileHref &
-          #  usr.nick & hrefEnd & """</span>""")
-      #  else:
-          #if index != 0: result.add ','
-          #end if
-          #result.add("""<span class="user"> """ & profileHref &
-          #  usr.nick & hrefEnd & """</span>""")
-      #  end if
-      #end for
-    </span>
-    <hr/>
-    #if stats.newestMember.nick != "":
-      #let profileUrl = c.req.makeUri("profile/", false) &
-      #  XMLEncode(stats.newestMember.nick)
-      <span>Total threads: ${stats.totalThreads} | Total posts: ${stats.totalPosts} | Newest member: <a href="$profileUrl">${stats.newestMember.nick}</a></span>
-    #else:
-      <span>Total threads: ${stats.totalThreads} | Total posts: ${stats.totalPosts}</span>
-    #end if
+#  var active: seq[string] = @[]
+#  for i in stats.activeUsers:
+#    active.add(i.nick)
+#  end for
+#  let profileUrl = c.req.makeUri("profile/", false) &
+#      xmlEncode(stats.newestMember.nick)
+  <span class="forum-user-info" title="${active.join(", ")}">
+    <b>${stats.activeUsers.len}</b> of <b>${stats.totalUsers}</b> users online</span> &nbsp;|&nbsp;
+    <b>${stats.totalThreads}</b> threads &nbsp;|&nbsp; <b>${stats.totalPosts}</b> posts &nbsp;|&nbsp;
+    newest member: <a href="$profileUrl">${stats.newestMember.nick}</a>
+#end proc
+#
+#
+#
+#
+#proc genSearchResults(c: var TForumData,
+#                       results: iterator: db_sqlite.TRow {.closure, tags: [FReadDB].},
+#                       count: var int): string =
+#  const threadId = 0
+#  const threadName = 1
+#  const postId = 2
+#  const postHeader = 3
+#  const postContent = 4
+#  const userName = 5
+#  const postCreation = 6
+#  const postAuthor = 7
+#  const userEmail = 8
+#  const what = 9
+#  result = ""
+#  count = 0
+#  var whCount: array[bool, int]
+<div id="talk-head">
+  <div class="info-post">
+    <div>
+        Search results for: <i style="color: #332299">${xmlEncode(c.search.replace("&quot;","\""))}</i>.
     </div>
   </div>
-  
+</div>
+<div id="talk-thread" class="searchResults">
+#  for row in results():
+#    inc(count)
+#    let isThread = %what == "0"
+#    inc(whCount[isThread])
+#    let postUrl = c.genThreadUrl(%postId,"",%threadId,"")
+#    let threadUrl = c.genThreadUrl("","",%threadId)
+#    var headersDiffer = false
+  <div>
+    <div class="author">
+      <div>
+        #let profileUrl = c.req.makeUri("profile/", false) & xmlEncode(%userName)
+        <div><a href="$profileUrl">${genGravatar(%userEmail, 40)}</a></div>
+        <div style="padding: 8px 0"><a href="$profileUrl">${xmlEncode(%userName)}</a></div>
+        #if c.userId == %postAuthor and c.currentPost.subject.len == 0:
+          <hr/><a href="${c.genThreadUrl(%postId, "edit", %threadId)}">Edit post</a>
+        #elif c.isAdmin and c.currentPost.subject.len == 0:
+          <hr/><a style="color: red;" href="${c.genThreadUrl(%postId, "edit", %threadId)}">Edit post</a>
+        #end if
+      </div>
+    </div>
+    <div class="topic">
+      <div>
+        #if %postHeader != "":
+        <div class="postTitle">
+          <span class="titleHeader">Post:</span>
+          <a href="${postUrl}">
+            <span>${%postHeader}</span>
+          </a>
+        </div>
+        #end if
+        #if not isThread:
+          #try:
+            ${(%postContent).rstToHtml}
+          #except EParseError:
+          #  c.errorMsg = getCurrentExceptionMsg()
+             ${xmlEncode(%postContent)}
+          #end
+        #end if
+        <span class="date">${xmlEncode(%postCreation)}</span>
+      </div>
+    </div>
+  </div>
+#  end for
+</div>
+#  if c.pageNum > 1:
+<form action="/search/${$(c.pageNum-1)}" method="post" class="searchNav">
+  <input type="hidden" name="q" value="${c.search}">
+  <input type="submit" value="Previous ${ThreadsPerPage} results">
+</form>
+#  end if
+#  if whCount[true] == ThreadsPerPage or whCount[false] == ThreadsPerPage:
+<form action="/search/${$(c.pageNum+1)}" method="post" class="searchNav">
+  <input type="hidden" name="q" value="${c.search}">
+  <input type="submit" value="Next ${ThreadsPerPage} results (if any)">
+</form>
+#  end if
 #end proc
+#
