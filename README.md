@@ -1,9 +1,20 @@
-nimforum
-========
+# nimforum
 
-This is Nimrod's forum. The code depends on the RST parser of the Nimrod
+This is Nim's forum. Available at http://forum.nim-lang.org.
+
+## Building
+
+You can use ``nimble`` (available [here](https://github.com/nim-lang/nimble) 
+to get all the necessary
+[dependencies](https://github.com/nim-lang/nimforum/blob/master/nimforum.nimble#L11).
+
+Clone this repo and execute ``nimble build`` in this repositories directory.
+
+## Dependencies
+
+The code depends on the RST parser of the Nim
 compiler and on Jester. The code generating captchas for registration uses the
-[cairo module](http://nimrod-lang.org/cairo.html), which requires you to have
+[cairo module](https://github.com/nim-lang/cairo), which requires you to have
 the [cairo library](http://cairographics.org) installed when you run the forum,
 or you will be greeted by a cryptic error message similar to:
 
@@ -19,7 +30,7 @@ Replace ``/opt/local/lib`` with the correct path on your system.
 
 # Copyright
 
-Copyright (c) 2012-2013 Andreas Rumpf, Dominik Picheta.
+Copyright (c) 2012-2015 Andreas Rumpf, Dominik Picheta.
 
 All rights reserved.
 

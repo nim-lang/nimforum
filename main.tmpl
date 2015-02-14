@@ -1,5 +1,5 @@
 #! stdtmpl
-#proc genMain(c: var TForumData, content: string, title = "Nimrod Forum",
+#proc genMain(c: var TForumData, content: string, title = "Nim Forum",
 #             additional_headers = "", showRssLinks = false): string =
 #  result = ""
 #  var stats: TForumStats
@@ -98,7 +98,7 @@
             <form method="get" action="http://www.google.com/search" target="_blank" class="searchForm">
               <input type="text" name="q" maxlength="255" value="${c.search}" title="Search this forum" />
               <input type="submit" value="Search" class="button search">
-              <input type="hidden"  name="sitesearch" value="http://forum.nimrod-lang.org" />
+              <input type="hidden"  name="sitesearch" value="http://forum.nim-lang.org" />
             </form>
           #end if
         </div>
@@ -156,7 +156,7 @@
       <div id="foot-legal">
         <h4>Written in Nim - Powered by <a href="https://github.com/dom96/jester">Jester</a></h4>
         Web Design by <a href="http://reign-studios.net/philipwitte/">Philip Witte</a> &amp; <a href="http://picheta.me">Dominik Picheta</a><br>
-        Copyright © 2015 - <a href="http://nim-lang.org/blog/">Andreas Rumpf</a> &amp; <a href="https://github.com/Araq/Nimrod/graphs/contributors">Contributors</a>
+        Copyright © 2015 - <a href="http://nim-lang.org/blog/">Andreas Rumpf</a> &amp; <a href="https://github.com/Araq/Nim/graphs/contributors">Contributors</a>
       </div>
     </div>
   </footer>
@@ -208,7 +208,7 @@
 #    ORDER BY modified DESC LIMIT 1""")
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-    <title>Nimrod forum thread activity</title>
+    <title>Nim forum thread activity</title>
     <link href="${c.req.makeUri("/threadActivity.xml")}" rel="self" />
     <link href="${frontQuery}" />
     <id>${frontQuery}</id>
@@ -257,7 +257,7 @@ ${xmlEncode(rstToHtml(%postContent))}</content>
 #    ORDER BY creation DESC LIMIT 1""")
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-    <title>Nimrod forum post activity</title>
+    <title>Nim forum post activity</title>
     <link href="${c.req.makeUri("/postActivity.xml")}" rel="self" />
     <link href="${frontQuery}" />
     <id>${frontQuery}</id>

@@ -1,6 +1,6 @@
 #
 #
-#              The Nimrod Forum
+#              The Nim Forum
 #        (c) Copyright 2012 Andreas Rumpf, Dominik Picheta
 #        Look at license.txt for more info.
 #        All rights reserved.
