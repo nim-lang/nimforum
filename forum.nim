@@ -24,6 +24,7 @@ const
   MaxPagesFromCurrent = 8
   noPageNums = ["/login", "/register", "/dologin", "/doregister", "/profile"]
   noHomeBtn = ["/", "/login", "/register", "/dologin", "/doregister", "/profile"]
+  banReasonDeactivated = "DEACTIVATED"
 
 type
   TCrud = enum crCreate, crRead, crUpdate, crDelete
@@ -65,6 +66,7 @@ type
     threads: int
     lastOnline: int
     email: string
+    ban: string
 
 var
   db: TDbConn
@@ -223,10 +225,18 @@ proc devRandomSalt(): string =
 
 proc makeSalt(): string =
   ## Creates a salt using a cryptographically secure random number generator.
+  ##
+  ## Ensures that the resulting salt contains no ``\0``.
   try:
     result = devRandomSalt()
   except IOError:
     result = randomSalt()
+
+  var newResult = ""
+  for i in 0 .. <result.len:
+    if result[i] != '\0':
+      newResult.add result[i]
+  return newResult
 
 proc makePassword(password, salt: string, comparingTo = ""): string =
   ## Creates an MD5 hash by combining password and salt.
@@ -287,8 +297,9 @@ proc register(c: var TForumData, name, pass, antibot, email: string): bool =
   
   # perform registration:
   var salt = makeSalt()
-  exec(db, sql("INSERT INTO person(name, password, email, salt, status, lastOnline) " &
-              "VALUES (?, ?, ?, ?, 'user', DATETIME('now'))"), name, 
+  exec(db,
+    sql("INSERT INTO person(name, password, email, salt, status, lastOnline, " &
+        "ban) VALUES (?, ?, ?, ?, 'user', DATETIME('now'), '')"), name,
               makePassword(pass, salt), email, salt)
   #  return setError(c, "", "Could not create your account!")
   return true
@@ -480,12 +491,18 @@ proc newThread(c: var TForumData): bool =
 proc login(c: var TForumData, name, pass: string): bool = 
   # get form data:
   const query = 
-    sql"select id, name, password, email, salt, admin from person where name = ?"
+    sql"select id, name, password, email, salt, admin, ban from person where name = ?"
   if name.len == 0:
     return c.setError("name", "Username cannot be nil.")
   var success = false
   for row in fastRows(db, query, name):
     if row[2] == makePassword(pass, row[4], row[2]):
+      case row[6]
+      of "": discard
+      of banReasonDeactivated:
+        return c.setError("name", "Your account has been deactivated.")
+      else:
+        return c.setError("name", "You have been banned: " & row[6])
       c.userid = row[0]
       c.username = row[1]
       c.userpass = row[2]
@@ -495,12 +512,17 @@ proc login(c: var TForumData, name, pass: string): bool =
       break
   if success:
     # create session:
-    exec(db, 
+    exec(db,
       sql"insert into session (ip, password, userid) values (?, ?, ?)", 
       c.req.ip, c.userpass, c.userid)
     return true
   else:
     return c.setError("password", "Login failed!")
+
+proc setBan(c: var TForumData, nick, reason: string): bool =
+  const query =
+    sql("update person set ban = ? where name = ?")
+  return tryExec(db, query, reason, nick)
 
 proc hasReplyBtn(c: var TForumData): bool =
   result = c.req.pathInfo != "/donewthread" and c.req.pathInfo != "/doreply"
@@ -687,6 +709,10 @@ proc gatherUserInfo(c: var TForumData, nick: string, ui: var TUserInfo): bool =
   let lastOnlineDBVal = getValue(db, lastOnlineQuery, uid)
   ui.lastOnline = if lastOnlineDBVal != "": lastOnlineDBVal.parseInt else: -1
   ui.email = getValue(db, sql"select email from person where id = ?", uid)
+  ui.ban = getValue(db, sql"select ban from person where id = ?", uid)
+
+proc genSetUserStatusUrl(c: var TForumData, nick: string, typ: string): string =
+  c.req.makeUri("/setUserStatus?nick=$1&type=$2" % [nick, typ])
 
 proc genProfile(c: var TForumData, ui: TUserInfo): string =
   result = ""
@@ -724,6 +750,41 @@ proc genProfile(c: var TForumData, ui: TUserInfo): string =
         th("Last Online"),
         td(if ui.lastOnline != -1: t2.format("dd/MM/yy HH':'mm 'UTC'")
            else: "Never")
+      ),
+      tr(
+        th("Status"),
+        td(case ui.ban
+           of banReasonDeactivated:
+             "Deactivated"
+           of "":
+             "Active"
+           else:
+             "Banned: " & ui.ban
+        )
+      ),
+      tr(
+        th(""),
+        td(if c.isAdmin and ui.ban != banReasonDeactivated:
+             if ui.ban == "":
+               htmlgen.a(
+                 href=c.genSetUserStatusUrl(ui.nick, "ban"),
+                     "Ban user")
+             else:
+               htmlgen.a(href=c.genSetUserStatusUrl(ui.nick, "unban"),
+                     "Unban user")
+           else: "")
+      ),
+      tr(
+        th(""),
+        td(if c.userName == ui.nick or c.isAdmin:
+             if ui.ban == "":
+               htmlgen.a(href=c.genSetUserStatusUrl(ui.nick, "deactivate"),
+                  "Deactivate user")
+             elif ui.ban == banReasonDeactivated:
+               htmlgen.a(href=c.genSetUserStatusUrl(ui.nick, "activate"),
+                  "Activate user")
+             else: ""
+           else: "")
       )
     )
   ))
@@ -922,6 +983,64 @@ routes:
     createTFD()
     resp genMain(c, genFormPost(c, "donewthread", "New thread", "", "", false),
                  "New Thread - Nimrod Forum")
+
+  get "/setUserStatus/?":
+    createTFD()
+    cond (@"nick" != "")
+    cond (@"type" != "")
+    var formBody = "<input type=\"hidden\" name=\"nick\" value=\"" &
+                      @"nick" & "\">"
+    var del = false
+    var content = ""
+    echo("Got type: ", @"type")
+    case @"type"
+    of "ban":
+      formBody.add "<input type='text' name='reason' />" &
+          "<input type='submit' name='banBtn' value='Ban' />"
+      content =
+        htmlgen.p("Please enter a reason for banning this user:")
+    of "unban":
+      formBody.add "<input type='submit' name='unbanBtn' value='Unban' />"
+      content =
+        htmlgen.p("Are you sure you wish to unban ", htmlgen.b(@"nick"),
+          "?")
+      del = true
+    of "deactivate":
+      formBody.add "<input type='hidden' name='reason' value='" &
+          banReasonDeactivated & "' />" &
+          "<input type='submit' name='actBtn' value='Deactivate' />"
+      content =
+        htmlgen.p("Are you sure you wish to deactivate ", htmlgen.b(@"nick"),
+          "?")
+    of "activate":
+      formBody.add "<input type='submit' name='actBtn' value='Activate' />"
+      content =
+        htmlgen.p("Are you sure you wish to activate ", htmlgen.b(@"nick"),
+          "?")
+      del = true
+    formBody.add "<input type='hidden' name='del' value='" & $del & "'/>"
+    content = htmlgen.form(action = c.req.makeUri("/dosetban"),
+        `method` = "POST", formBody) & content
+    resp genMain(c, content, "Set user status - Nim Forum")
+
+  post "/dosetban":
+    createTFD()
+    cond (@"nick" != "")
+    if not c.isAdmin and @"nick" != c.userName:
+      resp genMain(c, "You cannot ban this user.", "Error - Nim Forum")
+    if @"reason" == "" and @"del" != "true":
+      resp genMain(c, "Invalid ban reason.", "Error - Nim Forum")
+    let result =
+      if @"del" == "true":
+        # Remove the ban.
+        setBan(c, @"nick", "")
+      else:
+        setBan(c, @"nick", @"reason")
+    if result:
+      redirect(c.req.makeUri("/profile/" & @"nick"))
+    else:
+      resp genMain(c, "Failed to change the ban status of user.",
+          "Error - Nim Forum")
 
   const licenseRst = slurp("static/license.rst")
   get "/license":

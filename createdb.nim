@@ -42,6 +42,11 @@ create table if not exists person(
 );""" % [TUserName, TPassword, TEmail]), [])
 #  echo "person table already exists"
 
+db.exec(sql("""
+alter table person
+add ban varchar(128) not null default ''
+"""))
+
 db.exec(sql"""
 create unique index if not exists UserNameIx on person (name);
 """, [])
