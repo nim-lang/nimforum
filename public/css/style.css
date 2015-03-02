@@ -162,7 +162,7 @@ pre .EscapeSequence
 	#content.page { width:680px; min-height:800px; padding-left:20px; }
 	#content h1 { font-size:20pt; letter-spacing:1px; color:rgba(0,0,0,.75); }
 	#content h2 { font-size:16pt; letter-spacing:1px; color:rgba(0,0,0,.7); margin-top:40px; }
-	#content p { text-align:justify; color: #1D1D1D; margin: 5pt 0pt; }
+	#content p { color: #1D1D1D; margin: 5pt 0pt; }
 	#content a { color:#CEDAE9; text-decoration:none; }
 	#content a:hover { color:#fff;  }
 	#content ul { padding-left:20px; }
