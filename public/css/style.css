@@ -272,6 +272,7 @@ pre .EscapeSequence
       font-weight:bold; 
       white-space: nowrap;
     }
+    #talk-threads > div > .topic > div > a:visited { color: #1a1a1a; }
     #talk-threads > div > .detail > div { float:left; margin:0; }
     #talk-threads > div > .detail > div > div { margin-left:15px; padding: 5px 5px 5px 22px; }
     #talk-threads > div > .detail > div { width:50%; }
