@@ -144,9 +144,9 @@
         <div class="avatar">${genGravatar(%userEmail)}</div>
         <a class="name" href="$profileUrl">${xmlEncode(%userName)}</a>
         #if c.userId == %postAuthor and c.currentPost.subject.len == 0:
-          <hr/><a href="${c.genThreadUrl(%postId, "edit")}">Edit post</a>
+          <hr><a href="${c.genThreadUrl(%postId, "edit")}">Edit post</a>
         #elif c.isAdmin and c.currentPost.subject.len == 0:
-          <hr/><a style="color: red;" href="${c.genThreadUrl(%postId, "edit")}">Edit post</a>
+          <hr><a style="color: red;" href="${c.genThreadUrl(%postId, "edit")}">Edit post</a>
         #end if
       </div>
     </div>
@@ -321,9 +321,9 @@
         <div><a href="$profileUrl">${genGravatar(%userEmail, 40)}</a></div>
         <div style="padding: 8px 0"><a href="$profileUrl">${xmlEncode(%userName)}</a></div>
         #if c.userId == %postAuthor and c.currentPost.subject.len == 0:
-          <hr/><a href="${c.genThreadUrl(%postId, "edit", %threadId)}">Edit post</a>
+          <hr><a href="${c.genThreadUrl(%postId, "edit", %threadId)}">Edit post</a>
         #elif c.isAdmin and c.currentPost.subject.len == 0:
-          <hr/><a style="color: red;" href="${c.genThreadUrl(%postId, "edit", %threadId)}">Edit post</a>
+          <hr><a style="color: red;" href="${c.genThreadUrl(%postId, "edit", %threadId)}">Edit post</a>
         #end if
       </div>
     </div>
