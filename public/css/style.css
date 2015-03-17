@@ -7,27 +7,25 @@ body {
 	min-width:1030px;
 	margin:0;
 	font: 13pt Helvetica,Arial,sans-serif;
-	background:#152534 url("/images/bg.png") no-repeat fixed center top; }
+	background:#152534 url("/images/bg.png") no-repeat center top; }
 
 pre { color: #F5F5F5;}
-pre, pre * { cursor:text; }
+/*pre, pre * { cursor:text; }*/
 pre .Comment { color:#6D6D6D; font-style:italic; }
 pre .Keyword { color:#43A8CF; font-weight:bold; }
 pre .Type { color:#128B7D; font-weight:bold; }
-pre .Operator { font-weight: bold; }
+pre .Operator { color:#aaa; }
 pre .atr { color:#128B7D; font-weight:bold; font-style:italic; }
 pre .def { color:#CAD6E4; font-weight:bold; font-style:italic; }
-pre .StringLit { color:#854D6A; font-weight:bold; }
-pre .DecNumber, pre .FloatNumber { color:#8AB647; }
 pre .tab { border-left:1px dotted rgba(67,168,207,0.4); }
 pre .end { background:url("/images/tabEnd.png") no-repeat left bottom; }
-pre .EscapeSequence
-{
-  color: #C08D12;
-}
+pre .StringLit,
+pre .DecNumber,
+pre .FloatNumber { color:#8AB647; }
+pre .EscapeSequence { color:#C08D12; }
 
 .tall { height:100%; }
-.pre { padding:0 5px; font: 11pt "DejaVu Sans Mono",monospace; background:rgba(255,255,255,.30); border-radius:3px; }
+.pre { padding:0 5px; font:11pt "DejaVu Sans Mono",monospace; background:rgba(255,255,255,.30); border-radius:3px; }
 
 .page-layout { margin:0 auto; width:1000px; }
 .docs-layout { margin:0 40px; }
@@ -106,7 +104,7 @@ pre .EscapeSequence
 
 #body { z-index:1; position:relative; background:rgba(220,231,248,.6); }
 #body.docs { margin:0 40px 20px 320px; }
-#body.forum { margin:0 40px 20px 40px; min-height: 700px; }
+#body.forum { margin:0 40px 20px 40px; min-height:700px; }
 	
 	#body-border {
 		position:absolute;
@@ -150,6 +148,7 @@ pre .EscapeSequence
 		right:-25px;
 		height:3px;
 		background:url("/images/glow-line.png") no-repeat left; }
+	
 	#glow-line-bottom {
 		position:absolute;
 		bottom:-27px;
@@ -158,29 +157,78 @@ pre .EscapeSequence
 		height:3px;
 		background:url("/images/glow-line2.png") no-repeat right; }
 	
-	#content { padding:40px 0; }
+	#content { width:80%; padding:40px 0; }
+	#content.thread { width:100%; }
 	#content.page { width:680px; min-height:800px; padding-left:20px; }
 	#content h1 { font-size:20pt; letter-spacing:1px; color:rgba(0,0,0,.75); }
 	#content h2 { font-size:16pt; letter-spacing:1px; color:rgba(0,0,0,.7); margin-top:40px; }
-	#content p { color: #1D1D1D; margin: 5pt 0pt; }
+	#content p { color:#1D1D1D; margin:10pt 0pt; }
 	#content a { color:#CEDAE9; text-decoration:none; }
-	#content a:hover { color:#fff;  }
+	#content a:hover { color:#fff; }
 	#content ul { padding-left:20px; }
 	#content li { margin-bottom:10px; text-align:justify; }
+	
+	#content > div > form {
+		overflow:auto;
+		border-right:8px solid rgba(0, 0, 0, 0.2);
+		border-radius:3px;
+		background-color:rgba(255, 255, 255, 0.1);
+		padding:20px; }
+	#content > div > form > input,
+	#content > div > form > textarea { border:1px solid #6D6D6D; }
+	#content > div > form > textarea {
+		width:100%;
+		height:200px;
+		padding:4px 0;
+		margin-bottom: 3px;
+		border-radius: 3px;
+		border: 1px solid #6D6D6D;
+		background: rgba(255,255,255,0.7); }
+	#content > div > form > input[type=text] {
+		width:100%;
+		min-width:500px;
+		padding:4px 0;
+		margin-bottom: 3px;
+		border-radius: 3px;
+		border: 1px solid #6D6D6D;
+		background: rgba(255,255,255,0.7); }
+	#content > div > form > input:focus,
+	#content > div > form > textarea:focus { border:1px solid #1cb3ec; }
+	#content > div > form > h2 { margin:10px 0 5px 0; }
+	#content > div > form > .button {
+		cursor:pointer;
+		color: #CEDAE9;
+		padding:10px 20px;
+		font-size: 11pt;
+		text-decoration: none;
+		border-radius: 3px;
+		border-bottom: 2px solid rgba(0,0,0,0.24);
+		background-color: rgba(0,0,0,0.2);
+		margin-right:10px;
+		border-radius:3px; }
+	#content > div > form > .button:hover {
+		border-bottom: 2px solid rgba(0,0,0,0.5);
+		background-color: rgba(0,0,0,0.4); }
     
     #talk-heads { overflow:auto; margin:0 8px 0 8px; }
     #talk-heads > div { float:left; font-size:120%; font-weight:bold; }
-    #talk-heads > .topic { width:45%; }
+    
+		#talk-heads > .topic { width:45%; }
     #talk-heads > .detail { width:15%; }
     #talk-heads > .activity { width:25%; }
     #talk-heads > .users { width:15%; }
-    #talk-heads > div > div { margin:0 10px 10px 10px; padding:0 10px 10px 10px; border-bottom:1px dashed rgba(0,0,0,0.4); }
+    
+    #talk-heads > div > div {
+			margin:0 10px 10px 10px;
+			padding:0 10px 10px 10px;
+			border-bottom:1px dashed rgba(0,0,0,0.4); }
     #talk-heads > .topic > div { margin-left:0; }
     #talk-heads > .activity > div { margin-right:0; }
     
-    #talk-thread > div {
-      background-color: rgba(255, 255, 255, 0.5);
-    }
+    #talk-heads > div > div > a { display:block; float:right; }
+		#talk-heads > div > div > a > img { width:16px; vertical-align:text-bottom; }
+    
+    #talk-thread > div { background-color:rgba(255, 255, 255, 0.5); }
     #talk-thread  > div,
     #talk-threads > div {
       position:relative;
@@ -189,122 +237,75 @@ pre .EscapeSequence
       border-radius:3px;
       border:8px solid rgba(0,0,0,.8);
       border-top:none;
-      border-bottom:none;
-    }
-    #talk-threads > div
-    {
-      line-height: 150%;
-      background:rgba(0,0,0,0.1);
-    }
+      border-bottom:none; }
+    #talk-threads > div { line-height:150%; background:rgba(0,0,0,0.1); }
     #talk-threads > div:nth-child(odd) { background:rgba(0,0,0,0.2); }
     #talk-thread  > div > div,
-    #talk-threads > div > div
-    {
+    #talk-threads > div > div {
       float:left;
-      text-overflow: ellipsis;
-      overflow: hidden;
-      font-size: 13pt;
-    }
-    #talk-threads  > div > div > div { margin: 5px 10px; }
-    #talk-thread > div > div > div { margin: 15px 10px; }
-    #talk-thread > div > .topic
-    {
-      margin-top: 15pt;
-      white-space: normal;
-    }
-    #talk-thread > div > .topic > div
-    {
-      margin-left: 15px;
-    }
-    #talk-thread > div > .topic > div > span.date
-    {
-      position: absolute;
-      top: 5px;
-      right: 10pt;
-      border-bottom: 1px dashed;
-      color: #3D3D3D;
-    }
+      text-overflow:ellipsis;
+      overflow:hidden;
+      font-size:13pt; }
+    #talk-threads  > div > div > div { margin:5px 10px; }
+    #talk-thread > div > div > div { margin:15px 10px; }
+    #talk-thread > div > .topic { margin-top:15pt; white-space:normal; }
+    #talk-thread > div > .topic > div { margin-left:15px; }
+    #talk-thread > div > .topic > div > span.date {
+      position:absolute;
+      top:10px;
+      right:15px;
+      color:rgba(0,0,0,0.25); }
     #talk-threads > div > .topic { width:45%; }
-    #talk-threads > div > .users { width:15%; overflow:hidden; height: 30px; }
-    #talk-threads > div > .users > div > img
-    {
-      margin-bottom: -4pt;
-      cursor: help;
-    }
+    #talk-threads > div > .users { width:15%; overflow:hidden; height:30px; }
+    #talk-threads > div > .users > div > img { margin-bottom:-4pt; cursor:help; }
     #talk-threads > div > .detail { width:16%; overflow:hidden; }
     #talk-thread  > div > .author,
     #talk-threads > div > .activity {
       overflow:hidden;
-      background:rgba(0,0,0,0.8);
-      color: white;
-      
-    }
-    #talk-thread > div > .author {
-      width: 15%;
-    }
-    #talk-threads > div > .activity {
-      width:24%;
-      font-size: 9pt;
-    }
-    #talk-threads > div > .activity a
-    {
-      color: #1CB3EC;
-    }
-    #talk-threads > div > .activity a:hover
-    {
-      color: #ffffff;
-    }
-    #talk-thread > div > .author {
-      height: 100%;
-      position: absolute;
-    }
-    #talk-thread  > div > .author a,
+      color:#fff;
+      background:rgba(0,0,0,0.8); }
+		#talk-threads > div > .activity {
+			position:absolute;
+			top:0;
+			bottom:0;
+			right:0; }
+    #talk-thread > div > .author { width:15%; }
+    #talk-threads > div > .activity { width:24%; font-size:9pt; }
+    #talk-threads > div > .activity a { color:#1CB3EC; }
+    #talk-threads > div > .activity a:hover { color:#ffffff; }
+    #talk-thread > div > .author { height:100%; position:absolute; }
+    #talk-thread > div > .author a,
     #talk-threads > div > .author a { color:#1cb3ec !important; }
-    #talk-thread  > div > .author a:hover,
+    #talk-thread > div > .author a:hover,
     #talk-threads > div > .author a:hover { color:#fff !important; }
     #talk-threads > div > .topic .pages { float:right; }
-    #talk-threads > div > .topic .pages > a
-    {
-      margin-right: 5pt;
-    }
-    #talk-threads > div > .topic > div > a
-    {
-      font-weight:bold; 
-      white-space: nowrap;
-    }
-    #talk-threads > div > .topic > div > a:visited { color: #1a1a1a; }
+    #talk-threads > div > .topic .pages > a { margin-right:5pt; }
+    #talk-threads > div > .topic > div > a { font-weight:bold; }
+    #talk-threads > div > .topic > div > a:visited { color:#1a1a1a; }
     #talk-threads > div > .detail > div { float:left; margin:0; }
-    #talk-threads > div > .detail > div > div { margin-left:15px; padding: 5px 5px 5px 22px; }
+    #talk-threads > div > .detail > div > div { margin-left:15px; padding:5px 5px 5px 22px; }
     #talk-threads > div > .detail > div { width:50%; }
-    #talk-threads > div > .detail > div:first-child > div { background:url("/images/forum-views.png") no-repeat left; cursor: help; }
-    #talk-threads > div > .detail > div:last-child > div { background:url("/images/forum-posts.png") no-repeat left; cursor: help; }
+    #talk-threads > div > .detail > div:first-child > div { background:url("/images/forum-views.png") no-repeat left; cursor:help; }
+    #talk-threads > div > .detail > div:last-child > div { background:url("/images/forum-posts.png") no-repeat left; cursor:help; }
     
-    #talk-thread > div {  margin:20px 0; min-height:160px; padding-bottom: 10pt; }
+    #talk-thread > div { margin:20px 0; min-height:170px; padding-bottom:10pt; }
     #talk-thread > div > .author > div > .avatar { margin-top:20px; }
-    #talk-thread > div > .author > div > .name { }
-    #talk-thread > div > .author > div > .date { font-size: 8pt; color: white; }
-    #talk-thread > div > .topic { width:85%; padding-bottom:10px; margin-left: 15%; }
+    #talk-thread > div > .author > div > .avatar > img { box-shadow:0 0 12px #1cb3ec; }
+    #talk-thread > div > .topic { width:85%; padding-bottom:10px; margin-left:15%; }
     #talk-thread > div > .topic pre {
-        overflow:auto;
-        margin:0;
-        padding:15px 10px;
-        font-size:10pt;
-        font-style:normal;
-        line-height:14pt;
-        background:rgba(0,0,0,.75);
-        border-left:8px solid rgba(0,0,0,.3);
-        margin-bottom: 10pt;
-        font-family: "DejaVu Sans Mono", monospace;
-    }
-    #talk-thread > div > .topic a, #talk-thread > div > .topic a:visited
-    {
-      color: #3680C9;
-      text-decoration: none;
-    }
-    #talk-thread > div > .topic a:hover
-    {
-      text-decoration: underline;
-    }
+			overflow:auto;
+			margin:0;
+			padding:15px 10px;
+			font-size:10pt;
+			font-style:normal;
+			line-height:14pt;
+			background:rgba(0,0,0,.75);
+			border-left:8px solid rgba(0,0,0,.3);
+			margin-bottom:10pt;
+			font-family:"DejaVu Sans Mono", monospace; }
+    #talk-thread > div > .topic a,
+    #talk-thread > div > .topic a:visited { color:#3680C9; text-decoration:none; }
+    #talk-thread > div > .topic a:hover { text-decoration:underline; }
     #talk-head,
     #talk-info {
       overflow:auto;
@@ -318,35 +319,38 @@ pre .EscapeSequence
     #talk-head > div,
     #talk-info > div { float:left; }
     #talk-head > .info,
-    #talk-info > .info { width:80%; }
+    #talk-info > .info,
     #talk-head > .info-post,
-    #talk-info > .info-post { width: 85%; }
+    #talk-info > .info-post { width:76%; }
     #talk-head > .user,
     #talk-info > .user { width:20%; background:rgba(0,0,0,.2); }
     #talk-head > .user-post,
-    #talk-info > .user-post { width: 15%; background:rgba(0,0,0,.2); }
-    #talk-info > .user-post .reply { font-weight:bold; padding-left:22px; background:url("/images/forum-reply.png") no-repeat left; }
-    #talk-info > .user-post a span
-    {
-      color: #CEDAE9 !important;
-    }
-    #talk-info > .user-post > a > div:hover > span
-    {
-      color: #fff !important;
-    }
+    #talk-info > .user-post { width:24%; background:rgba(0,0,0,.2); }
+    #talk-info > .user-post .reply {
+			font-weight:bold;
+			padding-left:22px;
+			background:url("/images/forum-reply.png") no-repeat left; }
+    #talk-info > .user-post a span { color:#CEDAE9 !important; }
+    #talk-info > .user-post > a > div:hover > span { color:#fff !important; }
     #talk-head > div > div,
     #talk-info > div > div,
-    #talk-info > div > a > div { padding:5px 20px; color: #1a1a1a; }
-    #talk-head > div > div { color: #353535; }
+    #talk-info > div > a > div { padding:5px 20px; color:#1a1a1a; }
+    #talk-head > div > div { color:#353535; }
     #talk-head > .detail > div { float:left; margin:0; }
     #talk-head > .detail > div > div { padding-left:22px; }
     #talk-head > .detail > div:first-child > div { background:url("/images/forum-views.png") no-repeat left; }
     #talk-head > .detail > div:last-child > div { background:url("/images/forum-posts.png") no-repeat left; }
     
-    #talk-nav { margin:20px 8px 0 8px; padding-top:10px; border-top:1px dashed rgba(0,0,0,0.4); text-align:center; }
+    #talk-nav {
+			margin:20px 8px 0 8px;
+			padding-top:10px;
+			border-top:1px dashed rgba(0,0,0,0.4);
+			text-align:center; }
     #talk-nav > a.active { text-decoration:underline !important; }
-    #talk-nav > a, #talk-nav > span, #talk-info > .info-post > div > a,
-    #talk-info > .info-post > div > span { margin-left: 5pt; }
+    #talk-nav > a,
+    #talk-nav > span,
+    #talk-info > .info-post > div > a,
+    #talk-info > .info-post > div > span { margin-left:5pt; }
     
     .standout {
       padding:5px 30px;
@@ -398,31 +402,24 @@ pre .EscapeSequence
 		height:319px;
 		background:url("/images/mascot.png") no-repeat; }
 
-article#content
-{
-  width: 80%;
-  display: inline-block;
-}
-
 div#sidebar
 {
-  background-color: rgba(255, 255, 255, 0.1);
-  
-  border-left: 8px solid rgba(0, 0, 0, 0.8);
-  border-right: 8px solid rgba(0, 0, 0, 0.8);
-  border-bottom: 8px solid rgba(0, 0, 0, 0.8);
+  color: #FFF;
+	
+  border: 8px solid rgba(0, 0, 0, 0.8);
+	border-top: 0;
   border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.1);
   
   width: 15%;
   margin-top: 40px;
   
-  display: inline-block;
-  float: right;
-  
-  color: #FFF;
+	position: absolute;
+	right: 40px;
+	top: 50px;
 }
 
-div#sidebar .title
+div#sidebar > .title
 {
   background-color: rgba(0, 0, 0, 0.8);
   color: #FFF;
@@ -430,55 +427,56 @@ div#sidebar .title
   padding: 10pt;
 }
 
-div#sidebar .content
+div#sidebar > .content
 {
   padding: 12pt;
-  overflow: auto;
-  
+	background: rgba(0,0,0,0.1);
 }
 
-div#sidebar .content .button
+div#sidebar > .content .button
 {
-  background-color: rgba(0,0,0,0.2);
-  text-decoration: none;
-  color: #FFF;
-  padding: 4pt;
-  float: right;
-  border-bottom: 2px solid rgba(0,0,0,0.24);
-  font-size: 11pt;
+	display: block;
+  color: #CEDAE9;
+  padding: 5px;
   margin-top: 5pt;
+  font-size: 11pt;
+	text-align: center;
+  text-decoration: none;
+	border-radius: 3px;
+  border-bottom: 2px solid rgba(0,0,0,0.24);
+  background-color: rgba(0,0,0,0.2);
 }
 
 div#sidebar .content .button:hover
 {
   border-bottom: 2px solid rgba(0,0,0,0.5);
+	background-color: rgba(0,0,0,0.4);
+}
+
+div#sidebar > .content input.button
+{
+	cursor: pointer;
 }
 
 div#sidebar .content input
 {
-  width: 99%;
-  margin-bottom: 10pt;
-  margin-top: 2pt;
-  
+	width:100%;
+	padding:4px 0;
+	margin-bottom: 3px;
+	border-radius: 3px;
   border: 1px solid #6D6D6D;
-  font-size: 12pt;
-}
-
-div#sidebar .content a.avatar img
-{
-  float: left;
-  margin-top: 5pt;
+	background: rgba(255,255,255,0.7);
 }
 
 div#sidebar .content a.user
 {
-  background-color: rgba(0, 0, 0, 0.8);
-  color: #1cb3ec;
-  padding: 5pt;
-  width: 93%;
+  padding: 5px;
   display: block;
-  text-align: center;
+  color: #1cb3ec;
+	text-align: center;
   text-decoration: none;
+	border-radius: 3px 3px 0 0;
+  background-color: rgba(0, 0, 0, 0.8);
 }
 
 div#sidebar .content a.user:hover
@@ -486,33 +484,15 @@ div#sidebar .content a.user:hover
   color: #FFF;
 }
 
-div#sidebar .user .button
-{
-  float: left;
-  margin-top: 5pt;
-  width: 52.5%;
-}
-
-div#sidebar .user .logout
-{
-  clear: left;
-  width: 52pt;
-  text-align: center;
-  margin-left: 0pt;
-}
-
-div#sidebar .user .avatar > img
-{
-  margin-right: 5pt;
-}
-
-div#sidebar .content .search
-{
-  text-align: center;
-  margin: auto;
-  display: block;
-  width: 95%;
-}
+div#sidebar div.user .avatar {
+	display:block;
+	padding:10px;
+	text-align:center;
+	border-radius:0 0 3px 3px;
+	background:rgba(0,0,0,0.8); }
+div#sidebar div.user .avatar > img {
+	margin-bottom:5px;
+	box-shadow:0 0 12px #1cb3ec; }
 
 span.error
 {
@@ -522,7 +502,7 @@ span.error
   text-align: center;
   font-size: 10pt;
   background-color: rgba(0,0,0,0.8);
-  padding: 5pt 0pt;
+  padding: 5px 0pt;
   font-weight: bold;
 }
 
@@ -531,35 +511,6 @@ section#body #content span.error
   width: 25%;
   margin-top: 5px;
   margin-bottom: 5px;
-}
-
-article#content form
-{
-  border-right: 8px solid rgba(0, 0, 0, 0.2);
-  background-color: rgba(255, 255, 255, 0.1);
-  padding: 10pt 20pt;
-}
-
-article#content form > input, article#content form > textarea
-{
-  border: 1px solid #6D6D6D;
-}
-
-article#content form > input[type=text]
-{
-  width: 70%;
-  min-width: 500px;
-}
-
-article#content form > textarea
-{
-  width: 100%;
-  height: 200px;
-}
-
-article#content form > input:focus, article#content form > textarea:focus
-{
-  border: 1px solid #1cb3ec;
 }
 
 hr
@@ -596,26 +547,18 @@ div:target {
 }
 
 .postTitle a:hover {
-  text-decoration: none !important;
   border-bottom: 1px solid #D7300C;
 }
 
-.searchForm {
-  margin-top: 0px;
-  margin-right: 1em;
-  margin-bottom: 0px;
-  margin-left: 1em;
+.searchBox {
+	position:relative;
 }
-
 .searchHelp { 
-  color: #000000 !important;
-  float: right;
-  font-size: 11px;
-  left: -17px;
-  top: 3px;
-  position: relative;
+  top: 2px;
+  right: 5px;
+  position: absolute;
   text-decoration: none;
-  text-shadow: #FFFF00 1px 1px 2px;
+  color: #000000 !important;
   cursor: help;
 }
 
@@ -645,10 +588,4 @@ img.smiley {
   height: 20px;
   vertical-align: middle;
   margin: 0;
-}
-
-img.rssfeed {
-  width: 16px;
-  float: right;
-  margin-top: 10px;
 }

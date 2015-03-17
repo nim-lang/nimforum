@@ -525,8 +525,11 @@ proc setBan(c: var TForumData, nick, reason: string): bool =
   return tryExec(db, query, reason, nick)
 
 proc hasReplyBtn(c: var TForumData): bool =
-  result = c.req.pathInfo != "/donewthread" and c.req.pathInfo != "/doreply"
-  result = result and c.req.params["action"] != "reply"
+  result =
+    c.req.pathInfo != "/donewthread" and
+    c.req.pathInfo != "/doreply" and
+    c.req.params["action"] != "edit" and
+    c.req.params["action"] != "reply"
   # If the user is not logged in and there are no page numbers then we shouldn't
   # generate the div.
   let pages = ceil(c.totalPosts / PostsPerPage).int

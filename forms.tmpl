@@ -18,7 +18,7 @@
     <div>
       Topic
       <a href="${c.req.makeUri("/threadActivity.xml")}">
-        <img src="/images/Feed-icon.svg" class="rssfeed">
+        <img src="/images/Feed-icon.png">
       </a>
     </div>
   </div>
@@ -28,7 +28,7 @@
     <div>
       Activity
       <a href="${c.req.makeUri("/postActivity.xml")}">
-        <img src="/images/Feed-icon.svg" class="rssfeed">
+        <img src="/images/Feed-icon.png">
       </a>
     </div>
   </div>
@@ -84,8 +84,7 @@
 #end proc
 #
 #
-#proc genPostPreview(c: var TForumData,
-#                    title, content, author, date: string): string =
+#proc genPostPreview(c: var TForumData, title, content, author, date: string): string =
 #  result = ""
 <a name="preview"></a>
 <div id="talk-thread">
@@ -170,40 +169,39 @@
 #proc genFormPost(c: var TForumData, action: string,
 #                 topText, title, content: string, isEdit: bool): string =
 #  result = ""
-<br />
-<a name="reply"></a>
 <div id="replywrapper">
-  <div id="talk-head">
-    <div class="info-post">
-      <div>
-        <a href="${c.req.makeUri("/")}"><b>forum index</b></a> &gt;
-        $topText
+  #if c.req.params["action"] != "reply":
+    <div id="talk-head">
+      <div class="info-post">
+        <div>
+          <a href="${c.req.makeUri("/")}"><b>forum index</b></a> &gt;
+          $topText
+        </div>
       </div>
     </div>
-  </div>
+  #end if
   <form action="${c.req.makeUri(action, false) & "#preview"}" method="POST">
     #if action == "doreply":
       ${HiddenField(c, "subject", title)}
     #else:
-      ${FieldValid(c, "subject", "Subject:")}
+      ${FieldValid(c, "subject", "<h2>Subject</h2>")}
       ${TextWidget(c, "subject", title, maxlength=100)}
-      <br />
     #end if
-    ${FieldValid(c, "content", "Content:")}<br />
-    ${TextAreaWidget(c, "content", content)}<br />
+    ${FieldValid(c, "content", "<h2>Content</h2>")}
+    ${TextAreaWidget(c, "content", content)}<br>
     ${FormSession(c, action)}
 
   #  if isEdit:
-    <input type="checkbox" name="delete" value="Delete">Delete Post<br />
+    <input type="checkbox" name="delete" value="Delete">Delete Post<br>
   #  end if
     #if c.errorMsg != "":
       <div style="float: left; width: 100%;">
         <span class="error">$c.errorMsg</span>
       </div>
     #end if
-    <br/>
-    <input type="submit" name="previewBtn" value="Preview" />
-    <input type="submit" name="postBtn" value="Submit" />
+    <br>
+    <input type="submit" name="previewBtn" class="button" value="Preview">
+    <input type="submit" name="postBtn" class="button" value="Submit">
   
     <a href="http://nim-lang.org/rst.html">Syntax Cheatsheet</a>
   </form>

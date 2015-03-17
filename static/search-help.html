@@ -1,0 +1,26 @@
+
+<h1 id="full-text-search-for-nim-forum">Full-text search for Nim forum</h1>
+<h2 id="syntax-using-sqlite-dll-compiled-without-enhanced-query-syntax-support">Syntax (using <em>SQLite</em> dll compiled without <em>Enhanced Query Syntax</em> support):</h2><ul class="simple"><li>Only alphanumeric characters are searched.</li>
+<li>Only full words and words beginnings (e.g. <tt class="docutils literal"><span class="pre">Nim*</span></tt> for both <tt class="docutils literal"><span class="pre">Nimrod</span></tt> and <tt class="docutils literal"><span class="pre">Nim</span></tt>) are searched</li>
+<li>All words are joined with implicit <strong>AND</strong> operator; there's no explicit one</li>
+<li>There's explicit <strong>OR</strong> operator (upper-case) and it has higher priority</li>
+<li>Words can be prepended with <strong>-</strong> to be excluded from search</li>
+<li>No parentheses support</li>
+<li>Quotes for phrases search, e.g. <tt class="docutils literal"><span class="pre">&quot;programming language&quot;</span></tt></li>
+<li>Distances between words/phrases can be specified putting <tt class="docutils literal"><span class="pre">NEAR</span></tt> or <tt class="docutils literal"><span class="pre">NEAR/some_number</span></tt> between them</li>
+</ul>
+
+<h2 id="syntax-differences-in-enhanced-query-syntax-should-be-enabled-in-sqlite-dll">Syntax - differences in <em>Enhanced Query Syntax</em> (should be enabled in <em>SQLite</em> dll):</h2><ul class="simple"><li><strong>AND</strong> and <strong>NOT</strong> logical operators available</li>
+<li>Precedence of operators is, from highest to lowest: <strong>NOT</strong>, <strong>AND</strong>, <strong>OR</strong></li>
+<li>Parentheses for grouping are supported</li>
+</ul>
+
+<h2 id="where-search-is-performed">Where search is performed:</h2><ul class="simple"><li><strong>Threads' titles</strong> - these results are outputed first</li>
+<li><strong>Posts' titles</strong> - middle precedence</li>
+<li><strong>Posts' contents</strong> - the latest</li>
+</ul>
+
+<h2 id="how-results-are-shown">How results are shown:</h2><ul class="simple"><li>All results are ordered by date (posts' edits don't affect)</li>
+<li>Matched tokens in text are marked (bold or dotted underline)</li>
+<li>Threads title is the link to the thread and posts title is the link to the post</li>
+</ul>
