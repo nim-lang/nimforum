@@ -12,7 +12,8 @@
 <head>
   <title>${xmlEncode(title)}</title>
   <link rel="stylesheet" href="${c.req.makeUri("css/style.css", absolute = false)}">
-  <link rel="shortcut icon" href="${c.req.makeUri("favicon.ico", absolute = false)}">${additional_headers}
+  <link rel="shortcut icon" href="${c.req.makeUri("favicon.ico", absolute = false)}">
+  ${additional_headers}
   <meta charset="UTF-8">
 </head>
 <body>
@@ -21,12 +22,12 @@
   <header id="head" class="forum">
     <div class="wide-layout tall">
       <div id="head-logo"></div>
-      <a id="head-logo-link" href="/"></a>
+      <a id="head-logo-link" href="http://nim-lang.org/"></a>
       <nav id="head-links">
-        <a href="http://nim-lang.org/">home</a>
-        <a href="http://nim-lang.org/documentation.html">docs</a>
         <a href="http://nim-lang.org/learn.html">learn</a>
+        <a href="http://nim-lang.org/documentation.html">docs</a>
         <a href="http://nim-lang.org/download.html">download</a>
+        <a href="http://nim-lang.org/support.html">support</a>
         <a href="${frontQuery}" class="active">forum</a>
         <a href="http://nim-lang.org/question.html">faq</a>
       </nav>
@@ -49,91 +50,98 @@
     <div id="glow-line"></div>
     <div id="glow-line-bottom"></div>
     <div class="talk-layout">
-      <article id="content">
-        ${content}
-        #if c.isThreadsList:
+      #if c.isThreadsList:
+        <article id="content">
+          ${content}
           <div id="talk-info">
             <div class="info">
               <div>
                 ${c.genListOnline(stats)}
               </div>
             </div>
+          
+            <div class="user-post">
+              #if c.loggedIn():
+                <a href="${frontQuery}newthread">
+                  <div>
+                    <span class="reply">New Thread</span>
+                  </div>
+                </a>
+              #end if
+            </div>
           </div>
           #if not c.noPagenumumNav:
           <div id="talk-nav">
             ${genPagenumNav(c, stats)}
           </div>
-          #end if
-        #elif hasReplyBtn(c):
-          <div id="talk-info">
-            <div class="info-post">
-              <div>
-              ${genPagenumNav(c, stats)}
-              </div>
+        </article>
+        <div id="sidebar">
+          <div class="title">Search</div>
+          <div class="content">
+            #if isFTSAvailable:
+              <form method="post" action="/search" class="searchForm">
+                <div class="searchBox">
+                  <a href="/search-help" target="_blank" class="searchHelp">?</a>
+                  <input type="text" name="q" maxlength="255" value="${c.search}" title="Search this forum">
+                </div>
+                <input type="submit" value="Search" class="button search">
+              </form>
+            #else:
+              <form method="get" action="http://www.google.com/search" target="_blank" class="searchForm">
+                <input type="text" name="q" maxlength="255" value="${c.search}" title="Search this forum">
+                <input type="submit" value="Search" class="button search">
+                <input type="hidden"  name="sitesearch" value="http://forum.nim-lang.org">
+              </form>
+            #end if
+          </div>
+          #if c.loggedIn:
+            <div class="title">Account</div>
+            <div class="content user">
+              #let profileUrl = c.req.makeUri("profile/", false) & xmlEncode(c.username)
+              <a href="$profileUrl" class="user">${c.username}</a>
+              <a href="$profileUrl" class="avatar">${genGravatar(c.email)}</a>
+              <a href="$profileUrl" class="button">Profile</a>
+              <a href="${frontQuery}logout" class="button logout">Logout</a>
             </div>
-            <div class="user-post">
-              #if c.loggedIn():
+          #else:
+            <div class="title">Login</div>
+            <div class="content">
+              <form name="login" action="${frontQuery}dologin" method="POST">
+                <span>Username: </span><input type="text" name="name">
+                <span>Password: </span><input type="password" name="password">
+                <input type="submit" style="display:none;" id="hdnLogin" value="Login">
+              </form>
+              #if c.errorMsg != "" and c.req.pathInfo.normalizeUri == "/dologin":
+                <span class="error">$c.errorMsg</span>
+              #end if
+              <a href="${frontQuery}register" class="button" style="float: left;">Register</a>
+              <a href="#" onclick="document.forms['login'].submit()" class="button">Login</a>
+            </div>
+          #end if
+        </div>
+      #end if
+      #else:
+        <article id="content" class="thread">
+          ${content}
+          #if c.hasReplyBtn:
+            <div id="talk-info">
+              <div class="info-post">
+                <div>
+                ${genPagenumNav(c, stats)}
+                </div>
+              </div>
+              <div class="user-post">
                 #let replyUri = c.req.makeUri(c.req.path & "?action=reply#reply")
                 <a href="$replyUri">
                   <div>
                     <span class="reply">Reply</span>
                   </div>
                 </a>
-              #end if
+              </div>
             </div>
-          </div>
-        #end if
-        
-      </article>
-      <div id="sidebar">
-        <div class="title">Search</div>
-        <div class="content">
-          #if isFTSAvailable:
-            <a href="/search-help" target="_blank" class="searchHelp">?</a>
-            <form method="post" action="/search" class="searchForm">
-              <input type="text" name="q" maxlength="255" value="${c.search}" title="Search this forum" />
-              <input type="submit" value="Search" class="button search">
-            </form>
-          #else:
-            <form method="get" action="http://www.google.com/search" target="_blank" class="searchForm">
-              <input type="text" name="q" maxlength="255" value="${c.search}" title="Search this forum" />
-              <input type="submit" value="Search" class="button search">
-              <input type="hidden"  name="sitesearch" value="http://forum.nim-lang.org" />
-            </form>
           #end if
-        </div>
-        #if c.loggedIn:
-          <div class="title">Your account</div>
-          <div class="content user">
-            #let profileUrl = c.req.makeUri("profile/", false) &
-            #  xmlEncode(c.username)
-            <a href="$profileUrl" class="user">${c.username}</a>
-            <a href="$profileUrl" class="avatar">${genGravatar(c.email)}</a>
-            <a href="${frontQuery}newthread" class="button">New Thread</a>
-            <a href="$profileUrl" class="button">My Profile</a>
-            
-            <a href="${frontQuery}logout" class="button logout">Logout</a>
-            
-          </div>
-        #else:
-          <div class="title">Login</div>
-          <div class="content">
-            <form name="login" action="${frontQuery}dologin" method="POST">
-              <span>Username: </span><input type="text" name="name" />
-              <span>Password: </span><input type="password" name="password" />
-              <input type="submit" style="display: none;"
-                     id="hdnLogin" value="Login" />
-            </form>
-            #if c.errorMsg != "" and c.req.pathInfo.normalizeUri == "/dologin":
-              <span class="error">$c.errorMsg</span>
-            #end if
-            <a href="${frontQuery}register" class="button"
-               style="float: left;">Register</a>
-            <a href="#" onclick="document.forms['login'].submit()"
-               class="button">Login</a>
-          </div>
-        #end if
-      </div>
+        </article>
+      #end if
     </div>
   </section>
   
@@ -144,7 +152,8 @@
         <div>
           <h4>Documentation</h4>
           <a href="http://nim-lang.org/documentation.html">Stable Documentation</a>
-          <a href="https://github.com/Araq/Nim/issues">Github Issues &amp; Requests</a>
+          <a href="learn.html">Learning Resources</a>
+          <a href="https://github.com/Araq/Nim/issues">Issues &amp; Requests</a>
         </div>
         <div>
           <h4>Community</h4>
@@ -172,7 +181,6 @@
 
   </script>
 
-  <script src="${frontQuery}js/arrow.js"></script>
   <script src="${frontQuery}js/forum.js"></script>
 </body>
 </html>
@@ -180,10 +188,8 @@
 #
 #proc genRSSHeaders(c: var TForumData): string =
 #  result = ""
-<link href="${c.req.makeUri("/threadActivity.xml")}" title="Thread activity"
-  type="application/atom+xml" rel="alternate">
-<link href="${c.req.makeUri("/postActivity.xml")}" title="Post activity"
-  type="application/atom+xml" rel="alternate">
+<link href="${c.req.makeUri("/threadActivity.xml")}" title="Thread activity" type="application/atom+xml" rel="alternate">
+<link href="${c.req.makeUri("/postActivity.xml")}" title="Post activity" type="application/atom+xml" rel="alternate">
 #end proc
 #
 #proc genThreadsRSS(c: var TForumData): string =
@@ -208,27 +214,23 @@
 #    ORDER BY modified DESC LIMIT 1""")
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-    <title>Nim forum thread activity</title>
-    <link href="${c.req.makeUri("/threadActivity.xml")}" rel="self" />
-    <link href="${frontQuery}" />
-    <id>${frontQuery}</id>
-    <updated>${recent}</updated>
+  <title>Nim forum thread activity</title>
+  <link href="${c.req.makeUri("/threadActivity.xml")}" rel="self" />
+  <link href="${frontQuery}" />
+  <id>${frontQuery}</id>
+  <updated>${recent}</updated>
 # for row in rows(db, query, 10):
-    <entry>
-        <title>${xmlEncode(%name)}</title>
-        <id>urn:entry:${%threadid}</id>
-        # let url = c.genThreadUrl(threadid = %threadid,
-        #   pageNum = $(ceil(parseInt(%postCount) / PostsPerPage).int)) &
-        #   "#" & %postId
-        <link rel="alternate" type="text/html"
-          href="${c.req.makeUri(url)}"/>
-        <published>${%threadDate}</published>
-        <updated>${%threadDate}</updated>
-        <author><name>${xmlEncode(%postAuthor)}</name></author>
-        <content type="html"
->Posts ${%postCount}, ${xmlEncode(%postAuthor)} said:
-&lt;p&gt;
-${xmlEncode(rstToHtml(%postContent))}</content>
+  <entry>
+    <title>${xmlEncode(%name)}</title>
+    <id>urn:entry:${%threadid}</id>
+    # let url = c.genThreadUrl(threadid = %threadid,
+    #   pageNum = $(ceil(parseInt(%postCount) / PostsPerPage).int)) &
+    #   "#" & %postId
+    <link rel="alternate" type="text/html" href="${c.req.makeUri(url)}"/>
+    <published>${%threadDate}</published>
+    <updated>${%threadDate}</updated>
+    <author><name>${xmlEncode(%postAuthor)}</name></author>
+    <content type="html">Posts ${%postCount}, ${xmlEncode(%postAuthor)} said: &lt;p&gt; ${xmlEncode(rstToHtml(%postContent))}</content>
     </entry>
 # end for
 </feed>
@@ -257,27 +259,23 @@ ${xmlEncode(rstToHtml(%postContent))}</content>
 #    ORDER BY creation DESC LIMIT 1""")
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-    <title>Nim forum post activity</title>
-    <link href="${c.req.makeUri("/postActivity.xml")}" rel="self" />
-    <link href="${frontQuery}" />
-    <id>${frontQuery}</id>
-    <updated>${recent}</updated>
+  <title>Nim forum post activity</title>
+  <link href="${c.req.makeUri("/postActivity.xml")}" rel="self" />
+  <link href="${frontQuery}" />
+  <id>${frontQuery}</id>
+  <updated>${recent}</updated>
 # for row in rows(db, query, 10):
-    <entry>
-        <title>${xmlEncode(%postHeader)}</title>
-        <id>urn:entry:${%postId}</id>
-        # let url = c.genThreadUrl(threadid = %postThread,
-        #   pageNum = $(ceil(parseInt(%postPosition) / PostsPerPage).int)) &
-        #   "#" & %postId
-        <link rel="alternate" type="text/html"
-          href="${c.req.makeUri(url)}"/>
-        <published>${%postRssDate}</published>
-        <updated>${%postRssDate}</updated>
-        <author><name>${xmlEncode(%postAuthor)}</name></author>
-        <content type="html"
->On ${xmlEncode(%postHumanDate)}, ${xmlEncode(%postAuthor)} said:
-&lt;p&gt;
-${xmlEncode(rstToHtml(%postContent))}</content>
+  <entry>
+    <title>${xmlEncode(%postHeader)}</title>
+    <id>urn:entry:${%postId}</id>
+    # let url = c.genThreadUrl(threadid = %postThread,
+    #   pageNum = $(ceil(parseInt(%postPosition) / PostsPerPage).int)) &
+    #   "#" & %postId
+    <link rel="alternate" type="text/html" href="${c.req.makeUri(url)}"/>
+    <published>${%postRssDate}</published>
+    <updated>${%postRssDate}</updated>
+    <author><name>${xmlEncode(%postAuthor)}</name></author>
+    <content type="html">On ${xmlEncode(%postHumanDate)}, ${xmlEncode(%postAuthor)} said: &lt;p&gt; ${xmlEncode(rstToHtml(%postContent))}</content>
     </entry>
 # end for
 </feed>
