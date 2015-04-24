@@ -32,14 +32,7 @@
       </nav>
     </div>
   </header>
-  
-  <!--- #neck --->
-  <section id="neck">
-    <div class="wide-layout tall">
-      <div style="right: 131px;" id="glow-arrow" class="forum"></div>
-    </div>
-  </section>
-  
+
   <!--- #body --->
   <section id="body" class="forum">
     <div id="body-border"></div>
@@ -83,7 +76,7 @@
             </div>
           </div>
         #end if
-        
+
       </article>
       <div id="sidebar">
         <div class="title">Search</div>
@@ -111,9 +104,9 @@
             <a href="$profileUrl" class="avatar">${genGravatar(c.email)}</a>
             <a href="${frontQuery}newthread" class="button">New Thread</a>
             <a href="$profileUrl" class="button">My Profile</a>
-            
+
             <a href="${frontQuery}logout" class="button logout">Logout</a>
-            
+
           </div>
         #else:
           <div class="title">Login</div>
@@ -136,7 +129,7 @@
       </div>
     </div>
   </section>
-  
+
   <!--- #foot --->
   <footer id="foot" class="forum">
     <div class="talk-layout tall">
@@ -171,9 +164,6 @@
     ga('send', 'pageview');
 
   </script>
-
-  <script src="${frontQuery}js/arrow.js"></script>
-  <script src="${frontQuery}js/forum.js"></script>
 </body>
 </html>
 #end proc

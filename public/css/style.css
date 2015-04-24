@@ -3,11 +3,11 @@ a, a * { cursor:pointer; }
 
 html { margin:0; overflow-x:auto; }
 body {
-	overflow-x:hidden;
-	min-width:1030px;
-	margin:0;
-	font: 13pt Helvetica,Arial,sans-serif;
-	background:#152534 url("/images/bg.png") no-repeat fixed center top; }
+    overflow-x:hidden;
+    min-width:1030px;
+    margin:0;
+    font: 13pt Helvetica,Arial,sans-serif;
+    background:#152534 url("/images/bg.png") no-repeat fixed center top; }
 
 pre { color: #F5F5F5;}
 pre, pre * { cursor:text; }
@@ -34,21 +34,24 @@ pre .EscapeSequence
 .talk-layout { margin:0 40px; }
 .wide-layout { margin:0 auto; }
 
-#head { height:100px; background:url("/images/head.png") repeat-x bottom; }
+#head {
+    height:100px;
+    margin-bottom: 40px;
+    background:url("/images/head.png") repeat-x bottom; }
 #head.docs { margin-left:280px; background:rgba(0,0,0,.25) url("/images/head-fade.png") no-repeat right top; }
 #head > div { position:relative }
-	
-	#head-logo {
-		position:absolute;
-		left:-390px;
-		top:0;
-		width:917px;
-		height:268px;
-		pointer-events:none;
-		background:url("/images/logo.png") no-repeat; }
-	#head.docs #head-logo { left:-381px; position:fixed; }
-	#head.forum #head-logo { left:-370px; }
-	
+
+    #head-logo {
+        position:absolute;
+        left:-390px;
+        top:0;
+        width:917px;
+        height:268px;
+        pointer-events:none;
+        background:url("/images/logo.png") no-repeat; }
+    #head.docs #head-logo { left:-381px; position:fixed; }
+    #head.forum #head-logo { left:-370px; }
+
   #head-logo-link {
     position:absolute;
     display:block;
@@ -58,116 +61,115 @@ pre .EscapeSequence
     height:85px; }
   #head.docs #head-logo-link { left:-260px; }
   #head.forum #head-logo-link { left:30px; }
-	
-	#head-links { position:absolute; right:0; bottom:13px; }
-	#head.docs #head-links,
-	#head.forum #head-links { right:20px; }
-	#head-links > a {
-		display:block;
-		float:left;
-		padding:10px 25px 25px 25px;
-		color:rgba(255,255,255,.5);
-		font-size:14pt;
-		text-decoration:none;
-		letter-spacing:1px;
-		background:url("/images/head-link.png") no-repeat center bottom;
-		transition:
-			color 0.3s ease-in-out,
-			text-shadow 0.4s ease-in-out; }
-	#head-links > a:hover,
-	#head-links > a.active {
-		color:#1cb3ec;
-		text-shadow:0 0 4px rgba(28,179,236,.8);
-		background-image:url("/images/head-link_hover.png"); }
 
-	#head-banner { width:200px; height:100px; background:#000; }
+    #head-links { position:absolute; right:0; bottom:13px; }
+    #head.docs #head-links,
+    #head.forum #head-links { right:20px; }
+    #head-links > a {
+        display:block;
+        float:left;
+        padding:10px 25px 25px 25px;
+        color:rgba(255,255,255,.5);
+        font-size:14pt;
+        text-decoration:none;
+        letter-spacing:1px;
+        background:url("/images/head-link.png") no-repeat center bottom;
+        transition:
+            color 0.3s ease-in-out,
+            text-shadow 0.4s ease-in-out; }
+    #head-links > a:hover,
+    #head-links > a.active {
+        position: relative;
+        color:#1cb3ec;
+        text-shadow:0 0 4px rgba(28,179,236,.8);
+        background-image:url("/images/head-link_hover.png"); }
 
-#neck { z-index:0; height:40px; }
-#neck.home { height:370px; }
-#neck > div { position:relative }
-	
-	#glow-arrow {
-		position:absolute;
-		top:-9px;
-		left:0;
-		right:-16px;
-		height:48px;
-		background:url("/images/glow-arrow.png") no-repeat right; }
-  glow-arrow.docs { left:280px; }
-	
-	#glow-line-vert {
-		position:fixed;
-		top:100px;
-		left:280px;
-		width:3px;
-		height:844px;
-		background:url("/images/glow-line-vert.png") no-repeat; }
+        #head-links > a.active:after {
+            display: block;
+            content: "";
+            width: 771px;
+            background: url("/images/glow-arrow.png") no-repeat left;
+            height: 41px;
+            position: absolute;
+            left: 50%;
+            bottom: -49px;
+            transform: translateX(-618px); }
+
+    #head-banner { width:200px; height:100px; background:#000; }
+
+    #glow-line-vert {
+        position:fixed;
+        top:100px;
+        left:280px;
+        width:3px;
+        height:844px;
+        background:url("/images/glow-line-vert.png") no-repeat; }
 
 
 #body { z-index:1; position:relative; background:rgba(220,231,248,.6); }
 #body.docs { margin:0 40px 20px 320px; }
 #body.forum { margin:0 40px 20px 40px; min-height: 700px; }
-	
-	#body-border {
-		position:absolute;
-		top:-25px;
-		left:0;
-		right:0;
-		height:35px;
-		background:rgba(0,0,0,.25); }
-	
-	#body-border-left {
-		position:absolute;
-		left:-25px;
-		top:-25px;
-		bottom:-25px;
-		width:35px;
-		background:rgba(0,0,0,.25); }
-	
-	#body-border-right {
-		position:absolute;
-		right:-25px;
-		top:-25px;
-		bottom:-25px;
-		width:35px;
-		background:rgba(0,0,0,.25); }
-	
-	#body-border-bottom {
-		position:absolute;
-		left:10px;
-		right:10px;
-		bottom:-25px;
-		height:35px;
-		background:rgba(0,0,0,.25); }
-	
-	#body.docs #body-border,
-	#body.forum #body-border { left:10px; right:10px; }
-	
-	#glow-line {
-		position:absolute;
-		top:-27px;
-		left:100px;
-		right:-25px;
-		height:3px;
-		background:url("/images/glow-line.png") no-repeat left; }
-	#glow-line-bottom {
-		position:absolute;
-		bottom:-27px;
-		left:-25px;
-		right:100px;
-		height:3px;
-		background:url("/images/glow-line2.png") no-repeat right; }
-	
-	#content { padding:40px 0; }
-	#content.page { width:680px; min-height:800px; padding-left:20px; }
-	#content h1 { font-size:20pt; letter-spacing:1px; color:rgba(0,0,0,.75); }
-	#content h2 { font-size:16pt; letter-spacing:1px; color:rgba(0,0,0,.7); margin-top:40px; }
-	#content p { color: #1D1D1D; margin: 5pt 0pt; }
-	#content a { color:#CEDAE9; text-decoration:none; }
-	#content a:hover { color:#fff;  }
-	#content ul { padding-left:20px; }
-	#content li { margin-bottom:10px; text-align:justify; }
-    
+
+    #body-border {
+        position:absolute;
+        top:-25px;
+        left:0;
+        right:0;
+        height:35px;
+        background:rgba(0,0,0,.25); }
+
+    #body-border-left {
+        position:absolute;
+        left:-25px;
+        top:-25px;
+        bottom:-25px;
+        width:35px;
+        background:rgba(0,0,0,.25); }
+
+    #body-border-right {
+        position:absolute;
+        right:-25px;
+        top:-25px;
+        bottom:-25px;
+        width:35px;
+        background:rgba(0,0,0,.25); }
+
+    #body-border-bottom {
+        position:absolute;
+        left:10px;
+        right:10px;
+        bottom:-25px;
+        height:35px;
+        background:rgba(0,0,0,.25); }
+
+    #body.docs #body-border,
+    #body.forum #body-border { left:10px; right:10px; }
+
+    #glow-line {
+        position:absolute;
+        top:-27px;
+        left:100px;
+        right:-25px;
+        height:3px;
+        background:url("/images/glow-line.png") no-repeat left; }
+    #glow-line-bottom {
+        position:absolute;
+        bottom:-27px;
+        left:-25px;
+        right:100px;
+        height:3px;
+        background:url("/images/glow-line2.png") no-repeat right; }
+
+    #content { padding:40px 0; }
+    #content.page { width:680px; min-height:800px; padding-left:20px; }
+    #content h1 { font-size:20pt; letter-spacing:1px; color:rgba(0,0,0,.75); }
+    #content h2 { font-size:16pt; letter-spacing:1px; color:rgba(0,0,0,.7); margin-top:40px; }
+    #content p { color: #1D1D1D; margin: 5pt 0pt; }
+    #content a { color:#CEDAE9; text-decoration:none; }
+    #content a:hover { color:#fff;  }
+    #content ul { padding-left:20px; }
+    #content li { margin-bottom:10px; text-align:justify; }
+
     #talk-heads { overflow:auto; margin:0 8px 0 8px; }
     #talk-heads > div { float:left; font-size:120%; font-weight:bold; }
     #talk-heads > .topic { width:45%; }
@@ -177,7 +179,7 @@ pre .EscapeSequence
     #talk-heads > div > div { margin:0 10px 10px 10px; padding:0 10px 10px 10px; border-bottom:1px dashed rgba(0,0,0,0.4); }
     #talk-heads > .topic > div { margin-left:0; }
     #talk-heads > .activity > div { margin-right:0; }
-    
+
     #talk-thread > div {
       background-color: rgba(255, 255, 255, 0.5);
     }
@@ -237,7 +239,7 @@ pre .EscapeSequence
       overflow:hidden;
       background:rgba(0,0,0,0.8);
       color: white;
-      
+
     }
     #talk-thread > div > .author {
       width: 15%;
@@ -269,7 +271,7 @@ pre .EscapeSequence
     }
     #talk-threads > div > .topic > div > a
     {
-      font-weight:bold; 
+      font-weight:bold;
       white-space: nowrap;
     }
     #talk-threads > div > .topic > div > a:visited { color: #1a1a1a; }
@@ -278,7 +280,7 @@ pre .EscapeSequence
     #talk-threads > div > .detail > div { width:50%; }
     #talk-threads > div > .detail > div:first-child > div { background:url("/images/forum-views.png") no-repeat left; cursor: help; }
     #talk-threads > div > .detail > div:last-child > div { background:url("/images/forum-posts.png") no-repeat left; cursor: help; }
-    
+
     #talk-thread > div {  margin:20px 0; min-height:160px; padding-bottom: 10pt; }
     #talk-thread > div > .author > div > .avatar { margin-top:20px; }
     #talk-thread > div > .author > div > .name { }
@@ -342,12 +344,12 @@ pre .EscapeSequence
     #talk-head > .detail > div > div { padding-left:22px; }
     #talk-head > .detail > div:first-child > div { background:url("/images/forum-views.png") no-repeat left; }
     #talk-head > .detail > div:last-child > div { background:url("/images/forum-posts.png") no-repeat left; }
-    
+
     #talk-nav { margin:20px 8px 0 8px; padding-top:10px; border-top:1px dashed rgba(0,0,0,0.4); text-align:center; }
     #talk-nav > a.active { text-decoration:underline !important; }
     #talk-nav > a, #talk-nav > span, #talk-info > .info-post > div > a,
     #talk-info > .info-post > div > span { margin-left: 5pt; }
-    
+
     .standout {
       padding:5px 30px;
       margin-bottom:20px;
@@ -369,7 +371,7 @@ pre .EscapeSequence
     .standout li:first-child { padding-top:0; border-top:none; }
     .standout li p { margin:0 0 10px 0 !important; line-height:130%; }
     .standout li > a { font-weight:bold; }
-    
+
     .forum-user-info,
     .forum-user-info * { cursor:help }
 
@@ -381,22 +383,22 @@ pre .EscapeSequence
 #foot.home > div { width:960px; }
 #foot h4 { font-size:11pt; color:rgba(255,255,255,.4); margin:40px 0 6px 0; }
 #foot a:hover { color:#fff; }
-	
-	#foot-links { float:left; }
-	#foot-links > div { float:left; padding:0 40px 0 0; line-height:120%; }
-	#foot-links a { display:block; font-size:10pt; color:rgba(255,255,255,.3); text-decoration:none; }
-	#foot-legal { float:right; font-size:10pt; color:rgba(255,255,255,.3); line-height:150%; text-align:right; }
-	#foot-legal a { color:inherit; text-decoration:none; }
-	#foot-legal > h4 > a { color:inherit; }
-	
-	#mascot {
+
+    #foot-links { float:left; }
+    #foot-links > div { float:left; padding:0 40px 0 0; line-height:120%; }
+    #foot-links a { display:block; font-size:10pt; color:rgba(255,255,255,.3); text-decoration:none; }
+    #foot-legal { float:right; font-size:10pt; color:rgba(255,255,255,.3); line-height:150%; text-align:right; }
+    #foot-legal a { color:inherit; text-decoration:none; }
+    #foot-legal > h4 > a { color:inherit; }
+
+    #mascot {
     z-index:2;
-		position:absolute;
-		top:-340px;
-		right:25px;
-		width:202px;
-		height:319px;
-		background:url("/images/mascot.png") no-repeat; }
+        position:absolute;
+        top:-340px;
+        right:25px;
+        width:202px;
+        height:319px;
+        background:url("/images/mascot.png") no-repeat; }
 
 article#content
 {
@@ -407,18 +409,18 @@ article#content
 div#sidebar
 {
   background-color: rgba(255, 255, 255, 0.1);
-  
+
   border-left: 8px solid rgba(0, 0, 0, 0.8);
   border-right: 8px solid rgba(0, 0, 0, 0.8);
   border-bottom: 8px solid rgba(0, 0, 0, 0.8);
   border-radius: 3px;
-  
+
   width: 15%;
   margin-top: 40px;
-  
+
   display: inline-block;
   float: right;
-  
+
   color: #FFF;
 }
 
@@ -434,7 +436,7 @@ div#sidebar .content
 {
   padding: 12pt;
   overflow: auto;
-  
+
 }
 
 div#sidebar .content .button
@@ -459,7 +461,7 @@ div#sidebar .content input
   width: 99%;
   margin-bottom: 10pt;
   margin-top: 2pt;
-  
+
   border: 1px solid #6D6D6D;
   font-size: 12pt;
 }
@@ -607,7 +609,7 @@ div:target {
   margin-left: 1em;
 }
 
-.searchHelp { 
+.searchHelp {
   color: #000000 !important;
   float: right;
   font-size: 11px;
