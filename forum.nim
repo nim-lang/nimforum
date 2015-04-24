@@ -1098,7 +1098,7 @@ routes:
     else:
       let basePath =
         if path[path.high] == '/': path & "index"
-        elif path.endsWith(".html"): path[-5 .. -1]
+        elif path.endsWith(".html"): path[^5 .. ^1]
         else: path
       if existsFile(basePath & ".html"):
         page = readFile(basePath & ".html")
