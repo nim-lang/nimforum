@@ -117,6 +117,7 @@
               <input type="submit" style="display: none;"
                      id="hdnLogin" value="Login" />
             </form>
+            <a id="passreset" href=${c.req.makeUri("/resetPassword")}>Reset password</a>
             #if c.errorMsg != "" and c.req.pathInfo.normalizeUri == "/dologin":
               <span class="error">$c.errorMsg</span>
             #end if

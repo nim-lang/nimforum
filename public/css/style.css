@@ -516,6 +516,20 @@ div#sidebar .content .search
   width: 95%;
 }
 
+div#sidebar .content a#passreset {
+  color: #CEDAE9;
+  font-size: 9pt;
+  display: block;
+  text-decoration: none;
+  margin-top: -4pt;
+}
+
+div#sidebar .content a#passreset:hover {
+  color: #fff;
+}
+
+
+
 span.error
 {
   float: left;

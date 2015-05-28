@@ -8,12 +8,13 @@
 
 import
   os, strutils, times, md5, strtabs, cgi, math, db_sqlite, matchers,
-  rst, rstgen, captchas, scgi, jester, asyncdispatch, asyncnet, cache, sequtils
+  rst, rstgen, captchas, scgi, jester, asyncdispatch, asyncnet, cache, sequtils,
+  parseutils, utils
 
 when not defined(windows):
   import bcrypt # TODO
 
-from htmlgen import tr, th, td, span
+from htmlgen import tr, th, td, span, input
 
 const
   unselectedThread = -1
@@ -25,6 +26,7 @@ const
   noPageNums = ["/login", "/register", "/dologin", "/doregister", "/profile"]
   noHomeBtn = ["/", "/login", "/register", "/dologin", "/doregister", "/profile"]
   banReasonDeactivated = "DEACTIVATED"
+  banReasonEmailUnconfirmed = "EMAILCONFIRMATION"
 
 type
   TCrud = enum crCreate, crRead, crUpdate, crDelete
@@ -50,6 +52,7 @@ type
     totalPosts: int
     search: string
     noPagenumumNav: bool
+    config: Config
 
   TStyledButton = tuple[text: string, link: string]
 
@@ -72,6 +75,7 @@ var
   db: TDbConn
   docConfig: StringTableRef
   isFTSAvailable: bool
+  config: Config
 
 proc init(c: var TForumData) =
   c.userPass = ""
@@ -246,6 +250,20 @@ proc makePassword(password, salt: string, comparingTo = ""): string =
     let bcryptSalt = if comparingTo != "": comparingTo else: genSalt(8)
     result = hash(getMD5(salt & getMD5(password)), bcryptSalt)
 
+proc makeIdentHash(user, password, epoch, secret: string,
+                   comparingTo = ""): string =
+  ## Creates a hash verifying the identity of a user. Used for password reset
+  ## links and email activation links.
+  ## If ``epoch`` is smaller than the epoch of the user's last login then
+  ## the link is invalid.
+  ## The ``secret`` is the 'salt' field in the ``person`` table.
+  echo(user, password, epoch, secret)
+  when defined(windows):
+    result = getMD5(user & password & epoch & secret)
+  else:
+    let bcryptSalt = if comparingTo != "": comparingTo else: genSalt(8)
+    result = hash(user & password & epoch & secret, bcryptSalt)
+
 # -----------------------------------------------------------------------------
 template `||`(x: expr): expr = (if not isNil(x): x else: "")
 
@@ -274,7 +292,14 @@ proc setError(c: var TForumData, field, msg: string): bool {.inline.} =
   c.errorMsg = "Error: " & msg
   return false
 
-proc register(c: var TForumData, name, pass, antibot, email: string): bool =
+proc isCaptchaCorrect(c: var TForumData, antibot: string): bool =
+  ## Determines whether the user typed in the captcha correctly.
+  let correctRes = getValue(db,
+      sql"select answer from antibot where ip = ?", c.req.ip)
+  return antibot == correctRes
+
+proc register(c: var TForumData, name, pass, antibot,
+              email: string): bool =
   # Username validation:
   if name.len == 0 or not allCharsInSet(name, SecureChars):
     return setError(c, "name", "Invalid username!")
@@ -285,24 +310,67 @@ proc register(c: var TForumData, name, pass, antibot, email: string): bool =
   if pass.len < 4:
     return setError(c, "new_password", "Invalid password!")
 
-  # antibot validation:
-  let correctRes = getValue(db,
-    sql"select answer from antibot where ip = ?", c.req.ip)
-  if antibot != correctRes:
-    return setError(c, "antibot", "You seem to be a bot!")
+  # captcha validation:
+  if not isCaptchaCorrect(c, antibot):
+    return setError(c, "antibot", "Answer to captcha incorrect!")
 
   # email validation
-  if not validEmailAddress(email):
+  if not ('@' in email and '.' in email):
     return setError(c, "email", "Invalid email address")
 
   # perform registration:
   var salt = makeSalt()
+  let password = makePassword(pass, salt)
+
+  # Send activation email.
+  let epoch = $int(epochTime())
+  let activateUrl = c.req.makeUri("/activateEmail?nick=$1&epoch=$2&ident=$3" %
+      [encodeUrl(name), encodeUrl(epoch),
+       encodeUrl(makeIdentHash(name, password, epoch, salt))])
+
+  let emailSentFut = sendEmailActivation(c.config, email, name, activateUrl)
+  # Block until we send the email.
+  # TODO: This is a workaround for 'var T' not being usable in async procs.
+  while not emailSentFut.finished:
+    poll()
+  if emailSentFut.failed:
+    echo("[WARNING] Couldn't send activation email: ", emailSentFut.error.msg)
+    return setError(c, "email", "Couldn't send activation email")
+
+  # add account to person table
   exec(db,
     sql("INSERT INTO person(name, password, email, salt, status, lastOnline, " &
-        "ban) VALUES (?, ?, ?, ?, 'user', DATETIME('now'), '')"), name,
-              makePassword(pass, salt), email, salt)
-  #  return setError(c, "", "Could not create your account!")
+        "ban) VALUES (?, ?, ?, ?, 'user', DATETIME('now'), ?)"), name,
+              password, email, salt,
+              banReasonEmailUnconfirmed)
+
   return true
+
+proc resetPassword(c: var TForumData, nick, antibot: string): bool =
+  # Validate captcha
+  if not isCaptchaCorrect(c, antibot):
+    return setError(c, "antibot", "Answer to captcha incorrect!")
+  # Gather some extra information to determine ident hash.
+  let epoch = $int(epochTime())
+  let row = db.getRow(
+      sql"select password, salt, email from person where name = ?", nick)
+  if row[0] == "":
+    return setError(c, "nick", "Nickname not found")
+  # Generate URL for the email.
+  # TODO: Get rid of the stupid `%` in main.tmpl as it screws up strutils.%
+  let resetUrl = c.req.makeUri(
+      strutils.`%`("/emailResetPassword?nick=$1&epoch=$2&ident=$3",
+          [encodeUrl(nick), encodeUrl(epoch),
+           encodeUrl(makeIdentHash(nick, row[0], epoch, row[1]))]))
+  echo "User's reset URL is: ", resetUrl
+  # Send the email.
+  let emailSentFut = sendPassReset(c.config, row[2], nick, resetUrl)
+  # TODO: This is a workaround for 'var T' not being usable in async procs.
+  while not emailSentFut.finished:
+    poll()
+  if emailSentFut.failed:
+    echo("[WARNING] Couldn't send activation email: ", emailSentFut.error.msg)
+    return setError(c, "email", "Couldn't send activation email")
 
 proc checkLoggedIn(c: var TForumData) =
   let pass = c.req.cookies["sid"]
@@ -518,6 +586,15 @@ proc login(c: var TForumData, name, pass: string): bool =
     return true
   else:
     return c.setError("password", "Login failed!")
+
+proc verifyIdentHash(c: var TForumData, name, epoch, ident: string): bool =
+  const query =
+    sql"select password, salt, strftime('%s', lastOnline) from person where name = ?"
+  var row = getRow(db, query, name)
+  if row[0] == "": return false
+  let newIdent = makeIdentHash(name, row[0], epoch, row[1], ident)
+  if row[2].parseInt > epoch.parseInt: return false
+  result = newIdent == ident
 
 proc setBan(c: var TForumData, nick, reason: string): bool =
   const query =
@@ -762,6 +839,8 @@ proc genProfile(c: var TForumData, ui: TUserInfo): string =
         td(case ui.ban
            of banReasonDeactivated:
              "Deactivated"
+           of banReasonEmailUnconfirmed:
+             "Awaiting email confirmation"
            of "":
              "Active"
            else:
@@ -789,6 +868,9 @@ proc genProfile(c: var TForumData, ui: TUserInfo): string =
              elif ui.ban == banReasonDeactivated:
                htmlgen.a(href=c.genSetUserStatusUrl(ui.nick, "activate"),
                   "Activate user")
+             elif ui.ban == banReasonEmailUnconfirmed:
+               htmlgen.a(href=c.genSetUserStatusUrl(ui.nick, "activate"),
+                  "Confirm user's email")
              else: ""
            else: "")
       )
@@ -814,6 +896,7 @@ template createTFD(): stmt =
   c.startTime = epochTime()
   c.isThreadsList = false
   c.pageNum = 1
+  c.config = config
   if request.cookies.len > 0:
     checkLoggedIn(c)
 
@@ -950,8 +1033,9 @@ routes:
   post "/doregister":
     createTFD()
     if c.register(@"name", @"new_password", @"antibot", @"email"):
-      discard c.login(@"name", @"new_password")
-      finishLogin()
+      resp genMain(c, "You are now registered. You must now confirm your" &
+          " email address by clicking the link sent to " & @"email",
+          "Registration successful - Nim Forum")
     else:
       resp c.genMain(genFormRegister(c))
 
@@ -1060,6 +1144,80 @@ routes:
     else:
       resp genMain(c, "Failure", "Nim Forum")
 
+  get "/activateEmail/?":
+    createTFD()
+    cond (@"nick" != "")
+    cond (@"epoch" != "")
+    cond (@"ident" != "")
+    var epoch: BiggestInt = 0
+    cond(parseBiggestInt(@"epoch", epoch) > 0)
+    var success = false
+    if verifyIdentHash(c, @"nick", $epoch, @"ident"):
+      let ban = db.getValue(sql"select ban from person where name = ?", @"nick")
+      if ban == banReasonEmailUnconfirmed:
+        success = setBan(c, @"nick", "")
+
+    if success:
+      resp genMain(c, "Account activated", "Nim Forum")
+    else:
+      resp genMain(c, "Account activation failed", "Nim Forum")
+
+  get "/emailResetPassword/?":
+    createTFD()
+    cond (@"nick" != "")
+    cond (@"epoch" != "")
+    cond (@"ident" != "")
+    var epoch: BiggestInt = 0
+    cond(parseBiggestInt(@"epoch", epoch) > 0)
+    if verifyIdentHash(c, @"nick", $epoch, @"ident"):
+      let formBody = input(`type`="hidden", name="nick", value = @"nick") &
+                     input(`type`="hidden", name="epoch", value = @"epoch") &
+                     input(`type`="hidden", name="ident", value = @"ident") &
+                     input(`type`="password", name="password") &
+                     "<br/>" &
+                     input(`type`="submit", name="submitBtn",
+                           value="Change my password")
+      let message = htmlgen.p("Please enter a new password for ",
+                              htmlgen.b(@"nick"), ':')
+      let content = htmlgen.form(action=c.req.makeUri("/doemailresetpassword"),
+                         `method`="POST", message & formBody)
+
+      resp genMain(c, content, "Reset password - Nim Forum")
+    else:
+      resp genMain(c, "Invalid ident hash", "Error - Nim Forum")
+
+  post "/doemailresetpassword":
+    createTFD()
+    cond (@"nick" != "")
+    cond (@"epoch" != "")
+    cond (@"ident" != "")
+    cond (@"password" != "")
+    var epoch: BiggestInt = 0
+    cond(parseBiggestInt(@"epoch", epoch) > 0)
+    if verifyIdentHash(c, @"nick", $epoch, @"ident"):
+      let res = setPassword(c, @"nick", @"password")
+      if res:
+        resp genMain(c, "Password reset successfully!", "Nim Forum")
+      else:
+        resp genMain(c, "Password reset failure", "Nim Forum")
+    else:
+      resp genMain(c, "Invalid ident hash", "Nim Forum")
+
+  get "/resetPassword/?":
+    createTFD()
+
+    resp genMain(c, genFormResetPassword(c), "Reset Password - Nim Forum")
+
+  post "/doresetpassword":
+    createTFD()
+    echo(request.params)
+    cond (@"nick" != "")
+
+    if resetPassword(c, @"nick", @"antibot"):
+      resp genMain(c, "Email sent!", "Reset Password - Nim Forum")
+    else:
+      resp genMain(c, genFormResetPassword(c), "Reset Password - Nim Forum")
+
   const licenseRst = slurp("static/license.rst")
   get "/license":
     createTFD()
@@ -1117,6 +1275,7 @@ when isMainModule:
               database="nimforum")
   isFTSAvailable = db.getAllRows(sql("SELECT name FROM sqlite_master WHERE " &
       "type='table' AND name='post_fts'")).len == 1
+  config = loadConfig()
   var http = true
   if paramCount() > 0:
     if paramStr(1) == "scgi":

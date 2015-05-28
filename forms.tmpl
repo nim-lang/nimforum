@@ -10,7 +10,7 @@
 #  const threadId = 0
 #  const name = 1
 #  const views = 2
-#  
+#
 #  result = ""
 #  count = 0
 <div id="talk-heads">
@@ -46,7 +46,7 @@
     </div>
 
     #let users = getAllRows(db,
-    #  sql("select distinct name, email from person where id in " & 
+    #  sql("select distinct name, email from person where id in " &
     #      "(select author from post where thread = ?)"), %threadId)
     <div class="users">
       <div>
@@ -55,9 +55,9 @@
         #end for
       </div>
     </div>
-    
+
     #let latestReplyAuthor = getValue(db, sql("select name from person where id = " &
-    #  "(select author from post where id = " & 
+    #  "(select author from post where id = " &
     #  "(select max(id) from post where thread = ?))"), %threadId)
 
     #let replyProfileUrl = c.req.makeUri("profile/", false) &
@@ -112,7 +112,7 @@
 #
 #
 #proc genPostsList(c: var TForumData, threadId: string, count: var int): string =
-#  const query = sql"""select p.id, u.name, p.header, p.content, p.creation, p.author, u.email from post p, 
+#  const query = sql"""select p.id, u.name, p.header, p.content, p.creation, p.author, u.email from post p,
 #                      person u where u.id = p.author and p.thread = ? order by p.id limit ?, ?"""
 #  const postId = 0
 #  const userName = 1
@@ -204,7 +204,7 @@
     <br/>
     <input type="submit" name="previewBtn" value="Preview" />
     <input type="submit" name="postBtn" value="Submit" />
-  
+
     <a href="http://nim-lang.org/rst.html">Syntax Cheatsheet</a>
   </form>
 </div>
@@ -367,3 +367,33 @@
 #  end if
 #end proc
 #
+#
+#proc genFormResetPassword(c: var TForumData): string =
+#  result = ""
+<div id="talk-head">
+    <div class="info-post">
+      <div>
+        <a href="${c.req.makeUri("/")}"><b>forum index</b></a> &gt;
+        Reset Password
+      </div>
+    </div>
+</div>
+<form action="${c.req.makeUri("/doresetpassword", false)}" method="POST">
+  <table border="0">
+    <tr>
+      <td>${FieldValid(c, "nick", "Your nickname:")}</td>
+      <td><input type="text" name="nick" maxlength="20" /></td>
+    </tr>
+    <tr>
+      <td>${FieldValid(c, "antibot", "What is " & antibot(c) & "?")}</td>
+      <td>${TextWidget(c, "antibot", "", maxlength=4)}</td>
+    </tr>
+  </table>
+  #if c.errorMsg != "":
+      <div style="float: left; width: 100%;">
+        <span class="error">$c.errorMsg</span>
+      </div>
+  #end if
+  <input type="submit" value="Email me">
+</form>
+#end proc
