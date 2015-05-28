@@ -372,6 +372,8 @@ proc resetPassword(c: var TForumData, nick, antibot: string): bool =
     echo("[WARNING] Couldn't send activation email: ", emailSentFut.error.msg)
     return setError(c, "email", "Couldn't send activation email")
 
+  return true
+
 proc checkLoggedIn(c: var TForumData) =
   let pass = c.req.cookies["sid"]
   if pass.len == 0: return
