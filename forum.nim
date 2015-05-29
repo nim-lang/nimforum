@@ -595,7 +595,9 @@ proc verifyIdentHash(c: var TForumData, name, epoch, ident: string): bool =
   var row = getRow(db, query, name)
   if row[0] == "": return false
   let newIdent = makeIdentHash(name, row[0], epoch, row[1], ident)
-  if row[2].parseInt > epoch.parseInt: return false
+  # Check that the user has not been logged in since this ident hash has been
+  # created. Give the timestamp a certain range to prevent false negatives.
+  if row[2].parseInt > (epoch.parseInt + 60): return false
   result = newIdent == ident
 
 proc setBan(c: var TForumData, nick, reason: string): bool =
