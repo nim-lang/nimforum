@@ -301,7 +301,7 @@ proc isCaptchaCorrect(c: ForumData, antibot: string): bool =
   return antibot == correctRes
 
 proc register(c: ForumData, name, pass, antibot,
-              email: string): bool =
+              email: string): Future[bool] {.async.} =
   # Username validation:
   if name.len == 0 or not allCharsInSet(name, SecureChars):
     return setError(c, "name", "Invalid username!")
@@ -331,10 +331,7 @@ proc register(c: ForumData, name, pass, antibot,
        encodeUrl(makeIdentHash(name, password, epoch, salt))])
 
   let emailSentFut = sendEmailActivation(c.config, email, name, activateUrl)
-  # Block until we send the email.
-  # TODO: This is a workaround for 'var T' not being usable in async procs.
-  while not emailSentFut.finished:
-    poll()
+  await emailSentFut
   if emailSentFut.failed:
     echo("[WARNING] Couldn't send activation email: ", emailSentFut.error.msg)
     return setError(c, "email", "Couldn't send activation email")
@@ -1043,7 +1040,8 @@ routes:
 
   post "/doregister":
     createTFD()
-    if c.register(@"name", @"new_password", @"antibot", @"email"):
+    let registered = await c.register(@"name", @"new_password", @"antibot", @"email")
+    if registered:
       resp genMain(c, "You are now registered. You must now confirm your" &
           " email address by clicking the link sent to " & @"email",
           "Registration successful - Nim Forum")
