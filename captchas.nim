@@ -11,7 +11,7 @@ import cairo, os, strutils, jester
 proc getCaptchaFilename*(i: int): string {.inline.} =
   result = "public/captchas/capture_" & $i & ".png"
 
-proc getCaptchaUrl*(req: PRequest, i: int): string =
+proc getCaptchaUrl*(req: Request, i: int): string =
   result = req.makeUri("/captchas/capture_" & $i & ".png", absolute = false)
 
 proc createCaptcha*(file, text: string) =
@@ -23,7 +23,7 @@ proc createCaptcha*(file, text: string) =
 
   setSourceRgb(cr, 1.0, 0.5, 0.0)
   moveTo(cr, 0.0, 10.0)
-  showText(cr, repeatChar(text.len, 'O'))
+  showText(cr, repeat('O',text.len))
 
   setSourceRgb(cr, 0.0, 0.0, 1.0)
   moveTo(cr, 0.0, 10.0)

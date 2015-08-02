@@ -40,7 +40,7 @@ type
   TPost = tuple[subject, content: string]
 
   TForumData = object of TSession
-    req: PRequest
+    req: Request
     userid: string
     actionContent: string
     errorMsg, loginErrorMsg: string
@@ -72,7 +72,7 @@ type
     ban: string
 
 var
-  db: TDbConn
+  db: DbConn
   docConfig: StringTableRef
   isFTSAvailable: bool
   config: Config
@@ -425,7 +425,7 @@ proc validateRst(c: var TForumData, content: string): bool =
   except EParseError:
     result = setError(c, "", getCurrentExceptionMsg())
 
-proc crud(c: TCrud, table: string, data: varargs[string]): TSqlQuery =
+proc crud(c: TCrud, table: string, data: varargs[string]): SqlQuery =
   case c
   of crCreate:
     var fields = "insert into " & table & "("
@@ -1119,6 +1119,7 @@ routes:
         htmlgen.p("Are you sure you wish to activate ", htmlgen.b(@"nick"),
           "?")
       del = true
+    else: discard
     formBody.add "<input type='hidden' name='del' value='" & $del & "'/>"
     content = htmlgen.form(action = c.req.makeUri("/dosetban"),
         `method` = "POST", formBody) & content
@@ -1248,7 +1249,7 @@ routes:
     if @"page".len > 0:
       parseInt(@"page", c.pageNum, 0..1000_000)
       cond (c.pageNum > 0)
-    iterator searchResults(): db_sqlite.TRow {.closure, tags: [FReadDB].} =
+    iterator searchResults(): db_sqlite.Row {.closure, tags: [FReadDB].} =
       const queryFT = "fts.sql".slurp.sql
       for rowFT in fastRows(db, queryFT,
                     [q,q,$ThreadsPerPage,$c.pageNum,$ThreadsPerPage,q,
