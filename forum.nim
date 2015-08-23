@@ -483,6 +483,7 @@ template setPreviewData(c: expr) {.immediate, dirty.} =
   c.currentPost.content = content
 
 template writeToDb(c, cr, setPostId: expr) =
+  # insert a comment in the DB
   let retID = insertID(db, crud(cr, "post", "author", "ip", "header", "content", "thread"),
        c.userId, c.req.ip, subject, content, $c.threadId, "")
   discard tryExec(db, crud(cr, "post_fts", "id", "header", "content"),
@@ -530,6 +531,7 @@ proc edit(c: var TForumData, postId: int): bool =
     result = true
 
 proc reply(c: var TForumData): bool =
+  # reply to an existing thread
   checkLogin(c)
   retrPost(c)
   if c.isPreview:
@@ -539,9 +541,12 @@ proc reply(c: var TForumData): bool =
 
     exec(db, sql"update thread set modified = DATETIME('now') where id = ?",
          $c.threadId)
+    asyncCheck sendMailToMailingList(c.config, c.username, c.email,
+        subject, content)
     result = true
 
 proc newThread(c: var TForumData): bool =
+  # create new conversation thread (permanent or transient)
   const query = sql"insert into thread(name, views, modified) values (?, 0, DATETIME('now'))"
   checkLogin(c)
   retrPost(c)
@@ -556,6 +561,8 @@ proc newThread(c: var TForumData): bool =
     writeToDb(c, crCreate, false)
     discard tryExec(db, sql"insert into post_fts(post_fts) values('optimize')")
     discard tryExec(db, sql"insert into post_fts(thread_fts) values('optimize')")
+    asyncCheck sendMailToMailingList(c.config, c.username, c.email,
+        subject, content)
     result = true
 
 proc login(c: var TForumData, name, pass: string): bool =

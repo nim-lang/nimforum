@@ -6,6 +6,7 @@ type
     smtpPort: int
     smtpUser: string
     smtpPassword: string
+    mlistAddress: string
 
 proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
   result = Config(smtpAddress: "localhost", smtpPort: 25, smtpUser: "",
@@ -16,10 +17,11 @@ proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
     result.smtpPort = root["smtpPort"].getNum(25).int
     result.smtpUser = root["smtpUser"].getStr("")
     result.smtpPassword = root["smtpPassword"].getStr("")
+    result.mlistAddress = root["mlistAddress"].getStr("")
   except:
     echo("[WARNING] Couldn't read config file: ./forum.json")
 
-proc sendMail(config: Config, subject, message, recipient: string) {.async.} =
+proc sendMail(config: Config, subject, message, recipient: string, from_addr = "forum@nim-lang.org") {.async.} =
   var client = newAsyncSmtp(config.smtpAddress, Port(config.smtpPort))
   await client.connect()
   if config.smtpUser.len > 0:
@@ -29,8 +31,15 @@ proc sendMail(config: Config, subject, message, recipient: string) {.async.} =
   let encoded = createMessage(subject, message,
       toList, @[], [])
 
-  await client.sendMail("forum@nim-lang.org", toList,
+  await client.sendMail(from_addr, toList,
       $encoded)
+
+proc sendMailToMailingList*(config: Config, username, user_email_addr, subject, message: string) {.async.} =
+  # send message to a mailing list
+  let from_addr = "$# <$#>" % [username, user_email_addr]
+
+  if config.mlistAddress != "":
+    await sendMail(config, subject, message, config.mlistAddress, from_addr=from_addr)
 
 proc sendPassReset*(config: Config, email, user, resetUrl: string) {.async.} =
   let message = """Hello $1,
