@@ -491,10 +491,6 @@ template writeToDb(c, cr, setPostId: expr) =
   if setPostId:
     c.postId = retID.int
 
-template sendToMailingList(c) =
-  # send comment to a mailing list (if configured to do so)
-  discard sendMailToMailingList(c.config, c.username, c.email, subject, content)
-
 proc edit(c: var TForumData, postId: int): bool =
   checkLogin(c)
   if c.isPreview:
@@ -545,7 +541,8 @@ proc reply(c: var TForumData): bool =
 
     exec(db, sql"update thread set modified = DATETIME('now') where id = ?",
          $c.threadId)
-    sendToMailingList(c)
+    asyncCheck sendMailToMailingList(c.config, c.username, c.email,
+        subject, content)
     result = true
 
 proc newThread(c: var TForumData): bool =
@@ -564,7 +561,8 @@ proc newThread(c: var TForumData): bool =
     writeToDb(c, crCreate, false)
     discard tryExec(db, sql"insert into post_fts(post_fts) values('optimize')")
     discard tryExec(db, sql"insert into post_fts(thread_fts) values('optimize')")
-    sendToMailingList(c)
+    asyncCheck sendMailToMailingList(c.config, c.username, c.email,
+        subject, content)
     result = true
 
 proc login(c: var TForumData, name, pass: string): bool =
