@@ -1,5 +1,14 @@
 import asyncdispatch, smtp, strutils, json, os
 
+import logging
+
+newRollingFileLogger(
+  "nimforum.log",
+  bufSize = 0,
+  fmtStr = verboseFmtStr,
+  levelThreshold = Level.lvlInfo,
+).addHandler
+
 type
   Config* = object
     smtpAddress: string
