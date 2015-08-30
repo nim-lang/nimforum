@@ -1,4 +1,12 @@
 import asyncdispatch, smtp, strutils, json, os
+import logging
+
+newRollingFileLogger(
+  "nimforum.log",
+  bufSize = 0,
+  fmtStr = verboseFmtStr,
+  levelThreshold = Level.lvlInfo,
+).addHandler
 
 type
   Config* = object
@@ -21,7 +29,7 @@ proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
   except:
     echo("[WARNING] Couldn't read config file: ./forum.json")
 
-proc sendMail(config: Config, subject, message, recipient: string, from_addr = "forum@nim-lang.org", resent_from = "") {.async.} =
+proc sendMail(config: Config, subject, message, recipient: string, from_addr = "forum@nim-lang.org", from_name = "", resent_from = "") {.async.} =
   var client = newAsyncSmtp(config.smtpAddress, Port(config.smtpPort))
   await client.connect()
   if config.smtpUser.len > 0:
@@ -38,8 +46,14 @@ proc sendMail(config: Config, subject, message, recipient: string, from_addr = "
   let encoded = createMessage(subject, message,
       toList, @[], otherHeaders)
 
-  await client.sendMail(from_addr, toList,
-      $encoded)
+  let full_from_addr =
+    if from_name.len > 0:
+      "$# <$#>" % [from_name, from_addr]
+    else:
+      from_addr
+
+  info("Sending email ", full_from_addr, $toList, $encoded)
+  await client.sendMail(full_from_addr, toList, $encoded)
 
 proc sendMailToMailingList*(config: Config, username, user_email_addr, subject, message: string) {.async.} =
   # send message to a mailing list
