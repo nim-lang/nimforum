@@ -542,7 +542,7 @@ proc reply(c: var TForumData): bool =
     exec(db, sql"update thread set modified = DATETIME('now') where id = ?",
          $c.threadId)
     asyncCheck sendMailToMailingList(c.config, c.username, c.email,
-        subject, content)
+        subject, content, threadId=c.threadId, postId=c.postID, is_reply=true)
     result = true
 
 proc newThread(c: var TForumData): bool =
@@ -562,7 +562,7 @@ proc newThread(c: var TForumData): bool =
     discard tryExec(db, sql"insert into post_fts(post_fts) values('optimize')")
     discard tryExec(db, sql"insert into post_fts(thread_fts) values('optimize')")
     asyncCheck sendMailToMailingList(c.config, c.username, c.email,
-        subject, content)
+        subject, content, threadId=c.threadID, postId=c.postID, is_reply=false)
     result = true
 
 proc login(c: var TForumData, name, pass: string): bool =

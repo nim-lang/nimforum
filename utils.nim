@@ -1,4 +1,5 @@
 import asyncdispatch, smtp, strutils, json, os
+from times import getTime, getGMTime, format
 
 type
   Config* = object
@@ -21,7 +22,7 @@ proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
   except:
     echo("[WARNING] Couldn't read config file: ./forum.json")
 
-proc sendMail(config: Config, subject, message, recipient: string, from_addr = "forum@nim-lang.org", resent_from = "") {.async.} =
+proc sendMail(config: Config, subject, message, recipient: string, from_addr = "forum@nim-lang.org", otherHeaders:seq[(string, string)] = @[]) {.async.} =
   var client = newAsyncSmtp(config.smtpAddress, Port(config.smtpPort))
   await client.connect()
   if config.smtpUser.len > 0:
@@ -29,24 +30,36 @@ proc sendMail(config: Config, subject, message, recipient: string, from_addr = "
 
   let toList = @[recipient]
 
-  let otherHeaders =
-    if resent_from == "":
-      @[]
-    else:
-      @[("Resent-From", resent_from)]
-
   let encoded = createMessage(subject, message,
       toList, @[], otherHeaders)
 
-  await client.sendMail(from_addr, toList,
-      $encoded)
+  await client.sendMail(from_addr, toList, $encoded)
 
-proc sendMailToMailingList*(config: Config, username, user_email_addr, subject, message: string) {.async.} =
+proc sendMailToMailingList*(config: Config, username, user_email_addr, subject, message: string, thread_id=0, post_id=0, is_reply=false) {.async.} =
   # send message to a mailing list
+  if config.mlistAddress == "":
+    return
+
   let from_addr = "$# <$#>" % [username, user_email_addr]
 
-  if config.mlistAddress != "":
-    await sendMail(config, subject, message, config.mlistAddress, from_addr=from_addr, resent_from="forum@nim-lang.org")
+  let date = getTime().getGMTime().format("ddd, d MMM yyyy HH:mm:ss") & " +0000"
+  var otherHeaders = @[
+    ("Date", date),
+    ("Resent-From", "forum@nim-lang.org"),
+    ("Resent-date", date)
+  ]
+
+  if is_reply:
+    let msg_id = "<forum-id-$#-$#@nim-lang.org>" % [$thread_id, $post_id]
+    otherHeaders.add(("Message-ID", msg_id))
+    let references = "<forum-tid-$#@nim-lang.org>" % [$thread_id]
+    otherHeaders.add(("References", references))
+
+  else:  # New thread
+    let msg_id = "<forum-tid-$#@nim-lang.org>" % $thread_id
+    otherHeaders.add(("Message-ID", msg_id))
+
+  await sendMail(config, subject, message, config.mlistAddress, from_addr=from_addr, otherHeaders=otherHeaders)
 
 proc sendPassReset*(config: Config, email, user, resetUrl: string) {.async.} =
   let message = """Hello $1,
