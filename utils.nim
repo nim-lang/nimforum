@@ -30,8 +30,11 @@ proc sendMail(config: Config, subject, message, recipient: string, from_addr = "
 
   let toList = @[recipient]
 
+  var headers = otherHeaders
+  headers.add(("From", from_addr))
+
   let encoded = createMessage(subject, message,
-      toList, @[], otherHeaders)
+      toList, @[], headers)
 
   await client.sendMail(from_addr, toList, $encoded)
 
