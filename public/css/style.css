@@ -232,6 +232,7 @@ pre .EscapeSequence
     {
       margin-bottom: -4pt;
       cursor: help;
+      width: 20px;
     }
     #talk-threads > div > .detail { width:16%; overflow:hidden; }
     #talk-thread  > div > .author,
