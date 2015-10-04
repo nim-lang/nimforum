@@ -1,5 +1,9 @@
 import asyncdispatch, smtp, strutils, json, os
 from times import getTime, getGMTime, format
+import pop3
+from net import Port
+import tables
+
 
 type
   Config* = object
@@ -8,6 +12,19 @@ type
     smtpUser: string
     smtpPassword: string
     mlistAddress: string
+    popAddress: string
+    popPort: Port
+    popUser: string
+    popPassword: string
+    popDeleteOnIngest: bool
+    popAuth: string
+    popTLS: bool
+
+proc debug(msg: string): void =
+  echo "DEBUG: $#" % msg
+
+proc info(msg: string): void =
+  echo "INFO: $#" % msg
 
 proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
   result = Config(smtpAddress: "localhost", smtpPort: 25, smtpUser: "",
@@ -19,6 +36,14 @@ proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
     result.smtpUser = root["smtpUser"].getStr("")
     result.smtpPassword = root["smtpPassword"].getStr("")
     result.mlistAddress = root["mlistAddress"].getStr("")
+
+    result.popAddress = root["pop"]["Address"].getStr("")
+    result.popPort = root["pop"]["Port"].getNum(110).Port
+    result.popUser = root["pop"]["User"].getStr("")
+    result.popPassword = root["pop"]["Password"].getStr("")
+    result.popDeleteOnIngest = root["pop"]["DeleteOnIngest"].getBVal(true)
+    result.popAuth = root["pop"]["Auth"].getStr("")
+    result.popTLS = root["pop"]["TLS"].getBVal(true)
   except:
     echo("[WARNING] Couldn't read config file: ./forum.json")
 
@@ -90,3 +115,66 @@ via the following link:
 
 Thank you for registering and becoming a part of the Nim community!""" % [user, activateUrl]
   await sendMail(config, "Nim Forum Account Email Confirmation", message, email)
+
+proc ltrim(s: string, n: int): string =
+  s[n..<len(s)]
+
+type EmailMessage = tuple
+  headers: OrderedTableRef[string, string]
+  body: seq[string]
+
+proc fetch_pop3_message(client: POP3Client, msg_num: int): EmailMessage =
+  ## Fetch an email message using POP3
+  # https://tools.ietf.org/html/rfc2822
+  var body = client.retr(msg_num=msg_num)[1]
+  body = body.map(proc(x: string): string = x.strip(leading=false))
+
+  var folding_buffer: seq[string] = @[]
+  var field_name = ""
+  var header_lines_len = 0
+  var headers = newOrderedTable[string, string]()
+  for line in body:
+    if line == "":  # end of header block
+      headers[field_name] = folding_buffer.join("")
+      break
+
+    if line[0] in [' ', '\t']:
+      # folding detected
+      folding_buffer.add line.strip()
+
+    else:
+      # new field name
+      if field_name != "":
+        headers[field_name] = folding_buffer.join("")
+        folding_buffer = @[]
+
+      let colon_pos = line.find(':')
+      if colon_pos == -1:
+        echo "Unexpected header line: $#" % line
+        break
+      field_name = line[0..<colon_pos].toLower
+
+      folding_buffer.add line[(colon_pos+1)..<len(line)].strip()
+
+    header_lines_len.inc()
+
+  body = body[(header_lines_len+1)..<len(body)]
+
+  result = (headers, body)
+
+
+iterator fetch_pop3_messages*(client: POP3Client): EmailMessage =
+  ## Fetch all available emails from POP3
+  let num_emails = client.stat().numMessages
+  debug "$# messages to fetch" % $num_emails
+  for n in 1..num_emails:
+    yield client.fetch_pop3_message(n)
+
+proc connect_to_POP3*(conf: Config): POP3Client =
+  ## Connect to a POP3 server
+  result = newPOP3Client(host=conf.popAddress, port=conf.popPort,
+    use_ssl=conf.popTLS)
+  # TODO: implement popAuth string
+  result.user(conf.popUser)
+  result.pass(conf.popPassword)
+
