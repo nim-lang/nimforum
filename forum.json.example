@@ -1,0 +1,17 @@
+{
+    "mlistAddress": "",
+    "smtpAddress": "",
+    "smtpPort": 25,
+    "smtpUser": "",
+    "smtpPassword": "",
+    "pop": {
+        "Address": "",
+        "Port": 110,
+        "User": "",
+        "Password": "",
+        "DeleteOnIngest": false,
+        "Auth": "USER/PASS",
+        "TLS":false
+    }
+}
+
