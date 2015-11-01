@@ -54,6 +54,8 @@ type
     noPagenumumNav: bool
     config: Config
 
+  ForumData = ref TForumData
+
   TStyledButton = tuple[text: string, link: string]
 
   TForumStats = object
@@ -77,7 +79,7 @@ var
   isFTSAvailable: bool
   config: Config
 
-proc init(c: var TForumData) =
+proc init(c: ForumData) =
   c.userPass = ""
   c.userName = ""
   c.threadId = unselectedThread
@@ -92,7 +94,7 @@ proc init(c: var TForumData) =
 
   c.search = ""
 
-proc loggedIn(c: TForumData): bool =
+proc loggedIn(c: ForumData): bool =
   result = c.userName.len > 0
 
 # --------------- HTML widgets ------------------------------------------------
@@ -102,31 +104,31 @@ proc loggedIn(c: TForumData): bool =
 const
   reuseText = "\1"
 
-proc TextWidget(c: TForumData, name, defaultText: string,
+proc TextWidget(c: ForumData, name, defaultText: string,
                 maxlength = 30, size = -1): string =
   let x = if defaultText != reuseText: defaultText
           else: xmlEncode(c.req.params[name])
   return """<input type="text" name="$1" maxlength="$2" value="$3" $4/>""" % [
     name, $maxlength, x, if size != -1: "size=\"" & $size & "\"" else: ""]
 
-proc HiddenField(c: TForumData, name, defaultText: string): string =
+proc HiddenField(c: ForumData, name, defaultText: string): string =
   let x = if defaultText != reuseText: defaultText
           else: xmlEncode(c.req.params[name])
   return """<input type="hidden" name="$1" value="$2"/>""" % [name, x]
 
-proc TextAreaWidget(c: TForumData, name, defaultText: string): string =
+proc TextAreaWidget(c: ForumData, name, defaultText: string): string =
   let x = if defaultText != reuseText: defaultText
           else: xmlEncode(c.req.params[name])
   return """<textarea name="$1">$2</textarea>""" % [
     name, x]
 
-proc FieldValid(c: TForumData, name, text: string): string =
+proc FieldValid(c: ForumData, name, text: string): string =
   if name == c.invalidField:
     result = """<span style="color:red">$1</span>""" % text
   else:
     result = text
 
-proc genThreadUrl(c: TForumData, postId = "", action = "", threadid = "", pageNum = ""): string =
+proc genThreadUrl(c: ForumData, postId = "", action = "", threadid = "", pageNum = ""): string =
   result = "/t/" & (if threadid == "": $c.threadId else: threadid)
   if pageNum != "":
     result.add("/" & pageNum)
@@ -138,16 +140,16 @@ proc genThreadUrl(c: TForumData, postId = "", action = "", threadid = "", pageNu
     result.add("#" & postId)
   result = c.req.makeUri(result, absolute = false)
 
-proc FormSession(c: var TForumData, nextAction: string): string =
+proc FormSession(c: ForumData, nextAction: string): string =
   return """<input type="hidden" name="threadid" value="$1" />
             <input type="hidden" name="postid" value="$2" />""" % [
     $c.threadId, $c.postid]
 
-proc UrlButton(c: var TForumData, text, url: string): string =
+proc UrlButton(c: ForumData, text, url: string): string =
   return ("""<a class="url_button" href="$1">$2</a>""") % [
     url, text]
 
-proc genButtons(c: var TForumData, btns: seq[TStyledButton]): string =
+proc genButtons(c: ForumData, btns: seq[TStyledButton]): string =
   if btns.len == 1:
     var anchor = ""
 
@@ -267,11 +269,11 @@ proc makeIdentHash(user, password, epoch, secret: string,
 # -----------------------------------------------------------------------------
 template `||`(x: expr): expr = (if not isNil(x): x else: "")
 
-proc validThreadId(c: TForumData): bool =
+proc validThreadId(c: ForumData): bool =
   result = getValue(db, sql"select id from thread where id = ?",
                     $c.threadId).len > 0
 
-proc antibot(c: var TForumData): string =
+proc antibot(c: ForumData): string =
   let a = math.random(10)+1
   let b = math.random(1000)+1
   let answer = $(a+b)
@@ -287,18 +289,18 @@ proc antibot(c: var TForumData): string =
 const
   SecureChars = {'A'..'Z', 'a'..'z', '0'..'9', '_', '\128'..'\255'}
 
-proc setError(c: var TForumData, field, msg: string): bool {.inline.} =
+proc setError(c: ForumData, field, msg: string): bool {.inline.} =
   c.invalidField = field
   c.errorMsg = "Error: " & msg
   return false
 
-proc isCaptchaCorrect(c: var TForumData, antibot: string): bool =
+proc isCaptchaCorrect(c: ForumData, antibot: string): bool =
   ## Determines whether the user typed in the captcha correctly.
   let correctRes = getValue(db,
       sql"select answer from antibot where ip = ?", c.req.ip)
   return antibot == correctRes
 
-proc register(c: var TForumData, name, pass, antibot,
+proc register(c: ForumData, name, pass, antibot,
               email: string): bool =
   # Username validation:
   if name.len == 0 or not allCharsInSet(name, SecureChars):
@@ -346,7 +348,7 @@ proc register(c: var TForumData, name, pass, antibot,
 
   return true
 
-proc resetPassword(c: var TForumData, nick, antibot: string): bool =
+proc resetPassword(c: ForumData, nick, antibot: string): bool =
   # Validate captcha
   if not isCaptchaCorrect(c, antibot):
     return setError(c, "antibot", "Answer to captcha incorrect!")
@@ -374,7 +376,7 @@ proc resetPassword(c: var TForumData, nick, antibot: string): bool =
 
   return true
 
-proc checkLoggedIn(c: var TForumData) =
+proc checkLoggedIn(c: ForumData) =
   let pass = c.req.cookies["sid"]
   if pass.len == 0: return
   if execAffectedRows(db,
@@ -398,27 +400,27 @@ proc checkLoggedIn(c: var TForumData) =
   else:
     echo("SID not found in sessions. Assuming logged out.")
 
-proc logout(c: var TForumData) =
+proc logout(c: ForumData) =
   const query = sql"delete from session where ip = ? and password = ?"
   c.username = ""
   c.userpass = ""
   exec(db, query, c.req.ip, c.req.cookies["sid"])
 
-proc incrementViews(c: var TForumData) =
+proc incrementViews(c: ForumData) =
   const query = sql"update thread set views = views + 1 where id = ?"
   exec(db, query, $c.threadId)
 
-proc isPreview(c: TForumData): bool =
+proc isPreview(c: ForumData): bool =
   result = c.req.params["previewBtn"].len > 0 # TODO: Could be wrong?
 
-proc isDelete(c: TForumData): bool =
+proc isDelete(c: ForumData): bool =
   result = c.req.params["delete"].len > 0
 
 proc rstToHtml(content: string): string =
   result = rstgen.rstToHtml(content, {roSupportSmilies, roSupportMarkdown},
                             docConfig)
 
-proc validateRst(c: var TForumData, content: string): bool =
+proc validateRst(c: ForumData, content: string): bool =
   result = true
   try:
     discard rstToHtml(content)
@@ -491,7 +493,7 @@ template writeToDb(c, cr, setPostId: expr) =
   if setPostId:
     c.postId = retID.int
 
-proc edit(c: var TForumData, postId: int): bool =
+proc edit(c: ForumData, postId: int): bool =
   checkLogin(c)
   if c.isPreview:
     retrPost(c)
@@ -530,8 +532,7 @@ proc edit(c: var TForumData, postId: int): bool =
       exec(db, crud(crUpdate, "thread", "name"), subject, $c.threadId)
     result = true
 
-proc reply(c: var TForumData): bool =
-  # reply to an existing thread
+proc reply(c: ForumData): bool =
   checkLogin(c)
   retrPost(c)
   if c.isPreview:
@@ -545,8 +546,7 @@ proc reply(c: var TForumData): bool =
         subject, content, threadId=c.threadId, postId=c.postID, is_reply=true)
     result = true
 
-proc newThread(c: var TForumData): bool =
-  # create new conversation thread (permanent or transient)
+proc newThread(c: ForumData): bool =
   const query = sql"insert into thread(name, views, modified) values (?, 0, DATETIME('now'))"
   checkLogin(c)
   retrPost(c)
@@ -565,7 +565,7 @@ proc newThread(c: var TForumData): bool =
         subject, content, threadId=c.threadID, postId=c.postID, is_reply=false)
     result = true
 
-proc login(c: var TForumData, name, pass: string): bool =
+proc login(c: ForumData, name, pass: string): bool =
   # get form data:
   const query =
     sql"select id, name, password, email, salt, admin, ban from person where name = ?"
@@ -596,7 +596,7 @@ proc login(c: var TForumData, name, pass: string): bool =
   else:
     return c.setError("password", "Login failed!")
 
-proc verifyIdentHash(c: var TForumData, name, epoch, ident: string): bool =
+proc verifyIdentHash(c: ForumData, name, epoch, ident: string): bool =
   const query =
     sql"select password, salt, strftime('%s', lastOnline) from person where name = ?"
   var row = getRow(db, query, name)
@@ -607,18 +607,18 @@ proc verifyIdentHash(c: var TForumData, name, epoch, ident: string): bool =
   if row[2].parseInt > (epoch.parseInt + 60): return false
   result = newIdent == ident
 
-proc setBan(c: var TForumData, nick, reason: string): bool =
+proc setBan(c: ForumData, nick, reason: string): bool =
   const query =
     sql("update person set ban = ? where name = ?")
   return tryExec(db, query, reason, nick)
 
-proc setPassword(c: var TForumData, nick, pass: string): bool =
+proc setPassword(c: ForumData, nick, pass: string): bool =
   const query =
     sql("update person set password = ?, salt = ? where name = ?")
   var salt = makeSalt()
   result = tryExec(db, query, makePassword(pass, salt), salt, nick)
 
-proc hasReplyBtn(c: var TForumData): bool =
+proc hasReplyBtn(c: ForumData): bool =
   result = c.req.pathInfo != "/donewthread" and c.req.pathInfo != "/doreply"
   result = result and c.req.params["action"] != "reply"
   # If the user is not logged in and there are no page numbers then we shouldn't
@@ -627,7 +627,7 @@ proc hasReplyBtn(c: var TForumData): bool =
   result = result and (pages > 1 or c.loggedIn)
   return c.threadId >= 0 and result
 
-proc genActionMenu(c: var TForumData): string =
+proc genActionMenu(c: ForumData): string =
   result = ""
   var btns: seq[TStyledButton] = @[]
   # TODO: Make this detection better?
@@ -643,7 +643,7 @@ proc genActionMenu(c: var TForumData): string =
     btns.add(("New Thread", c.req.makeUri("/newthread", false)))
   result = c.genButtons(btns)
 
-proc getStats(c: var TForumData, simple: bool): TForumStats =
+proc getStats(c: ForumData, simple: bool): TForumStats =
   const totalUsersQuery =
     sql"select count(*) from person"
   result.totalUsers = getValue(db, totalUsersQuery).parseInt
@@ -668,7 +668,7 @@ proc getStats(c: var TForumData, simple: bool): TForumStats =
         result.newestMember = (row[1], row[0].parseInt, row[2].parseBool)
         newestMemberCreation = row[4].parseInt
 
-proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
+proc genPagenumNav(c: ForumData, stats: TForumStats): string =
   result = ""
   var
     firstUrl = ""
@@ -741,22 +741,22 @@ proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
   result.add(nextTag)
   result.add(lastTag)
 
-proc gatherTotalPostsByID(c: var TForumData, thrid: int): int =
+proc gatherTotalPostsByID(c: ForumData, thrid: int): int =
   ## Gets the total post count of a thread.
   result = getValue(db, sql"select count(*) from post where thread = ?", $thrid).parseInt
 
-proc gatherTotalPosts(c: var TForumData) =
+proc gatherTotalPosts(c: ForumData) =
   if c.totalPosts > 0: return
   # Gather some data.
   const totalPostsQuery =
       sql"select count(*) from post p, person u where u.id = p.author and p.thread = ?"
   c.totalPosts = getValue(db, totalPostsQuery, $c.threadId).parseInt
 
-proc getPagesInThread(c: var TForumData): int =
+proc getPagesInThread(c: ForumData): int =
   c.gatherTotalPosts() # Get total post count
   result = ceil(c.totalPosts / PostsPerPage).int-1
 
-proc getPagesInThreadByID(c: var TForumData, thrid: int): int =
+proc getPagesInThreadByID(c: ForumData, thrid: int): int =
   result = ceil(c.gatherTotalPostsByID(thrid) / PostsPerPage).int
 
 proc getThreadTitle(thrid: int, pageNum: int): string =
@@ -764,7 +764,7 @@ proc getThreadTitle(thrid: int, pageNum: int): string =
   if pageNum notin {0,1}:
     result.add(" - Page " & $pageNum)
 
-proc genPagenumLocalNav(c: var TForumData, thrid: int): string =
+proc genPagenumLocalNav(c: ForumData, thrid: int): string =
   result = ""
   const maxPostPages = 6 # Maximum links to pages shown.
   const hmpp = maxPostPages div 2
@@ -784,7 +784,7 @@ proc genPagenumLocalNav(c: var TForumData, thrid: int): string =
 
   result = htmlgen.span(class = "pages", result)
 
-proc gatherUserInfo(c: var TForumData, nick: string, ui: var TUserInfo): bool =
+proc gatherUserInfo(c: ForumData, nick: string, ui: var TUserInfo): bool =
   ui.nick = nick
   const getUIDQuery = sql"select id from person where name = ?"
   var uid = getValue(db, getUIDQuery, nick)
@@ -805,10 +805,10 @@ proc gatherUserInfo(c: var TForumData, nick: string, ui: var TUserInfo): bool =
   ui.email = getValue(db, sql"select email from person where id = ?", uid)
   ui.ban = getValue(db, sql"select ban from person where id = ?", uid)
 
-proc genSetUserStatusUrl(c: var TForumData, nick: string, typ: string): string =
+proc genSetUserStatusUrl(c: ForumData, nick: string, typ: string): string =
   c.req.makeUri("/setUserStatus?nick=$1&type=$2" % [nick, typ])
 
-proc genProfile(c: var TForumData, ui: TUserInfo): string =
+proc genProfile(c: ForumData, ui: TUserInfo): string =
   result = ""
 
   result.add(htmlgen.`div`(id = "talk-head",
@@ -901,7 +901,7 @@ proc prependRe(s: string): string =
            else: "Re: " & s
 
 template createTFD(): stmt =
-  var c {.inject.}: TForumData
+  var c {.inject.}: ForumData = new(TForumData)
   init(c)
   c.req = request
   c.startTime = epochTime()
