@@ -5,7 +5,7 @@
 #end template
 #
 #
-#proc genThreadsList(c: var TForumData, count: var int): string =
+#proc genThreadsList(c: ForumData, count: var int): string =
 #  const query = sql"select id, name, views, modified from thread order by modified desc limit ?, ?"
 #  const threadId = 0
 #  const name = 1
@@ -84,7 +84,7 @@
 #end proc
 #
 #
-#proc genPostPreview(c: var TForumData,
+#proc genPostPreview(c: ForumData,
 #                    title, content, author, date: string): string =
 #  result = ""
 <a name="preview"></a>
@@ -111,7 +111,7 @@
 #end proc
 #
 #
-#proc genPostsList(c: var TForumData, threadId: string, count: var int): string =
+#proc genPostsList(c: ForumData, threadId: string, count: var int): string =
 #  const query = sql"""select p.id, u.name, p.header, p.content, p.creation, p.author, u.email from post p,
 #                      person u where u.id = p.author and p.thread = ? order by p.id limit ?, ?"""
 #  const postId = 0
@@ -167,7 +167,7 @@
 #end proc
 #
 #
-#proc genFormPost(c: var TForumData, action: string,
+#proc genFormPost(c: ForumData, action: string,
 #                 topText, title, content: string, isEdit: bool): string =
 #  result = ""
 <br />
@@ -211,7 +211,7 @@
 #end proc
 #
 #
-#proc genFormRegister(c: var TForumData): string =
+#proc genFormRegister(c: ForumData): string =
 #  result = ""
 <div id="talk-head">
     <div class="info-post">
@@ -249,7 +249,7 @@
 </form>
 #end proc
 #
-#proc genFormLogin(c: var TForumData): string =
+#proc genFormLogin(c: ForumData): string =
 #  result = ""
 #  if not c.loggedIn:
   <form action="${c.req.makeUri("/dologin", false)}" method="POST">
@@ -268,7 +268,7 @@
 #end proc
 #
 #
-#proc genListOnline(c: var TForumData, stats: TForumStats): string =
+#proc genListOnline(c: ForumData, stats: TForumStats): string =
 #  result = ""
 #  var active: seq[string] = @[]
 #  for i in stats.activeUsers:
@@ -285,8 +285,8 @@
 #
 #
 #
-#proc genSearchResults(c: var TForumData,
-#                       results: iterator: db_sqlite.TRow {.closure, tags: [FReadDB].},
+#proc genSearchResults(c: ForumData,
+#                       results: iterator: db_sqlite.Row {.closure, tags: [FReadDB].},
 #                       count: var int): string =
 #  const threadId = 0
 #  const threadName = 1
@@ -368,7 +368,7 @@
 #end proc
 #
 #
-#proc genFormResetPassword(c: var TForumData): string =
+#proc genFormResetPassword(c: ForumData): string =
 #  result = ""
 <div id="talk-head">
     <div class="info-post">

@@ -1,5 +1,5 @@
 #! stdtmpl
-#proc genMain(c: var TForumData, content: string, title = "Nim Forum",
+#proc genMain(c: ForumData, content: string, title = "Nim Forum",
 #             additional_headers = "", showRssLinks = false): string =
 #  result = ""
 #  var stats: TForumStats
@@ -169,7 +169,7 @@
 </html>
 #end proc
 #
-#proc genRSSHeaders(c: var TForumData): string =
+#proc genRSSHeaders(c: ForumData): string =
 #  result = ""
 <link href="${c.req.makeUri("/threadActivity.xml")}" title="Thread activity"
   type="application/atom+xml" rel="alternate">
@@ -177,7 +177,7 @@
   type="application/atom+xml" rel="alternate">
 #end proc
 #
-#proc genThreadsRSS(c: var TForumData): string =
+#proc genThreadsRSS(c: ForumData): string =
 #  result = ""
 #  const query = sql"""SELECT A.id, A.name,
 #    strftime('%Y-%m-%dT%H:%M:%SZ', (A.modified)),
@@ -225,7 +225,7 @@ ${xmlEncode(rstToHtml(%postContent))}</content>
 </feed>
 #end proc
 #
-#proc genPostsRSS(c: var TForumData): string =
+#proc genPostsRSS(c: ForumData): string =
 #  result = ""
 #  const query = sql"""SELECT A.id, B.name, A.content, A.thread,
 #    A.header, strftime('%Y-%m-%dT%H:%M:%SZ', A.creation),
