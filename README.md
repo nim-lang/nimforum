@@ -4,7 +4,7 @@ This is Nim's forum. Available at http://forum.nim-lang.org.
 
 ## Building
 
-You can use ``nimble`` (available [here](https://github.com/nim-lang/nimble) 
+You can use ``nimble`` (available [here](https://github.com/nim-lang/nimble)
 to get all the necessary
 [dependencies](https://github.com/nim-lang/nimforum/blob/master/nimforum.nimble#L11).
 
@@ -54,6 +54,10 @@ Requires: "nimrod >= 0.10.3, cairo#head, jester#head, bcrypt >= 0.2.1"
 
 **Important: You need to compile and run `createdb` to generate the initial database
 before you can run `forum` the first time**!
+
+**Note: If you do not have a mail server set up locally, you can specify
+``-d:dev`` during compilation to prevent nimforum from attempting to send
+emails and to automatically activate user accounts**
 
 This is as simple as:
 

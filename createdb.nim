@@ -8,10 +8,10 @@
 
 import strutils, db_sqlite
 
-var db = open(connection="nimforum.db", user="postgres", password="", 
+var db = open(connection="nimforum.db", user="postgres", password="",
               database="nimforum")
 
-const 
+const
   TUserName = "varchar(20)"
   TPassword = "varchar(32)"
   TEmail = "varchar(30)"
@@ -63,7 +63,7 @@ create table if not exists post(
   content varchar(1000) not null,
   thread integer not null,
   creation timestamp not null default (DATETIME('now')),
-  
+
   foreign key (thread) references thread(id),
   foreign key (author) references person(id)
 );""", []):

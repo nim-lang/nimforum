@@ -105,18 +105,18 @@ const
 proc TextWidget(c: TForumData, name, defaultText: string,
                 maxlength = 30, size = -1): string =
   let x = if defaultText != reuseText: defaultText
-          else: xmlEncode(c.req.params[name])
+          else: xmlEncode(c.req.params.getOrDefault(name))
   return """<input type="text" name="$1" maxlength="$2" value="$3" $4/>""" % [
     name, $maxlength, x, if size != -1: "size=\"" & $size & "\"" else: ""]
 
 proc HiddenField(c: TForumData, name, defaultText: string): string =
   let x = if defaultText != reuseText: defaultText
-          else: xmlEncode(c.req.params[name])
+          else: xmlEncode(c.req.params.getOrDefault(name))
   return """<input type="hidden" name="$1" value="$2"/>""" % [name, x]
 
 proc TextAreaWidget(c: TForumData, name, defaultText: string): string =
   let x = if defaultText != reuseText: defaultText
-          else: xmlEncode(c.req.params[name])
+          else: xmlEncode(c.req.params.getOrDefault(name))
   return """<textarea name="$1">$2</textarea>""" % [
     name, x]
 
@@ -333,16 +333,17 @@ proc register(c: var TForumData, name, pass, antibot,
   # TODO: This is a workaround for 'var T' not being usable in async procs.
   while not emailSentFut.finished:
     poll()
-  if emailSentFut.failed:
-    echo("[WARNING] Couldn't send activation email: ", emailSentFut.error.msg)
-    return setError(c, "email", "Couldn't send activation email")
+  when not defined(dev):
+    if emailSentFut.failed:
+      echo("[WARNING] Couldn't send activation email: ", emailSentFut.error.msg)
+      return setError(c, "email", "Couldn't send activation email")
 
   # add account to person table
   exec(db,
     sql("INSERT INTO person(name, password, email, salt, status, lastOnline, " &
         "ban) VALUES (?, ?, ?, ?, 'user', DATETIME('now'), ?)"), name,
               password, email, salt,
-              banReasonEmailUnconfirmed)
+              when defined(dev): "" else: banReasonEmailUnconfirmed)
 
   return true
 
@@ -409,10 +410,10 @@ proc incrementViews(c: var TForumData) =
   exec(db, query, $c.threadId)
 
 proc isPreview(c: TForumData): bool =
-  result = c.req.params["previewBtn"].len > 0 # TODO: Could be wrong?
+  result = c.req.params.hasKey("previewBtn")
 
 proc isDelete(c: TForumData): bool =
-  result = c.req.params["delete"].len > 0
+  result = c.req.params.hasKey("delete")
 
 proc rstToHtml(content: string): string =
   result = rstgen.rstToHtml(content, {roSupportSmilies, roSupportMarkdown},
@@ -582,6 +583,8 @@ proc login(c: var TForumData, name, pass: string): bool =
       of "": discard
       of banReasonDeactivated:
         return c.setError("name", "Your account has been deactivated.")
+      of banReasonEmailUnconfirmed:
+        return c.setError("name", "You need to confirm your email first.")
       else:
         return c.setError("name", "You have been banned: " & row[6])
       c.userid = row[0]
@@ -624,7 +627,7 @@ proc setPassword(c: var TForumData, nick, pass: string): bool =
 
 proc hasReplyBtn(c: var TForumData): bool =
   result = c.req.pathInfo != "/donewthread" and c.req.pathInfo != "/doreply"
-  result = result and c.req.params["action"] != "reply"
+  result = result and c.req.params.getOrDefault("action") != "reply"
   # If the user is not logged in and there are no page numbers then we shouldn't
   # generate the div.
   let pages = ceil(c.totalPosts / PostsPerPage).int

@@ -23,6 +23,7 @@ proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
     echo("[WARNING] Couldn't read config file: ./forum.json")
 
 proc sendMail(config: Config, subject, message, recipient: string, from_addr = "forum@nim-lang.org", otherHeaders:seq[(string, string)] = @[]) {.async.} =
+  when defined(dev): return
   var client = newAsyncSmtp(config.smtpAddress, Port(config.smtpPort))
   await client.connect()
   if config.smtpUser.len > 0:
