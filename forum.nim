@@ -376,7 +376,7 @@ proc resetPassword(c: var TForumData, nick, antibot: string): bool =
   return true
 
 proc checkLoggedIn(c: var TForumData) =
-  if c.req.cookies.hasKey("sid"): return
+  if not c.req.cookies.hasKey("sid"): return
   let pass = c.req.cookies["sid"]
   if execAffectedRows(db,
        sql("update session set lastModified = DATETIME('now') " &
