@@ -535,6 +535,27 @@ proc edit(c: var TForumData, postId: int): bool =
       exec(db, crud(crUpdate, "thread", "name"), subject, $c.threadId)
     result = true
 
+proc gatherUserInfo(c: var TForumData, nick: string, ui: var TUserInfo): bool
+proc spamCheck(c: var TForumData, subject, content: string): bool =
+  # Check current user's info
+  var ui: TUserInfo
+  if gatherUserInfo(c, c.userName, ui):
+    if ui.posts > 1: return
+
+  # Strip all punctuation
+  var subjAlphabet = ""
+  for i in subject:
+    if i in Letters:
+      subjAlphabet.add(i)
+  var contentAlphabet = ""
+  for i in content:
+    if i in Letters:
+      contentAlphabet.add(i)
+
+  for word in ["appliance", "kitchen", "cheap", "sale"]:
+    if word in subjAlphabet.toLower() or word in contentAlphabet.toLower():
+      return true
+
 proc reply(c: var TForumData): bool =
   # reply to an existing thread
   checkLogin(c)
@@ -542,6 +563,9 @@ proc reply(c: var TForumData): bool =
   if c.isPreview:
     setPreviewData(c)
   else:
+    if spamCheck(c, subject, content):
+      echo("[WARNING] Found spam: ", subject)
+      return true
     writeToDb(c, crCreate, true)
 
     exec(db, sql"update thread set modified = DATETIME('now') where id = ?",
@@ -559,6 +583,9 @@ proc newThread(c: var TForumData): bool =
     setPreviewData(c)
     c.threadID = transientThread
   else:
+    if spamCheck(c, subject, content):
+      echo("[WARNING] Found spam: ", subject)
+      return true
     c.threadID = tryInsertID(db, query, c.req.params["subject"]).int
     if c.threadID < 0: return setError(c, "subject", "Subject already exists")
     discard tryExec(db, crud(crCreate, "thread_fts", "id", "name"),
