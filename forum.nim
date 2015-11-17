@@ -461,11 +461,8 @@ template retrSubject(c: expr) =
 
 template retrContent(c: expr) =
   let content {.inject.} = c.req.params["content"]
-  if content.strip.len < 10:
+  if content.strip.len < 2:
     return setError(c, "content", "Content not long enough")
-  # Enforce DB content length for posts
-  elif content.len > 1000:
-    return setError(c, "content", "Post length too long")
 
   if not validateRst(c, content): return false
 
