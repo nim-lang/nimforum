@@ -9,7 +9,8 @@
 import
   os, strutils, times, md5, strtabs, cgi, math, db_sqlite, matchers,
   rst, rstgen, captchas, scgi, jester, asyncdispatch, asyncnet, cache, sequtils,
-  parseutils, utils
+  parseutils, utils, sets
+
 
 when not defined(windows):
   import bcrypt # TODO
@@ -1309,6 +1310,46 @@ routes:
   get "/search-help":
     textPage "static/search-help"
 
+
+proc compare_with_mlist*(conf: Config, interval_secs: int) =
+  ## Compare forum and mailing list, report differences. Used for debugging.
+  let tstamp = getTime().int - interval_secs
+  var thread_ids = initSet[int]()
+  var rows = db.getAllRows(sql"SELECT id FROM thread WHERE modified > ?", tstamp)
+  for r in rows:
+    thread_ids.incl r[0].parseInt()
+
+  var post_ids = initSet[string]()
+  rows = db.getAllRows(sql"SELECT thread, id FROM post WHERE creation > ?", tstamp)
+  for r in rows:
+    post_ids.incl r[0] & "-" & r[1]
+
+  let client = connect_to_POP3(conf)
+  for msg in client.fetch_pop3_messages():
+    let msg_id = msg.headers["message-id"]
+    if msg.headers["resent-from"] != "forum@nim-lang.org" or
+        not msg_id.endswith("@nim-lang.org>"):
+
+      echo "email from outside the forum: ", msg.headers["from"], " sbj: ",
+        msg.headers["subject"]
+      continue
+
+    if msg_id.startswith("<forum-id-"):
+      let id = msg_id[10..<len(msg_id)].split('@')[0]
+      if id in post_ids:
+        post_ids.excl id
+      else:
+        echo "Unexpected post: ", id, " not in ", post_ids
+
+    elif msg_id.startswith("<forum-tid-"):
+      let id = msg_id[11..<len(msg_id)].split('@')[0]
+      thread_ids.excl id.parseInt()
+
+
+  echo "posts missing from the mailing list: ", post_ids
+  echo "threads missing from the mailing list:  ", thread_ids
+
+
 when isMainModule:
   docConfig = rstgen.defaultConfig()
   docConfig["doc.smiley_format"] = "/images/smilieys/$1.png"
@@ -1318,6 +1359,13 @@ when isMainModule:
   isFTSAvailable = db.getAllRows(sql("SELECT name FROM sqlite_master WHERE " &
       "type='table' AND name='post_fts'")).len == 1
   config = loadConfig()
+
+
+  if paramCount() != 0 and paramStr(1) == "-c":
+    compare_with_mlist(config, paramStr(2).parseInt)
+    db.close()
+    quit()
+
   var http = true
   if paramCount() > 0:
     if paramStr(1) == "scgi":
