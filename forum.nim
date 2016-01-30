@@ -71,6 +71,8 @@ type
     email: string
     ban: string
 
+  ForumError = object of Exception
+
 var
   db: TDbConn
   docConfig: StringTableRef
@@ -110,8 +112,10 @@ proc TextWidget(c: TForumData, name, defaultText: string,
     name, $maxlength, x, if size != -1: "size=\"" & $size & "\"" else: ""]
 
 proc HiddenField(c: TForumData, name, defaultText: string): string =
-  let x = if defaultText != reuseText: defaultText
-          else: xmlEncode(c.req.params.getOrDefault(name))
+  let x = xmlencode(
+            if defaultText != reuseText: defaultText
+            else: c.req.params.getOrDefault(name)
+          )
   return """<input type="hidden" name="$1" value="$2"/>""" % [name, x]
 
 proc TextAreaWidget(c: TForumData, name, defaultText: string): string =
@@ -455,11 +459,15 @@ proc crud(c: TCrud, table: string, data: varargs[string]): TSqlQuery =
     result = sql("delete from " & table & " where id = ?")
 
 template retrSubject(c: expr) =
+  if not c.req.params.hasKey("subject"):
+    raise newException(ForumError, "Subject empty")
   let subject {.inject.} = c.req.params["subject"]
   if subject.strip.len < 3:
     return setError(c, "subject", "Subject not long enough")
 
 template retrContent(c: expr) =
+  if not c.req.params.hasKey("content"):
+    raise newException(ForumError, "Content empty")
   let content {.inject.} = c.req.params["content"]
   if content.strip.len < 2:
     return setError(c, "content", "Content not long enough")
