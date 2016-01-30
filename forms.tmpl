@@ -166,7 +166,8 @@
 </div>
 #end proc
 #
-#
+#proc genMarkHelp(): string
+#end proc
 #proc genFormPost(c: var TForumData, action: string,
 #                 topText, title, content: string, isEdit: bool): string =
 #  result = ""
@@ -202,10 +203,11 @@
       </div>
     #end if
     <br/>
+
     <input type="submit" name="previewBtn" value="Preview" />
     <input type="submit" name="postBtn" value="Submit" />
 
-    <a href="http://nim-lang.org/rst.html">Syntax Cheatsheet</a>
+    ${genMarkHelp()}
   </form>
 </div>
 #end proc
@@ -396,4 +398,82 @@
   #end if
   <input type="submit" value="Email me">
 </form>
+#end proc
+#proc genMarkHelp(): string =
+#result = ""
+<div id="markhelp">
+    <p>nimforum uses a slightly-customized version of
+        <a href="http://www.sphinx-doc.org/en/stable/rest.html">reStructuredText</a> for formatting. See below for some basics, or check
+        <a href="http://nim-lang.org/rst.html">this link</a> for a more detailed help reference.</p>
+    <table class="rst">
+        <tbody>
+            <tr class="markheading">
+                <td><em>you type:</em>
+                </td>
+                <td><em>you see:</em>
+                </td>
+            </tr>
+            <tr>
+                <td>*italics*</td>
+                <td><em>italics</em>
+                </td>
+            </tr>
+            <tr>
+                <td>**bold**</td>
+                <td><b>bold</b>
+                </td>
+            </tr>
+            <tr>
+                <td>`nim! &lt;http://nim-lang.org&gt;`_</td>
+                <td><a href="http://nim-lang.org">nim!</a>
+                </td>
+            </tr>
+            <tr>
+                <td>* item 1
+                    <br>* item 2
+                    <br>* item 3</td>
+                <td>
+                    <ul>
+                        <li>item 1</li>
+                        <li>item 2</li>
+                        <li>item 3</li>
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <td>&gt; quoted text</td>
+                <td>
+                    <blockquote>quoted text</blockquote>
+                </td>
+            </tr>
+            <tr>
+                <td>The forum supports the Github Markdown syntax
+                    <br>for code listings:
+                    <br>
+                    <br>```nim
+                    <br>if 1 * 2 &lt; 3:
+                    <br><span class="spaces">&nbsp;&nbsp;</span>echo "hello, world!"
+                    <br>```
+                    <br>
+                </td>
+                <td>The forum supports the Github Markdown syntax
+                    <br>for code listings:
+                    <br>
+                    <pre class="listing">
+<span class="Keyword">if</span> <span class="DecNumber">1</span><span class=
+"Operator">*</span><span class="DecNumber">2</span> <span class=
+"Operator">&lt;</span> <span class="DecNumber">3</span><span class=
+"Punctuation">:</span>
+  <span class="Identifier">echo</span> <span class=
+"StringLit">"hello, world!"</span>
+                    </pre>
+                </td>
+            </tr>
+            <tr>
+                <td>A horizontal rule can be created<br/>----<br/>but it needs text after it</td>
+                <td>A horizontal rule can be created<hr/>but it needs text after it</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
 #end proc
