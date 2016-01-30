@@ -659,28 +659,12 @@ proc setPassword(c: var TForumData, nick, pass: string): bool =
 
 proc hasReplyBtn(c: var TForumData): bool =
   result = c.req.pathInfo != "/donewthread" and c.req.pathInfo != "/doreply"
-  result = result and c.req.params.getOrDefault("action") != "reply"
+  result = result and c.req.params.getOrDefault("action") notin ["reply", "edit"]
   # If the user is not logged in and there are no page numbers then we shouldn't
   # generate the div.
   let pages = ceil(c.totalPosts / PostsPerPage).int
   result = result and (pages > 1 or c.loggedIn)
   return c.threadId >= 0 and result
-
-proc genActionMenu(c: var TForumData): string =
-  result = ""
-  var btns: seq[TStyledButton] = @[]
-  # TODO: Make this detection better?
-  if c.req.pathInfo.normalizeUri notin noHomeBtn and not c.isThreadsList:
-    btns.add(("Thread List", c.req.makeUri("/", false)))
-  #echo c.loggedIn
-  if c.loggedIn:
-    let hasReplyBtn = c.req.pathInfo != "/donewthread" and c.req.pathInfo != "/doreply"
-    if c.threadId >= 0 and hasReplyBtn:
-      let replyUrl = c.genThreadUrl(action = "reply",
-            pageNum = $(ceil(c.totalPosts / PostsPerPage).int)) & "#reply"
-      btns.add(("Reply", replyUrl))
-    btns.add(("New Thread", c.req.makeUri("/newthread", false)))
-  result = c.genButtons(btns)
 
 proc getStats(c: var TForumData, simple: bool): TForumStats =
   const totalUsersQuery =
