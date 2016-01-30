@@ -552,12 +552,21 @@ proc spamCheck(c: var TForumData, subject, content: string): bool =
   for i in subject:
     if i in Letters:
       subjAlphabet.add(i)
+    case i
+    of '!':
+      subjAlphabet.add("i")
+    else: discard
   var contentAlphabet = ""
   for i in content:
     if i in Letters:
       contentAlphabet.add(i)
+    case i
+    of '!':
+      subjAlphabet.add("i")
+    else: discard
 
-  for word in ["appliance", "kitchen", "cheap", "sale"]:
+  for word in ["appliance", "kitchen", "cheap", "sale", "relocating",
+               "packers", "lenders", "fifa", "coins"]:
     if word in subjAlphabet.toLower() or word in contentAlphabet.toLower():
       return true
 
