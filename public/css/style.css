@@ -706,3 +706,8 @@ blockquote {
   border-left: 2px solid rgb(61, 61, 61);
   color: rgb(109, 109, 109);
 }
+
+blockquote p {
+  color: rgb(109, 109, 109) !important;
+
+}
