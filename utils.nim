@@ -10,11 +10,11 @@ type
     mlistAddress: string
 
 proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
-  result = Config(smtpAddress: "localhost", smtpPort: 25, smtpUser: "",
-                  smtpPassword: "")
+  result = Config(smtpAddress: "", smtpPort: 25, smtpUser: "",
+                  smtpPassword: "", mlistAddress: "")
   try:
     let root = parseFile(filename)
-    result.smtpAddress = root["smtpAddress"].getStr("localhost")
+    result.smtpAddress = root["smtpAddress"].getStr("")
     result.smtpPort = root["smtpPort"].getNum(25).int
     result.smtpUser = root["smtpUser"].getStr("")
     result.smtpPassword = root["smtpPassword"].getStr("")
@@ -23,7 +23,10 @@ proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
     echo("[WARNING] Couldn't read config file: ./forum.json")
 
 proc sendMail(config: Config, subject, message, recipient: string, from_addr = "forum@nim-lang.org", otherHeaders:seq[(string, string)] = @[]) {.async.} =
-  when defined(dev): return
+  if config.smtpAddress.len == 0:
+    echo("[WARNING] Cannot send mail: no smtp server configured (smtpAddress).")
+    return
+
   var client = newAsyncSmtp(config.smtpAddress, Port(config.smtpPort))
   await client.connect()
   if config.smtpUser.len > 0:
@@ -41,7 +44,8 @@ proc sendMail(config: Config, subject, message, recipient: string, from_addr = "
 
 proc sendMailToMailingList*(config: Config, username, user_email_addr, subject, message: string, thread_id=0, post_id=0, is_reply=false) {.async.} =
   # send message to a mailing list
-  if config.mlistAddress == "":
+  if config.mlistAddress.len == 0:
+    echo("[WARNING] Cannot send mail: no mlistAddress configured.")
     return
 
   let from_addr = "$# <$#>" % [username, user_email_addr]
