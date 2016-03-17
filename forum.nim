@@ -561,6 +561,13 @@ template writeToDb(c, cr, setPostId: expr) =
   if setPostId:
     c.postId = retID.int
 
+proc isOwner(c: var TForumData, postId: int): bool =
+  ## isOwner is a convenience proc - checkOwnership template only returns if not
+  ## valid, here we will return with a boolean if authorized or not.  That way
+  ## we can use it with cond.
+  checkOwnership(c,postId)
+  true
+
 proc edit(c: var TForumData, postId: int): bool =
   checkLogin(c)
   if c.isPreview:
@@ -1052,6 +1059,8 @@ routes:
         title = "Replying to thread: " & pSubject
       of "edit":
         cond c.postId != -1
+        # Kick out early (don't display view) if don't own post
+        cond c.isOwner(c.postId)
         const query = sql"select header, content from post where id = ?"
         let row = getRow(db, query, $c.postId)
         let header = ||row[0]
