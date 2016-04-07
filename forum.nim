@@ -541,12 +541,14 @@ template retrPost(c: expr) =
 template checkLogin(c: expr) =
   if not loggedIn(c): return setError(c, "", "User is not logged in")
 
-template checkOwnership(c, postId: expr) =
+proc checkOwnership(c: var TForumData, postId: string): bool =
   if not c.isAdmin:
     let x = getValue(db, sql"select author from post where id = ?",
                      postId)
     if x != c.userId:
-      return setError(c, "", "You are not the owner of this post")
+      result = setError(c, "", "You are not the owner of this post")
+  else:
+    result = true
 
 template setPreviewData(c: expr) {.immediate, dirty.} =
   c.currentPost.subject = subject
@@ -561,12 +563,6 @@ template writeToDb(c, cr, setPostId: expr) =
   if setPostId:
     c.postId = retID.int
 
-proc isOwner(c: var TForumData, postId: int): bool =
-  ## isOwner is a convenience proc - checkOwnership template only returns if not
-  ## valid, here we will return with a boolean if authorized or not.  That way
-  ## we can use it with cond.
-  checkOwnership(c,postId)
-  true
 
 proc edit(c: var TForumData, postId: int): bool =
   checkLogin(c)
@@ -574,7 +570,7 @@ proc edit(c: var TForumData, postId: int): bool =
     retrPost(c)
     setPreviewData(c)
   elif c.isDelete:
-    checkOwnership(c, $postId)
+    if not checkOwnership(c, $postId): return false
     if not tryExec(db, crud(crDelete, "post"), $postId):
       return setError(c, "", "database error")
     discard tryExec(db, crud(crDelete, "post_fts"), $postId)
@@ -594,7 +590,7 @@ proc edit(c: var TForumData, postId: int): bool =
         return setError(c, "", "database error")
     result = true
   else:
-    checkOwnership(c, $postId)
+    if not checkOwnership(c, $postId): return false
     retrPost(c)
     exec(db, crud(crUpdate, "post", "header", "content"),
          subject, content, $postId)
@@ -1058,9 +1054,8 @@ routes:
         body.add genFormPost(c, "doreply", "Reply", subject, "", false)
         title = "Replying to thread: " & pSubject
       of "edit":
-        cond c.postId != -1
-        # Kick out early (don't display view) if don't own post
-        cond c.isOwner(c.postId)
+        # Kick out early (don't display view) if don't own post or invalid ID
+        cond c.postId != -1 and c.checkOwnership($c.postId)
         const query = sql"select header, content from post where id = ?"
         let row = getRow(db, query, $c.postId)
         let header = ||row[0]
