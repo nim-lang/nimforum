@@ -231,11 +231,11 @@
     </tr>
     <tr>
       <td>${FieldValid(c, "new_password", "Password:")}</td>
-      <td><input type="password" name="new_password" maxlength="20" /></td>
+      <td><input type="password" name="new_password" /></td>
     </tr>
     <tr>
       <td>${FieldValid(c, "email", "E-Mail:")}</td>
-      <td>${TextWidget(c, "email", reuseText, maxlength=30)}</td>
+      <td>${TextWidget(c, "email", reuseText, maxlength=300)}</td>
     </tr>
     <tr>
       <td>${FieldValid(c, "antibot", "What is " & antibot(c) & "?")}</td>
