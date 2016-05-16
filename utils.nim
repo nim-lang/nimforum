@@ -14,13 +14,13 @@ proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
                   smtpPassword: "", mlistAddress: "")
   try:
     let root = parseFile(filename)
-    result.smtpAddress = root["smtpAddress"].getStr("")
-    result.smtpPort = root["smtpPort"].getNum(25).int
-    result.smtpUser = root["smtpUser"].getStr("")
-    result.smtpPassword = root["smtpPassword"].getStr("")
-    result.mlistAddress = root["mlistAddress"].getStr("")
+    result.smtpAddress = root{"smtpAddress"}.getStr("")
+    result.smtpPort = root{"smtpPort"}.getNum(25).int
+    result.smtpUser = root{"smtpUser"}.getStr("")
+    result.smtpPassword = root{"smtpPassword"}.getStr("")
+    result.mlistAddress = root{"mlistAddress"}.getStr("")
   except:
-    echo("[WARNING] Couldn't read config file: ./forum.json")
+    echo("[WARNING] Couldn't read config file: ", filename)
 
 proc sendMail(config: Config, subject, message, recipient: string, from_addr = "forum@nim-lang.org", otherHeaders:seq[(string, string)] = @[]) {.async.} =
   if config.smtpAddress.len == 0:
