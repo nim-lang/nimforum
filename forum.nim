@@ -9,7 +9,7 @@
 import
   os, strutils, times, md5, strtabs, cgi, math, db_sqlite, matchers,
   rst, rstgen, captchas, scgi, jester, asyncdispatch, asyncnet, cache, sequtils,
-  parseutils, utils, htmlparser, xmltree, streams
+  parseutils, utils, htmlparser, xmltree, streams, random
 
 when not defined(windows):
   import bcrypt # TODO
@@ -276,8 +276,8 @@ proc validThreadId(c: TForumData): bool =
                     $c.threadId).len > 0
 
 proc antibot(c: var TForumData): string =
-  let a = math.random(10)+1
-  let b = math.random(1000)+1
+  let a = random(10)+1
+  let b = random(1000)+1
   let answer = $(a+b)
 
   exec(db, sql"delete from antibot where ip = ?", c.req.ip)
@@ -1373,7 +1373,7 @@ routes:
 when isMainModule:
   docConfig = rstgen.defaultConfig()
   docConfig["doc.smiley_format"] = "/images/smilieys/$1.png"
-  math.randomize()
+  randomize()
   db = open(connection="nimforum.db", user="postgres", password="",
               database="nimforum")
   isFTSAvailable = db.getAllRows(sql("SELECT name FROM sqlite_master WHERE " &
@@ -1388,4 +1388,3 @@ when isMainModule:
 
   runForever()
   db.close()
-
