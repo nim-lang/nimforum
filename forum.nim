@@ -541,12 +541,15 @@ template retrPost(c: expr) =
 template checkLogin(c: expr) =
   if not loggedIn(c): return setError(c, "", "User is not logged in")
 
-template checkOwnership(c, postId: expr) =
-  if not c.isAdmin:
+proc checkOwnership(c: var TForumData, postId: int): bool =
+  if c.isAdmin:
+    result = true
+  else:
     let x = getValue(db, sql"select author from post where id = ?",
                      postId)
-    if x != c.userId:
-      return setError(c, "", "You are not the owner of this post")
+    if x == c.userId:
+      result = true
+    else: result = setError(c, "", "You are not the owner of this post")
 
 template setPreviewData(c: expr) {.immediate, dirty.} =
   c.currentPost.subject = subject
@@ -561,13 +564,14 @@ template writeToDb(c, cr, setPostId: expr) =
   if setPostId:
     c.postId = retID.int
 
+
 proc edit(c: var TForumData, postId: int): bool =
   checkLogin(c)
   if c.isPreview:
     retrPost(c)
     setPreviewData(c)
   elif c.isDelete:
-    checkOwnership(c, $postId)
+    if not checkOwnership(c, postId): return false
     if not tryExec(db, crud(crDelete, "post"), $postId):
       return setError(c, "", "database error")
     discard tryExec(db, crud(crDelete, "post_fts"), $postId)
@@ -587,7 +591,7 @@ proc edit(c: var TForumData, postId: int): bool =
         return setError(c, "", "database error")
     result = true
   else:
-    checkOwnership(c, $postId)
+    if not checkOwnership(c, postId): return false
     retrPost(c)
     exec(db, crud(crUpdate, "post", "header", "content"),
          subject, content, $postId)
@@ -1051,7 +1055,8 @@ routes:
         body.add genFormPost(c, "doreply", "Reply", subject, "", false)
         title = "Replying to thread: " & pSubject
       of "edit":
-        cond c.postId != -1
+        # Kick out early (don't display view) if don't own post or invalid ID
+        cond c.postId != -1 and c.checkOwnership(c.postId)
         const query = sql"select header, content from post where id = ?"
         let row = getRow(db, query, $c.postId)
         let header = ||row[0]
