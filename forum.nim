@@ -379,6 +379,22 @@ proc resetPassword(c: var TForumData, nick, antibot: string): bool =
 
   return true
 
+proc logout(c: var TForumData) =
+  const query = sql"delete from session where ip = ? and password = ?"
+  c.username = ""
+  c.userpass = ""
+  exec(db, query, c.req.ip, c.req.cookies["sid"])
+
+proc getBanErrorMsg(banValue: string): string =
+  case banValue
+  of "": return ""
+  of banReasonDeactivated:
+    return "Your account has been deactivated."
+  of banReasonEmailUnconfirmed:
+    return "You need to confirm your email first."
+  else:
+    return "You have been banned: " & banValue
+
 proc checkLoggedIn(c: var TForumData) =
   if not c.req.cookies.hasKey("sid"): return
   let pass = c.req.cookies["sid"]
@@ -392,22 +408,23 @@ proc checkLoggedIn(c: var TForumData) =
       c.req.ip, pass)
 
     let row = getRow(db,
-      sql"select name, email, admin from person where id = ?", c.userid)
+      sql"select name, email, admin, ban from person where id = ?", c.userid)
     c.username = ||row[0]
     c.email = ||row[1]
     c.isAdmin = parseBool(||row[2])
+    # Check ban status.
+    let banErrorMsg = getBanErrorMsg(||row[3])
+    if banErrorMsg.len > 0:
+      discard c.setError("name", banErrorMsg)
+      logout(c)
+      return
+
     # Update lastOnline
     db.exec(sql"update person set lastOnline = DATETIME('now') where id = ?",
             c.userid)
 
   else:
     echo("SID not found in sessions. Assuming logged out.")
-
-proc logout(c: var TForumData) =
-  const query = sql"delete from session where ip = ? and password = ?"
-  c.username = ""
-  c.userpass = ""
-  exec(db, query, c.req.ip, c.req.cookies["sid"])
 
 proc incrementViews(c: var TForumData) =
   const query = sql"update thread set views = views + 1 where id = ?"
@@ -680,14 +697,8 @@ proc login(c: var TForumData, name, pass: string): bool =
   var success = false
   for row in fastRows(db, query, name):
     if row[2] == makePassword(pass, row[4], row[2]):
-      case row[6]
-      of "": discard
-      of banReasonDeactivated:
-        return c.setError("name", "Your account has been deactivated.")
-      of banReasonEmailUnconfirmed:
-        return c.setError("name", "You need to confirm your email first.")
-      else:
-        return c.setError("name", "You have been banned: " & row[6])
+      if row[6].len > 0:
+        return c.setError("name", getBanErrorMsg(row[6]))
       c.userid = row[0]
       c.username = row[1]
       c.userpass = row[2]
