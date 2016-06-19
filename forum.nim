@@ -659,6 +659,25 @@ proc spamCheck(c: var TForumData, subject, content: string): bool =
     if word in subjAlphabet.toLower() or word in contentAlphabet.toLower():
       return true
 
+proc rateLimitCheck(c: var TForumData): bool =
+  const query40 =
+    sql("SELECT count(*) FROM post where author = ? and " &
+        "(strftime('%s', 'now') - strftime('%s', creation)) < 40")
+  const query90 =
+    sql("SELECT count(*) FROM post where author = ? and " &
+        "(strftime('%s', 'now') - strftime('%s', creation)) < 90")
+  const query300 =
+    sql("SELECT count(*) FROM post where author = ? and " &
+        "(strftime('%s', 'now') - strftime('%s', creation)) < 300")
+  # TODO Why can't I pass the secs as a param?
+  let last40s = getValue(db, query40, c.userId).parseInt
+  let last90s = getValue(db, query90, c.userId).parseInt
+  let last300s = getValue(db, query300, c.userId).parseInt
+  if last40s > 1: return true
+  if last90s > 2: return true
+  if last300s > 6: return true
+  return false
+
 proc reply(c: var TForumData): bool =
   # reply to an existing thread
   checkLogin(c)
@@ -669,6 +688,8 @@ proc reply(c: var TForumData): bool =
     if spamCheck(c, subject, content):
       echo("[WARNING] Found spam: ", subject)
       return true
+    if rateLimitCheck(c):
+      return setError(c, "subject", "You're posting too fast.")
     writeToDb(c, crCreate, true)
 
     exec(db, sql"update thread set modified = DATETIME('now') where id = ?",
@@ -689,6 +710,8 @@ proc newThread(c: var TForumData): bool =
     if spamCheck(c, subject, content):
       echo("[WARNING] Found spam: ", subject)
       return true
+    if rateLimitCheck(c):
+      return setError(c, "subject", "You're posting too fast.")
     c.threadID = tryInsertID(db, query, c.req.params["subject"]).int
     if c.threadID < 0: return setError(c, "subject", "Subject already exists")
     discard tryExec(db, crud(crCreate, "thread_fts", "id", "name"),
