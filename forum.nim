@@ -578,6 +578,24 @@ template writeToDb(c, cr, setPostId: expr) =
   if setPostId:
     c.postId = retID.int
 
+proc updateThreads(c: var TForumData): int =
+  ## Removes threads if they have no posts, or changes their modified field
+  ## if they still contain posts.
+  const query =
+      sql"delete from thread where id not in (select thread from post)"
+  result = execAffectedRows(db, query).int
+  if result > 0:
+    discard tryExec(db, sql"delete from thread_fts where id not in (select thread from post)")
+  else:
+    # Update corresponding thread's modified field.
+    let getModifiedSql = "(select creation from post where post.thread = ?" &
+        " order by creation desc limit 1)"
+    let updateSql = sql("update thread set modified=" & getModifiedSql &
+        " where id = ?")
+    if not tryExec(db, updateSql, $c.threadId, $c.threadId):
+      result = -1
+      discard setError(c, "", "database error")
+
 proc edit(c: var TForumData, postId: int): bool =
   checkLogin(c)
   if c.isPreview:
@@ -588,21 +606,15 @@ proc edit(c: var TForumData, postId: int): bool =
     if not tryExec(db, crud(crDelete, "post"), $postId):
       return setError(c, "", "database error")
     discard tryExec(db, crud(crDelete, "post_fts"), $postId)
+    result = true
     # delete corresponding thread:
-    if execAffectedRows(db,
-        sql"delete from thread where id not in (select thread from post)") > 0:
+    let updateResult = updateThreads(c)
+    if updateResult > 0:
       # whole thread has been deleted, so:
       c.threadId = unselectedThread
-      discard tryExec(db, sql"delete from thread_fts where id not in (select thread from post)")
-    else:
-      # Update corresponding thread's modified field.
-      let getModifiedSql = "(select creation from post where post.thread = ?" &
-          " order by creation desc limit 1)"
-      let updateSql = sql("update thread set modified=" & getModifiedSql &
-          " where id = ?")
-      if not tryExec(db, updateSql, $c.threadId, $c.threadId):
-        return setError(c, "", "database error")
-    result = true
+    elif updateResult < 0:
+      # error occurred
+      return false
   else:
     checkOwnership(c, $postId)
     retrPost(c)
@@ -730,6 +742,12 @@ proc setBan(c: var TForumData, nick, reason: string): bool =
   const query =
     sql("update person set ban = ? where name = ?")
   return tryExec(db, query, reason, nick)
+
+proc deleteAll(c: var TForumData, nick: string): bool =
+  const query =
+    sql("delete from post where author = (select id from person where name = ?)")
+  result = tryExec(db, query, nick)
+  result = result and updateThreads(c) >= 0
 
 proc setPassword(c: var TForumData, nick, pass: string): bool =
   const query =
@@ -987,7 +1005,14 @@ proc genProfile(c: var TForumData, ui: TUserInfo): string =
                   "Confirm user's email")
              else: ""
            else: "")
-      )
+      ),
+      tr(
+        th(""),
+        td(if c.isAdmin:
+             htmlgen.a(href=c.req.makeUri("/deleteAll?nick=$1" % ui.nick),
+                     "Delete all user's posts and threads")
+           else: "")
+      ),
     )
   ))
 
@@ -1223,8 +1248,8 @@ routes:
           "?")
       del = true
     formBody.add "<input type='hidden' name='del' value='" & $del & "'/>"
-    content = htmlgen.form(action = c.req.makeUri("/dosetban"),
-        `method` = "POST", formBody) & content
+    content = content & htmlgen.form(action = c.req.makeUri("/dosetban"),
+        `method` = "POST", formBody)
     resp genMain(c, content, "Set user status - Nim Forum")
 
   post "/dosetban":
@@ -1245,6 +1270,32 @@ routes:
     else:
       resp genMain(c, "Failed to change the ban status of user.",
           "Error - Nim Forum")
+
+  get "/deleteAll/?":
+    createTFD()
+    cond (@"nick" != "")
+    var formBody = "<input type=\"hidden\" name=\"nick\" value=\"" &
+                      @"nick" & "\">"
+    var del = false
+    var content = ""
+    formBody.add "<input type='submit' name='deleteAllBtn' value='Delete All' />"
+    content = htmlgen.p("Are you sure you wish to delete all " &
+      "the posts and threads created by ", htmlgen.b(@"nick"), "?")
+    content = content & htmlgen.form(action = c.req.makeUri("/dodeleteall"),
+        `method` = "POST", formBody)
+    resp genMain(c, content, "Delete all user's posts & threads - Nim Forum")
+
+  post "/dodeleteall/?":
+    createTFD()
+    cond (@"nick" != "")
+    if not c.isAdmin:
+      resp genMain(c, "You cannot delete this user's data.", "Error - Nim Forum")
+    let result = deleteAll(c, @"nick")
+    if result:
+      redirect(c.req.makeUri("/profile/" & @"nick"))
+    else:
+      resp genMain(c, "Failed to delete all user's posts and threads.",
+          "Error - NimForum")
 
   get "/setpassword/?":
     createTFD()
