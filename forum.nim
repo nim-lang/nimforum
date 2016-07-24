@@ -467,7 +467,7 @@ proc rstToHtml(content: string): string =
   # TODO: Yes, this is ugly. I wrote it quickly. PRs welcome ;)
   try:
     var node = parseHtml(newStringStream(result))
-    var newNode = newElement("document")
+    var newNode = newElement("div")
     if node.kind == xnElement:
       var currentBlockquote = newElement("blockquote")
       for n in items(node):
