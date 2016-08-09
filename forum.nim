@@ -8,8 +8,8 @@
 
 import
   os, strutils, times, md5, strtabs, cgi, math, db_sqlite, matchers,
-  rst, rstgen, captchas, scgi, jester, asyncdispatch, asyncnet, cache, sequtils,
-  parseutils, utils, htmlparser, xmltree, streams, random
+  captchas, scgi, jester, asyncdispatch, asyncnet, cache, sequtils,
+  parseutils, utils, random, rst
 
 when not defined(windows):
   import bcrypt # TODO
@@ -75,7 +75,6 @@ type
 
 var
   db: TDbConn
-  docConfig: StringTableRef
   isFTSAvailable: bool
   config: Config
 
@@ -436,70 +435,6 @@ proc isPreview(c: TForumData): bool =
 proc isDelete(c: TForumData): bool =
   result = c.req.params.hasKey("delete")
 
-proc processGT(n: XmlNode, tag: string): (int, XmlNode, string) =
-  result = (0, newElement(tag), tag)
-  if n.kind == xnElement and len(n) == 1 and n[0].kind == xnElement:
-    return processGT(n[0], if n[0].kind == xnElement: n[0].tag else: tag)
-
-  var countGT = true
-  for c in items(n):
-    case c.kind
-    of xnText:
-      if c.text == ">" and countGT:
-        result[0].inc()
-      else:
-        countGT = false
-        result[1].add(newText(c.text))
-    else:
-      result[1].add(c)
-
-proc blockquoteFinish(currentBlockquote, newNode: var XmlNode, n: XmlNode) =
-  if currentBlockquote.len > 0:
-    #echo(currentBlockquote.repr)
-    newNode.add(currentBlockquote)
-    currentBlockquote = newElement("blockquote")
-  newNode.add(n)
-
-proc rstToHtml(content: string): string =
-  result = rstgen.rstToHtml(content, {roSupportSmilies, roSupportMarkdown},
-                            docConfig)
-  # Bolt on quotes.
-  # TODO: Yes, this is ugly. I wrote it quickly. PRs welcome ;)
-  try:
-    var node = parseHtml(newStringStream(result))
-    var newNode = newElement("div")
-    if node.kind == xnElement:
-      var currentBlockquote = newElement("blockquote")
-      for n in items(node):
-        case n.kind
-        of xnElement:
-          case n.tag
-          of "p":
-            let (nesting, contentNode, tag) = processGT(n, "p")
-            if nesting > 0:
-              var bq = currentBlockquote
-              for i in 1 .. <nesting:
-                var newBq = bq.child("blockquote")
-                if newBq.isNil:
-                  newBq = newElement("blockquote")
-                  bq.add(newBq)
-                bq = newBq
-              bq.insert(contentNode, if bq.len == 0: 0 else: bq.len)
-            else:
-              blockquoteFinish(currentBlockquote, newNode, n)
-          else:
-            blockquoteFinish(currentBlockquote, newNode, n)
-        of xnText:
-          if n.text[0] == '\10':
-            newNode.add(n)
-          else:
-            blockquoteFinish(currentBlockquote, newNode, n)
-        else:
-          blockquoteFinish(currentBlockquote, newNode, n)
-      result = $newNode
-  except:
-    echo("[WARNING] Could not parse rst html.")
-
 proc validateRst(c: var TForumData, content: string): bool =
   result = true
   try:
@@ -678,6 +613,9 @@ proc rateLimitCheck(c: var TForumData): bool =
   if last300s > 6: return true
   return false
 
+proc makeThreadURL(c: var TForumData): string =
+  c.req.makeUri("/t/" & $c.threadId)
+
 proc reply(c: var TForumData): bool =
   # reply to an existing thread
   checkLogin(c)
@@ -695,7 +633,7 @@ proc reply(c: var TForumData): bool =
     exec(db, sql"update thread set modified = DATETIME('now') where id = ?",
          $c.threadId)
     asyncCheck sendMailToMailingList(c.config, c.username, c.email,
-        subject, content, threadId=c.threadId, postId=c.postID, is_reply=true)
+        subject, content, threadId=c.threadId, postId=c.postID, is_reply=true, threadUrl=c.makeThreadURL())
     result = true
 
 proc newThread(c: var TForumData): bool =
@@ -720,7 +658,7 @@ proc newThread(c: var TForumData): bool =
     discard tryExec(db, sql"insert into post_fts(post_fts) values('optimize')")
     discard tryExec(db, sql"insert into post_fts(thread_fts) values('optimize')")
     asyncCheck sendMailToMailingList(c.config, c.username, c.email,
-        subject, content, threadId=c.threadID, postId=c.postID, is_reply=false)
+        subject, content, threadId=c.threadID, postId=c.postID, is_reply=false, threadUrl=c.makeThreadURL())
     result = true
 
 proc login(c: var TForumData, name, pass: string): bool =
@@ -828,7 +766,7 @@ proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
     lastUrl = c.req.makeUri("/page/" & $(totalPages))
     nextUrl = c.req.makeUri("/page/" & $(c.pageNum+1))
   else:
-    firstUrl = c.req.makeUri("/t/" & $c.threadId)
+    firstUrl = c.makeThreadURL()
     if c.pageNum == 1:
       prevUrl = firstUrl
     else:
@@ -1456,8 +1394,6 @@ routes:
     textPage "static/search-help"
 
 when isMainModule:
-  docConfig = rstgen.defaultConfig()
-  docConfig["doc.smiley_format"] = "/images/smilieys/$1.png"
   randomize()
   db = open(connection="nimforum.db", user="postgres", password="",
               database="nimforum")

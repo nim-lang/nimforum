@@ -1,4 +1,5 @@
-import asyncdispatch, smtp, strutils, json, os
+import asyncdispatch, smtp, strutils, json, os, rst, rstgen, xmltree, strtabs,
+  htmlparser, streams
 from times import getTime, getGMTime, format
 
 type
@@ -8,6 +9,11 @@ type
     smtpUser: string
     smtpPassword: string
     mlistAddress: string
+
+var docConfig: StringTableRef
+
+docConfig = rstgen.defaultConfig()
+docConfig["doc.smiley_format"] = "/images/smilieys/$1.png"
 
 proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
   result = Config(smtpAddress: "", smtpPort: 25, smtpUser: "",
@@ -21,6 +27,70 @@ proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
     result.mlistAddress = root{"mlistAddress"}.getStr("")
   except:
     echo("[WARNING] Couldn't read config file: ", filename)
+
+proc processGT(n: XmlNode, tag: string): (int, XmlNode, string) =
+  result = (0, newElement(tag), tag)
+  if n.kind == xnElement and len(n) == 1 and n[0].kind == xnElement:
+    return processGT(n[0], if n[0].kind == xnElement: n[0].tag else: tag)
+
+  var countGT = true
+  for c in items(n):
+    case c.kind
+    of xnText:
+      if c.text == ">" and countGT:
+        result[0].inc()
+      else:
+        countGT = false
+        result[1].add(newText(c.text))
+    else:
+      result[1].add(c)
+
+proc blockquoteFinish(currentBlockquote, newNode: var XmlNode, n: XmlNode) =
+  if currentBlockquote.len > 0:
+    #echo(currentBlockquote.repr)
+    newNode.add(currentBlockquote)
+    currentBlockquote = newElement("blockquote")
+  newNode.add(n)
+
+proc rstToHtml*(content: string): string =
+  result = rstgen.rstToHtml(content, {roSupportSmilies, roSupportMarkdown},
+                            docConfig)
+  # Bolt on quotes.
+  # TODO: Yes, this is ugly. I wrote it quickly. PRs welcome ;)
+  try:
+    var node = parseHtml(newStringStream(result))
+    var newNode = newElement("div")
+    if node.kind == xnElement:
+      var currentBlockquote = newElement("blockquote")
+      for n in items(node):
+        case n.kind
+        of xnElement:
+          case n.tag
+          of "p":
+            let (nesting, contentNode, tag) = processGT(n, "p")
+            if nesting > 0:
+              var bq = currentBlockquote
+              for i in 1 .. <nesting:
+                var newBq = bq.child("blockquote")
+                if newBq.isNil:
+                  newBq = newElement("blockquote")
+                  bq.add(newBq)
+                bq = newBq
+              bq.insert(contentNode, if bq.len == 0: 0 else: bq.len)
+            else:
+              blockquoteFinish(currentBlockquote, newNode, n)
+          else:
+            blockquoteFinish(currentBlockquote, newNode, n)
+        of xnText:
+          if n.text[0] == '\10':
+            newNode.add(n)
+          else:
+            blockquoteFinish(currentBlockquote, newNode, n)
+        else:
+          blockquoteFinish(currentBlockquote, newNode, n)
+      result = $newNode
+  except:
+    echo("[WARNING] Could not parse rst html.")
 
 proc sendMail(config: Config, subject, message, recipient: string, from_addr = "forum@nim-lang.org", otherHeaders:seq[(string, string)] = @[]) {.async.} =
   if config.smtpAddress.len == 0:
@@ -42,7 +112,7 @@ proc sendMail(config: Config, subject, message, recipient: string, from_addr = "
 
   await client.sendMail(from_addr, toList, $encoded)
 
-proc sendMailToMailingList*(config: Config, username, user_email_addr, subject, message: string, thread_id=0, post_id=0, is_reply=false) {.async.} =
+proc sendMailToMailingList*(config: Config, username, user_email_addr, subject, message: string, threadUrl: string, thread_id=0, post_id=0, is_reply=false) {.async.} =
   # send message to a mailing list
   if config.mlistAddress.len == 0:
     echo("[WARNING] Cannot send mail: no mlistAddress configured.")
@@ -67,7 +137,14 @@ proc sendMailToMailingList*(config: Config, username, user_email_addr, subject, 
     let msg_id = "<forum-tid-$#@nim-lang.org>" % $thread_id
     otherHeaders.add(("Message-ID", msg_id))
 
-  await sendMail(config, subject, message, config.mlistAddress, from_addr=from_addr, otherHeaders=otherHeaders)
+  var processedMsg: string
+  try:
+    processedMsg = rstToHTML(message) & "<hr/><a href=\"" & threadUrl & "\" style=\"font-size:small\">View thread on Nim forum</a>"
+    otherHeaders.add(("Content-Type", "text/html; charset=\"UTF-8\""))
+  except:
+    processedMsg = message
+
+  await sendMail(config, subject, processedMsg, config.mlistAddress, from_addr=from_addr, otherHeaders=otherHeaders)
 
 proc sendPassReset*(config: Config, email, user, resetUrl: string) {.async.} =
   let message = """Hello $1,
