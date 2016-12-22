@@ -1,9 +1,6 @@
 Full-text search for Nim forum
 ==============================
 
-Syntax (using *SQLite* dll compiled without *Enhanced Query Syntax* support):
------------------------------------------------------------------------------
-
 - Only alphanumeric characters are searched.
 - Only full words and words beginnings (e.g. ``Nim*`` for both ``Nimrod`` and ``Nim``) are searched
 - All words are joined with implicit **AND** operator; there's no explicit one
@@ -13,23 +10,25 @@ Syntax (using *SQLite* dll compiled without *Enhanced Query Syntax* support):
 - Quotes for phrases search, e.g. ``"programming language"``
 - Distances between words/phrases can be specified putting ``NEAR`` or ``NEAR/some_number`` between them
 
-Syntax - differences in *Enhanced Query Syntax* (should be enabled in *SQLite* dll):
-------------------------------------------------------------------------------------
-
-- **AND** and **NOT** logical operators available
-- Precedence of operators is, from highest to lowest: **NOT**, **AND**, **OR**
-- Parentheses for grouping are supported
-
 Where search is performed:
 --------------------------
 
-- **Threads' titles** - these results are outputed first
-- **Posts' titles** - middle precedence
-- **Posts' contents** - the latest
+- **Threads' titles**
+- **Posts' contents**
+- **User names**
 
 How results are shown:
 ----------------------
 
 - All results are ordered by date (posts' edits don't affect)
-- Matched tokens in text are marked (bold or dotted underline)
-- Threads title is the link to the thread and posts title is the link to the post
+- Matched tokens in text are marked (bold or underline)
+- Posts title is the link to the post
+
+Username search:
+-----------------
+
+The first and the last words of the search are checked to being a username of an existing user. If so, then additionally posts/threads of that user are searched with the query without the username.
+
+E.g.: Considering there exists a user *User1*, *"User1 macro"* searches for *User1*'s posts containing word *"macro"* and any user's posts containing simultaneously both words *"User1"* and *"macro"*.
+
+To search for all threads and posts of some user, enter just username.

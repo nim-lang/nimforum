@@ -470,7 +470,39 @@ proc reply(c: var TForumData): bool =
     exec(db, sql"update thread set modified = DATETIME('now') where id = ?",
          $c.threadId)
     result = true
-  
+
+## Returns true, if subj contains all the words of some line
+## of *black_list.txt*.
+## Words in *black_list.txt* are whitespace-separated.
+## Words can end with ``*``, then they are treated as words beginnings.
+proc inBlackList(subj: string): bool =
+  const NonAlphaNum = AllChars - IdentChars - {'\0'}
+  let words = subj.toLower.split(NonAlphaNum)
+  try:
+    # black-list can be modified without Forum restart
+    for bline in lines("black_list.txt"):
+      let bwords = bline.toLower.split
+      echo bwords
+      let count = bwords.len
+      var same = 0
+      for bword in bwords:
+        if bword[bword.high] == '*':
+          let bwordBgn = bword[0 .. bword.high-1]
+          for word in words:
+            if word.startsWith(bwordBgn):
+              inc same
+        else:
+          for word in words:
+            if word == bword:
+              inc same
+      echo same, " ", count
+      if same == count:
+        return true
+    result = false
+  except:
+    echo getCurrentExceptionMsg()
+    result = false
+
 proc newThread(c: var TForumData): bool =
   const query = sql"insert into thread(name, views, modified) values (?, 0, DATETIME('now'))"
   checkLogin(c)
@@ -478,6 +510,8 @@ proc newThread(c: var TForumData): bool =
   if c.isPreview:
     setPreviewData(c)
     c.threadID = transientThread
+  elif inBlackList(c.req.params["subject"]):
+    result = true
   else:
     c.threadID = tryInsertID(db, query, c.req.params["subject"]).int
     if c.threadID < 0: return setError(c, "subject", "Subject already exists")
@@ -1047,6 +1081,25 @@ routes:
     createTFD()
     resp genMain(c, rstToHtml(licenseRst), "Content license - Nim Forum")
 
+  proc handleAuthor(query: var string): tuple[author, queryNoAuthor: string] =
+    const queryUserId = "SELECT id FROM person WHERE name LIKE ? LIMIT 1".sql
+    var parts = query.split
+    for i in [0, parts.high]:
+      let uid = db.getValue(queryUserId, parts[i])
+      if uid.len > 0:
+        result.author = uid
+        parts.delete(i,i)
+        result.queryNoAuthor = parts.join(" ")
+        break
+    if result.author.isNil:
+      result = ("", "")
+    elif result.queryNoAuthor.len == 0:
+      query = nil
+  proc getPostsPage(post, thread: int): string =
+    const sql = "SELECT COUNT(*) FROM post WHERE thread == ? AND id < ?".sql
+    let count = db.getValue(sql, thread, post).parseInt
+    let page = ((count - 1) div PostsPerPage) + 1
+    result = if page > 1: $page else: ""
   post "/search/?@page?":
     cond isFTSAvailable
     createTFD()
@@ -1057,20 +1110,29 @@ routes:
     for i in 0 .. q.len-1:
       if   q[i].int < 32: q[i] = ' '
       elif q[i] == '\'':  q[i] = '"'
+    # splitting to author and query-w/o-author, both are set or both are empty
     c.search = q.replace("\"","&quot;");
+    let (author, qa) = handleAuthor(q)
     if @"page".len > 0:
       parseInt(@"page", c.pageNum, 0..1000_000)
       cond (c.pageNum > 0)
+    const queryFT = "fts.sql".slurp.sql
+    const queryAu = "by_author.sql".slurp.sql
+    let
+      pgSize  = $ThreadsPerPage
+      pgNum   = $c.pageNum
+      sql  = if q.isNil: queryAu else: queryFT
+      args = 
+          if q.isNil: @[author,pgSize,pgNum,pgSize]
+          else: @[qa,author,author,q,qa,author,author,q,pgSize,pgNum,pgSize,
+                  if author.len > 0: qa else: q]
     iterator searchResults(): db_sqlite.TRow {.closure, tags: [FReadDB].} =
-      const queryFT = "fts.sql".slurp.sql
-      for rowFT in fastRows(db, queryFT,
-                    [q,q,$ThreadsPerPage,$c.pageNum,$ThreadsPerPage,q,
-                     q,q,$ThreadsPerPage,$c.pageNum,$ThreadsPerPage,q]):
+      for rowFT in fastRows(db, sql, args):
         yield rowFT
-    resp genMain(c, genSearchResults(c, searchResults, count),
+    resp genMain(c, genSearchResults(c, searchResults, count, getPostsPage),
                  additionalHeaders = genRSSHeaders(c), showRssLinks = true)
 
-  # tries first to read html, then to read rst, convert ot html, cache and return
+  # tries first to read html, then to read rst, convert to html, cache and return
   template textPage(path: string): stmt =
     createTFD()
     #c.isThreadsList = true
