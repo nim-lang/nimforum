@@ -40,7 +40,7 @@ type
   TPost = tuple[subject, content: string]
 
   TForumData = object of TSession
-    req: PRequest
+    req: Request
     userid: string
     actionContent: string
     errorMsg, loginErrorMsg: string
@@ -74,7 +74,7 @@ type
   ForumError = object of Exception
 
 var
-  db: TDbConn
+  db: DbConn
   isFTSAvailable: bool
   config: Config
 
@@ -202,7 +202,7 @@ proc formatTimestamp(t: int): string =
     return "just now"
 
 proc getGravatarUrl(email: string, size = 80): string =
-  let emailMD5 = email.toLower.toMD5
+  let emailMD5 = email.toLowerAscii.toMD5
   return ("http://www.gravatar.com/avatar/" & $emailMD5 & "?s=" & $size &
      "&d=identicon")
 
@@ -268,7 +268,7 @@ proc makeIdentHash(user, password, epoch, secret: string,
     result = hash(user & password & epoch & secret, bcryptSalt)
 
 # -----------------------------------------------------------------------------
-template `||`(x: expr): expr = (if not isNil(x): x else: "")
+template `||`(x: untyped): untyped = (if not isNil(x): x else: "")
 
 proc validThreadId(c: TForumData): bool =
   result = getValue(db, sql"select id from thread where id = ?",
@@ -442,7 +442,7 @@ proc validateRst(c: var TForumData, content: string): bool =
   except EParseError:
     result = setError(c, "", getCurrentExceptionMsg())
 
-proc crud(c: TCrud, table: string, data: varargs[string]): TSqlQuery =
+proc crud(c: TCrud, table: string, data: varargs[string]): SqlQuery =
   case c
   of crCreate:
     var fields = "insert into " & table & "("
@@ -470,14 +470,14 @@ proc crud(c: TCrud, table: string, data: varargs[string]): TSqlQuery =
   of crDelete:
     result = sql("delete from " & table & " where id = ?")
 
-template retrSubject(c: expr) =
+template retrSubject(c: untyped) =
   if not c.req.params.hasKey("subject"):
     raise newException(ForumError, "Subject empty")
   let subject {.inject.} = c.req.params["subject"]
   if subject.strip.len < 3:
     return setError(c, "subject", "Subject not long enough")
 
-template retrContent(c: expr) =
+template retrContent(c: untyped) =
   if not c.req.params.hasKey("content"):
     raise newException(ForumError, "Content empty")
   let content {.inject.} = c.req.params["content"]
@@ -486,25 +486,25 @@ template retrContent(c: expr) =
 
   if not validateRst(c, content): return false
 
-template retrPost(c: expr) =
+template retrPost(c: untyped) =
   retrSubject(c)
   retrContent(c)
 
-template checkLogin(c: expr) =
+template checkLogin(c: untyped) =
   if not loggedIn(c): return setError(c, "", "User is not logged in")
 
-template checkOwnership(c, postId: expr) =
+template checkOwnership(c, postId: untyped) =
   if not c.isAdmin:
     let x = getValue(db, sql"select author from post where id = ?",
                      postId)
     if x != c.userId:
       return setError(c, "", "You are not the owner of this post")
 
-template setPreviewData(c: expr) {.immediate, dirty.} =
+template setPreviewData(c: untyped) {.dirty.} =
   c.currentPost.subject = subject
   c.currentPost.content = content
 
-template writeToDb(c, cr, setPostId: expr) =
+template writeToDb(c, cr, setPostId: untyped) =
   # insert a comment in the DB
   let retID = insertID(db, crud(cr, "post", "author", "ip", "header", "content", "thread"),
        c.userId, c.req.ip, subject, content, $c.threadId, "")
@@ -591,7 +591,8 @@ proc spamCheck(c: var TForumData, subject, content: string): bool =
 
   for word in ["appliance", "kitchen", "cheap", "sale", "relocating",
                "packers", "lenders", "fifa", "coins"]:
-    if word in subjAlphabet.toLower() or word in contentAlphabet.toLower():
+    if word in subjAlphabet.toLowerAscii() or
+       word in contentAlphabet.toLowerAscii():
       return true
 
 proc rateLimitCheck(c: var TForumData): bool =
@@ -989,7 +990,7 @@ proc prependRe(s: string): string =
            elif s.startswith("Re:"): s
            else: "Re: " & s
 
-template createTFD(): stmt =
+template createTFD() =
   var c {.inject.}: TForumData
   init(c)
   c.req = request
@@ -1031,7 +1032,7 @@ routes:
       parseInt(@"page", c.pageNum, 0..1000_000)
     if @"postid".len > 0:
       parseInt(@"postid", c.postId, 0..1000_000)
-    cond (c.pageNum > 0)
+    cond(c.pageNum > 0)
     var count = 0
     var pSubject = getThreadTitle(c.threadid, c.pageNum)
     cond validThreadId(c)
@@ -1066,9 +1067,9 @@ routes:
   get "/page/?@page?/?":
     createTFD()
     c.isThreadsList = true
-    cond (@"page" != "")
+    cond(@"page" != "")
     parseInt(@"page", c.pageNum, 0..1000_000)
-    cond (c.pageNum > 0)
+    cond(c.pageNum > 0)
     var count = 0
     let list = genThreadsList(c, count)
     if count == 0:
@@ -1078,7 +1079,7 @@ routes:
 
   get "/profile/@nick/?":
     createTFD()
-    cond (@"nick" != "")
+    cond(@"nick" != "")
     var userinfo: TUserInfo
     if gatherUserInfo(c, @"nick", userinfo):
       resp genMain(c, c.genProfile(userinfo),
@@ -1099,18 +1100,18 @@ routes:
     createTFD()
     resp genMain(c, genFormRegister(c), "Register - Nim Forum")
 
-  template readIDs(): stmt =
+  template readIDs() =
     # Retrieve the threadid, postid and pagenum
     if (@"threadid").len > 0:
       parseInt(@"threadid", c.threadId, -1..1000_000)
     if (@"postid").len > 0:
       parseInt(@"postid", c.postId, -1..1000_000)
 
-  template finishLogin(): stmt =
+  template finishLogin() =
     setCookie("sid", c.userpass, daysForward(7))
     redirect(uri("/"))
 
-  template handleError(action: string, topText: string, isEdit: bool): stmt =
+  template handleError(action: string, topText: string, isEdit: bool) =
     if c.isPreview:
       body.add genPostPreview(c, @"subject", @"content",
                               c.userName, $getGMTime(getTime()))
@@ -1176,8 +1177,8 @@ routes:
 
   get "/setUserStatus/?":
     createTFD()
-    cond (@"nick" != "")
-    cond (@"type" != "")
+    cond(@"nick" != "")
+    cond(@"type" != "")
     var formBody = "<input type=\"hidden\" name=\"nick\" value=\"" &
                       @"nick" & "\">"
     var del = false
@@ -1208,6 +1209,7 @@ routes:
         htmlgen.p("Are you sure you wish to activate ", htmlgen.b(@"nick"),
           "?")
       del = true
+    else: discard
     formBody.add "<input type='hidden' name='del' value='" & $del & "'/>"
     content = content & htmlgen.form(action = c.req.makeUri("/dosetban"),
         `method` = "POST", formBody)
@@ -1215,7 +1217,7 @@ routes:
 
   post "/dosetban":
     createTFD()
-    cond (@"nick" != "")
+    cond(@"nick" != "")
     if not c.isAdmin and @"nick" != c.userName:
       resp genMain(c, "You cannot ban this user.", "Error - Nim Forum")
     if @"reason" == "" and @"del" != "true":
@@ -1234,7 +1236,7 @@ routes:
 
   get "/deleteAll/?":
     createTFD()
-    cond (@"nick" != "")
+    cond(@"nick" != "")
     var formBody = "<input type=\"hidden\" name=\"nick\" value=\"" &
                       @"nick" & "\">"
     var del = false
@@ -1248,7 +1250,7 @@ routes:
 
   post "/dodeleteall/?":
     createTFD()
-    cond (@"nick" != "")
+    cond(@"nick" != "")
     if not c.isAdmin:
       resp genMain(c, "You cannot delete this user's data.", "Error - Nim Forum")
     let result = deleteAll(c, @"nick")
@@ -1260,8 +1262,8 @@ routes:
 
   get "/setpassword/?":
     createTFD()
-    cond (@"nick" != "")
-    cond (@"pass" != "")
+    cond(@"nick" != "")
+    cond(@"pass" != "")
     if not c.isAdmin:
       resp genMain(c, "You cannot change this user's pass.", "Error - Nim Forum")
     let res = setPassword(c, @"nick", @"pass")
@@ -1272,9 +1274,9 @@ routes:
 
   get "/activateEmail/?":
     createTFD()
-    cond (@"nick" != "")
-    cond (@"epoch" != "")
-    cond (@"ident" != "")
+    cond(@"nick" != "")
+    cond(@"epoch" != "")
+    cond(@"ident" != "")
     var epoch: BiggestInt = 0
     cond(parseBiggestInt(@"epoch", epoch) > 0)
     var success = false
@@ -1290,9 +1292,9 @@ routes:
 
   get "/emailResetPassword/?":
     createTFD()
-    cond (@"nick" != "")
-    cond (@"epoch" != "")
-    cond (@"ident" != "")
+    cond(@"nick" != "")
+    cond(@"epoch" != "")
+    cond(@"ident" != "")
     var epoch: BiggestInt = 0
     cond(parseBiggestInt(@"epoch", epoch) > 0)
     if verifyIdentHash(c, @"nick", $epoch, @"ident"):
@@ -1314,10 +1316,10 @@ routes:
 
   post "/doemailresetpassword":
     createTFD()
-    cond (@"nick" != "")
-    cond (@"epoch" != "")
-    cond (@"ident" != "")
-    cond (@"password" != "")
+    cond(@"nick" != "")
+    cond(@"epoch" != "")
+    cond(@"ident" != "")
+    cond(@"password" != "")
     var epoch: BiggestInt = 0
     cond(parseBiggestInt(@"epoch", epoch) > 0)
     if verifyIdentHash(c, @"nick", $epoch, @"ident"):
@@ -1337,7 +1339,7 @@ routes:
   post "/doresetpassword":
     createTFD()
     echo(request.params)
-    cond (@"nick" != "")
+    cond(@"nick" != "")
 
     if resetPassword(c, @"nick", @"antibot"):
       resp genMain(c, "Email sent!", "Reset Password - Nim Forum")
@@ -1362,7 +1364,7 @@ routes:
     c.search = q.replace("\"","&quot;");
     if @"page".len > 0:
       parseInt(@"page", c.pageNum, 0..1000_000)
-      cond (c.pageNum > 0)
+      cond(c.pageNum > 0)
     iterator searchResults(): db_sqlite.TRow {.closure, tags: [FReadDB].} =
       const queryFT = "fts.sql".slurp.sql
       for rowFT in fastRows(db, queryFT,
@@ -1373,7 +1375,7 @@ routes:
                  additionalHeaders = genRSSHeaders(c), showRssLinks = true)
 
   # tries first to read html, then to read rst, convert ot html, cache and return
-  template textPage(path: string): stmt =
+  template textPage(path: string) =
     createTFD()
     #c.isThreadsList = true
     var page = ""

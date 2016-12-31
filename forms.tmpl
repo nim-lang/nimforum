@@ -1,6 +1,6 @@
 #? stdtmpl | standard
 #
-#template `%`(idx: expr): expr {.immediate.} =
+#template `%`(idx: untyped): untyped =
 #  row[idx]
 #end template
 #
@@ -288,7 +288,7 @@
 #
 #
 #proc genSearchResults(c: var TForumData,
-#                       results: iterator: db_sqlite.TRow {.closure, tags: [FReadDB].},
+#                       results: iterator: db_sqlite.Row {.closure, tags: [FReadDB].},
 #                       count: var int): string =
 #  const threadId = 0
 #  const threadName = 1
