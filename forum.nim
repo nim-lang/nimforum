@@ -7,9 +7,9 @@
 #
 
 import
-  os, strutils, times, md5, strtabs, cgi, math, db_sqlite, matchers,
+  os, strutils, times, md5, strtabs, cgi, math, db_sqlite,
   captchas, scgi, jester, asyncdispatch, asyncnet, cache, sequtils,
-  parseutils, utils, random, rst
+  parseutils, utils, random, rst, ranks
 
 when not defined(windows):
   import bcrypt # TODO
@@ -25,8 +25,6 @@ const
   MaxPagesFromCurrent = 8
   noPageNums = ["/login", "/register", "/dologin", "/doregister", "/profile"]
   noHomeBtn = ["/", "/login", "/register", "/dologin", "/doregister", "/profile"]
-  banReasonDeactivated = "DEACTIVATED"
-  banReasonEmailUnconfirmed = "EMAILCONFIRMATION"
 
 type
   TCrud = enum crCreate, crRead, crUpdate, crDelete
@@ -35,7 +33,7 @@ type
     threadid: int
     postid: int
     userName, userPass, email: string
-    isAdmin: bool
+    rank: Rank
 
   TPost = tuple[subject, content: string]
 
@@ -70,6 +68,7 @@ type
     lastOnline: int
     email: string
     ban: string
+    rank: Rank
 
   ForumError = object of Exception
 
@@ -103,27 +102,27 @@ proc loggedIn(c: TForumData): bool =
 const
   reuseText = "\1"
 
-proc TextWidget(c: TForumData, name, defaultText: string,
+proc textWidget(c: TForumData, name, defaultText: string,
                 maxlength = 30, size = -1): string =
   let x = if defaultText != reuseText: defaultText
           else: xmlEncode(c.req.params.getOrDefault(name))
   return """<input type="text" name="$1" maxlength="$2" value="$3" $4/>""" % [
     name, $maxlength, x, if size != -1: "size=\"" & $size & "\"" else: ""]
 
-proc HiddenField(c: TForumData, name, defaultText: string): string =
+proc hiddenField(c: TForumData, name, defaultText: string): string =
   let x = xmlencode(
             if defaultText != reuseText: defaultText
             else: c.req.params.getOrDefault(name)
           )
   return """<input type="hidden" name="$1" value="$2"/>""" % [name, x]
 
-proc TextAreaWidget(c: TForumData, name, defaultText: string): string =
+proc textAreaWidget(c: TForumData, name, defaultText: string): string =
   let x = if defaultText != reuseText: defaultText
           else: xmlEncode(c.req.params.getOrDefault(name))
   return """<textarea name="$1">$2</textarea>""" % [
     name, x]
 
-proc FieldValid(c: TForumData, name, text: string): string =
+proc fieldValid(c: TForumData, name, text: string): string =
   if name == c.invalidField:
     result = """<span style="color:red">$1</span>""" % text
   else:
@@ -141,12 +140,12 @@ proc genThreadUrl(c: TForumData, postId = "", action = "", threadid = "", pageNu
     result.add("#" & postId)
   result = c.req.makeUri(result, absolute = false)
 
-proc FormSession(c: var TForumData, nextAction: string): string =
+proc formSession(c: var TForumData, nextAction: string): string =
   return """<input type="hidden" name="threadid" value="$1" />
             <input type="hidden" name="postid" value="$2" />""" % [
     $c.threadId, $c.postid]
 
-proc UrlButton(c: var TForumData, text, url: string): string =
+proc urlButton(c: var TForumData, text, url: string): string =
   return ("""<a class="url_button" href="$1">$2</a>""") % [
     url, text]
 
@@ -343,10 +342,10 @@ proc register(c: var TForumData, name, pass, antibot,
 
   # add account to person table
   exec(db,
-    sql("INSERT INTO person(name, password, email, salt, status, lastOnline, " &
-        "ban) VALUES (?, ?, ?, ?, 'user', DATETIME('now'), ?)"), name,
+    sql("INSERT INTO person(name, password, email, salt, status, lastOnline) " &
+        "VALUES (?, ?, ?, ?, ?, DATETIME('now'))"), name,
               password, email, salt,
-              when defined(dev): "" else: banReasonEmailUnconfirmed)
+              when defined(dev): $User else: $EmailUnconfirmed)
 
   return true
 
@@ -384,15 +383,19 @@ proc logout(c: var TForumData) =
   c.userpass = ""
   exec(db, query, c.req.ip, c.req.cookies["sid"])
 
-proc getBanErrorMsg(banValue: string): string =
-  case banValue
-  of "": return ""
-  of banReasonDeactivated:
-    return "Your account has been deactivated."
-  of banReasonEmailUnconfirmed:
-    return "You need to confirm your email first."
-  else:
+proc getBanErrorMsg(banValue: string; rank: Rank): string =
+  if banValue.len > 0:
     return "You have been banned: " & banValue
+  case rank
+  of Spammer: return "You are a spammer."
+  of Troll: return "You are a troll."
+  of Inactive: return "Your account has been deactivated."
+  of EmailUnconfirmed:
+    return "You need to confirm your email first."
+  of Moderated:
+    return "Your posts await moderation."
+  of User, Moderator, Admin:
+    return ""
 
 proc checkLoggedIn(c: var TForumData) =
   if not c.req.cookies.hasKey("sid"): return
@@ -407,14 +410,13 @@ proc checkLoggedIn(c: var TForumData) =
       c.req.ip, pass)
 
     let row = getRow(db,
-      sql"select name, email, admin, ban from person where id = ?", c.userid)
+      sql"select name, email, status, ban from person where id = ?", c.userid)
     c.username = ||row[0]
     c.email = ||row[1]
-    c.isAdmin = parseBool(||row[2])
-    # Check ban status.
-    let banErrorMsg = getBanErrorMsg(||row[3])
-    if banErrorMsg.len > 0:
-      discard c.setError("name", banErrorMsg)
+    c.rank = parseEnum[Rank](||row[2])
+    let ban = getBanErrorMsg(||row[3], c.rank)
+    if ban.len > 0:
+      discard c.setError("name", ban)
       logout(c)
       return
 
@@ -494,7 +496,7 @@ template checkLogin(c: untyped) =
   if not loggedIn(c): return setError(c, "", "User is not logged in")
 
 template checkOwnership(c, postId: untyped) =
-  if not c.isAdmin:
+  if c.rank < Moderator:
     let x = getValue(db, sql"select author from post where id = ?",
                      postId)
     if x != c.userId:
@@ -617,6 +619,13 @@ proc rateLimitCheck(c: var TForumData): bool =
 proc makeThreadURL(c: var TForumData): string =
   c.req.makeUri("/t/" & $c.threadId)
 
+template postChecks() {.dirty.} =
+  if spamCheck(c, subject, content):
+    echo("[WARNING] Found spam: ", subject)
+    return true
+  if rateLimitCheck(c):
+    return setError(c, "subject", "You're posting too fast.")
+
 proc reply(c: var TForumData): bool =
   # reply to an existing thread
   checkLogin(c)
@@ -624,17 +633,15 @@ proc reply(c: var TForumData): bool =
   if c.isPreview:
     setPreviewData(c)
   else:
-    if spamCheck(c, subject, content):
-      echo("[WARNING] Found spam: ", subject)
-      return true
-    if rateLimitCheck(c):
-      return setError(c, "subject", "You're posting too fast.")
+    postChecks()
     writeToDb(c, crCreate, true)
 
     exec(db, sql"update thread set modified = DATETIME('now') where id = ?",
          $c.threadId)
-    asyncCheck sendMailToMailingList(c.config, c.username, c.email,
-        subject, content, threadId=c.threadId, postId=c.postID, is_reply=true, threadUrl=c.makeThreadURL())
+    if c.rank >= User:
+      asyncCheck sendMailToMailingList(c.config, c.username, c.email,
+          subject, content, threadId=c.threadId, postId=c.postID, is_reply=true,
+          threadUrl=c.makeThreadURL())
     result = true
 
 proc newThread(c: var TForumData): bool =
@@ -646,11 +653,7 @@ proc newThread(c: var TForumData): bool =
     setPreviewData(c)
     c.threadID = transientThread
   else:
-    if spamCheck(c, subject, content):
-      echo("[WARNING] Found spam: ", subject)
-      return true
-    if rateLimitCheck(c):
-      return setError(c, "subject", "You're posting too fast.")
+    postChecks()
     c.threadID = tryInsertID(db, query, c.req.params["subject"]).int
     if c.threadID < 0: return setError(c, "subject", "Subject already exists")
     discard tryExec(db, crud(crCreate, "thread_fts", "id", "name"),
@@ -658,26 +661,29 @@ proc newThread(c: var TForumData): bool =
     writeToDb(c, crCreate, false)
     discard tryExec(db, sql"insert into post_fts(post_fts) values('optimize')")
     discard tryExec(db, sql"insert into post_fts(thread_fts) values('optimize')")
-    asyncCheck sendMailToMailingList(c.config, c.username, c.email,
-        subject, content, threadId=c.threadID, postId=c.postID, is_reply=false, threadUrl=c.makeThreadURL())
+    if c.rank >= User:
+      asyncCheck sendMailToMailingList(c.config, c.username, c.email,
+          subject, content, threadId=c.threadID, postId=c.postID, is_reply=false,
+          threadUrl=c.makeThreadURL())
     result = true
 
 proc login(c: var TForumData, name, pass: string): bool =
   # get form data:
   const query =
-    sql"select id, name, password, email, salt, admin, ban from person where name = ?"
+    sql"select id, name, password, email, salt, status, ban from person where name = ?"
   if name.len == 0:
     return c.setError("name", "Username cannot be nil.")
   var success = false
   for row in fastRows(db, query, name):
     if row[2] == makePassword(pass, row[4], row[2]):
-      if row[6].len > 0:
-        return c.setError("name", getBanErrorMsg(row[6]))
+      c.rank = parseEnum[Rank](row[5])
+      let ban = getBanErrorMsg(row[6], c.rank)
+      if ban.len > 0:
+        return c.setError("name", ban)
       c.userid = row[0]
       c.username = row[1]
       c.userpass = row[2]
       c.email = row[3]
-      c.isAdmin = row[5].parseBool
       success = true
       break
   if success:
@@ -704,6 +710,11 @@ proc setBan(c: var TForumData, nick, reason: string): bool =
   const query =
     sql("update person set ban = ? where name = ?")
   return tryExec(db, query, reason, nick)
+
+proc setStatus(c: var TForumData, nick: string, status: Rank): bool =
+  const query =
+    sql("update person set status = ? where name = ?")
+  return tryExec(db, query, $status, nick)
 
 proc deleteAll(c: var TForumData, nick: string): bool =
   const query =
@@ -874,7 +885,7 @@ proc gatherUserInfo(c: var TForumData, nick: string, ui: var TUserInfo): bool =
   if uid == "": return false
   result = true
   const totalPostsQuery =
-      sql"SELECT count(*) FROM post WHERE author = ?"
+      sql"select count(*) from post where author = ?"
   ui.posts = getValue(db, totalPostsQuery, uid).parseInt
   const totalThreadsQuery =
       sql("select count(*) from thread where id in (select thread from post where" &
@@ -882,11 +893,13 @@ proc gatherUserInfo(c: var TForumData, nick: string, ui: var TUserInfo): bool =
 
   ui.threads = getValue(db, totalThreadsQuery, uid).parseInt
   const lastOnlineQuery =
-      sql"select strftime('%s', lastOnline) from person where id = ?"
-  let lastOnlineDBVal = getValue(db, lastOnlineQuery, uid)
-  ui.lastOnline = if lastOnlineDBVal != "": lastOnlineDBVal.parseInt else: -1
-  ui.email = getValue(db, sql"select email from person where id = ?", uid)
-  ui.ban = getValue(db, sql"select ban from person where id = ?", uid)
+      sql"""select strftime('%s', lastOnline), email, ban, status
+            from person where id = ?"""
+  let row = db.getRow lastOnlineQuery
+  ui.lastOnline = if row[0].len > 0: row[0].parseInt else: -1
+  ui.email = row[1]
+  ui.ban = row[2]
+  ui.rank = parseEnum[Rank](row[3])
 
 proc genSetUserStatusUrl(c: var TForumData, nick: string, typ: string): string =
   c.req.makeUri("/setUserStatus?nick=$1&type=$2" % [nick, typ])
@@ -930,21 +943,12 @@ proc genProfile(c: var TForumData, ui: TUserInfo): string =
       ),
       tr(
         th("Status"),
-        td(case ui.ban
-           of banReasonDeactivated:
-             "Deactivated"
-           of banReasonEmailUnconfirmed:
-             "Awaiting email confirmation"
-           of "":
-             "Active"
-           else:
-             "Banned: " & ui.ban
-        )
+        td($ui.rank)
       ),
       tr(
         th(""),
-        td(if c.isAdmin and ui.ban != banReasonDeactivated:
-             if ui.ban == "":
+        td(if c.rank >= Moderator and c.rank > ui.rank:
+             if ui.rank >= EmailUnconfirmed:
                htmlgen.a(
                  href=c.genSetUserStatusUrl(ui.nick, "ban"),
                      "Ban user")
@@ -955,22 +959,22 @@ proc genProfile(c: var TForumData, ui: TUserInfo): string =
       ),
       tr(
         th(""),
-        td(if c.userName == ui.nick or c.isAdmin:
-             if ui.ban == "":
-               htmlgen.a(href=c.genSetUserStatusUrl(ui.nick, "deactivate"),
-                  "Deactivate user")
-             elif ui.ban == banReasonDeactivated:
-               htmlgen.a(href=c.genSetUserStatusUrl(ui.nick, "activate"),
-                  "Activate user")
-             elif ui.ban == banReasonEmailUnconfirmed:
+        td(if c.rank >= Moderator and c.rank > ui.rank:
+             if ui.rank == EmailUnconfirmed:
                htmlgen.a(href=c.genSetUserStatusUrl(ui.nick, "activate"),
                   "Confirm user's email")
+             elif ui.rank > Moderated:
+               htmlgen.a(href=c.genSetUserStatusUrl(ui.nick, "deactivate"),
+                  "Deactivate user")
+             elif ui.rank <= Moderated:
+               htmlgen.a(href=c.genSetUserStatusUrl(ui.nick, "activate"),
+                  "Activate user")
              else: ""
            else: "")
       ),
       tr(
         th(""),
-        td(if c.isAdmin:
+        td(if c.rank >= Moderator:
              htmlgen.a(href=c.req.makeUri("/deleteAll?nick=$1" % ui.nick),
                      "Delete all user's posts and threads")
            else: "")
@@ -1197,9 +1201,7 @@ routes:
           "?")
       del = true
     of "deactivate":
-      formBody.add "<input type='hidden' name='reason' value='" &
-          banReasonDeactivated & "' />" &
-          "<input type='submit' name='actBtn' value='Deactivate' />"
+      formBody.add "<input type='submit' name='actBtn' value='Deactivate' />"
       content =
         htmlgen.p("Are you sure you wish to deactivate ", htmlgen.b(@"nick"),
           "?")
@@ -1218,10 +1220,11 @@ routes:
   post "/dosetban":
     createTFD()
     cond(@"nick" != "")
-    if not c.isAdmin and @"nick" != c.userName:
+    if c.rank < Moderator:
       resp genMain(c, "You cannot ban this user.", "Error - Nim Forum")
     if @"reason" == "" and @"del" != "true":
       resp genMain(c, "Invalid ban reason.", "Error - Nim Forum")
+
     let result =
       if @"del" == "true":
         # Remove the ban.
@@ -1251,7 +1254,7 @@ routes:
   post "/dodeleteall/?":
     createTFD()
     cond(@"nick" != "")
-    if not c.isAdmin:
+    if c.rank < Moderator:
       resp genMain(c, "You cannot delete this user's data.", "Error - Nim Forum")
     let result = deleteAll(c, @"nick")
     if result:
@@ -1264,7 +1267,7 @@ routes:
     createTFD()
     cond(@"nick" != "")
     cond(@"pass" != "")
-    if not c.isAdmin:
+    if c.rank < Moderator:
       resp genMain(c, "You cannot change this user's pass.", "Error - Nim Forum")
     let res = setPassword(c, @"nick", @"pass")
     if res:
@@ -1281,9 +1284,9 @@ routes:
     cond(parseBiggestInt(@"epoch", epoch) > 0)
     var success = false
     if verifyIdentHash(c, @"nick", $epoch, @"ident"):
-      let ban = db.getValue(sql"select ban from person where name = ?", @"nick")
-      if ban == banReasonEmailUnconfirmed:
-        success = setBan(c, @"nick", "")
+      let ban = parseEnum[Rank](db.getValue(sql"select status from person where name = ?", @"nick"))
+      if ban == EmailUnconfirmed:
+        success = setStatus(c, @"nick", Moderated)
 
     if success:
       resp genMain(c, "Account activated", "Nim Forum")
@@ -1361,11 +1364,11 @@ routes:
     for i in 0 .. q.len-1:
       if   q[i].int < 32: q[i] = ' '
       elif q[i] == '\'':  q[i] = '"'
-    c.search = q.replace("\"","&quot;");
+    c.search = q.replace("\"","&quot;")
     if @"page".len > 0:
       parseInt(@"page", c.pageNum, 0..1000_000)
       cond(c.pageNum > 0)
-    iterator searchResults(): db_sqlite.TRow {.closure, tags: [FReadDB].} =
+    iterator searchResults(): db_sqlite.Row {.closure, tags: [ReadDbEffect].} =
       const queryFT = "fts.sql".slurp.sql
       for rowFT in fastRows(db, queryFT,
                     [q,q,$ThreadsPerPage,$c.pageNum,$ThreadsPerPage,q,

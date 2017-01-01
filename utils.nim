@@ -1,6 +1,19 @@
 import asyncdispatch, smtp, strutils, json, os, rst, rstgen, xmltree, strtabs,
-  htmlparser, streams
+  htmlparser, streams, parseutils
 from times import getTime, getGMTime, format
+
+proc parseInt*(s: string, value: var int, validRange: Slice[int]) {.
+  noSideEffect.} =
+  ## parses `s` into an integer in the range `validRange`. If successful,
+  ## `value` is modified to contain the result. Otherwise no exception is
+  ## raised and `value` is not touched; this way a reasonable default value
+  ## won't be overwritten.
+  var x = value
+  try:
+    discard parseutils.parseInt(s, x, 0)
+  except OverflowError:
+    discard
+  if x in validRange: value = x
 
 type
   Config* = object

@@ -6,7 +6,10 @@
 #
 #
 #proc genThreadsList(c: var TForumData, count: var int): string =
-#  const query = sql"select id, name, views, modified from thread order by modified desc limit ?, ?"
+#  const query = sql"""select id, name, views, modified from thread
+#                    where id in (select thread from post where author in
+#                             (select id from person where ban <> 'MODERATED'))
+#                    order by modified desc limit ?, ?"""
 #  const threadId = 0
 #  const name = 1
 #  const views = 2
@@ -113,7 +116,9 @@
 #
 #proc genPostsList(c: var TForumData, threadId: string, count: var int): string =
 #  const query = sql"""select p.id, u.name, p.header, p.content, p.creation, p.author, u.email from post p,
-#                      person u where u.id = p.author and p.thread = ? order by p.id limit ?, ?"""
+#                      person u
+#                      where u.id = p.author and p.thread = ? and p.ban <> 'MODERATED'
+#                      order by p.id limit ?, ?"""
 #  const postId = 0
 #  const userName = 1
 #  const postHeader = 2
@@ -146,7 +151,7 @@
         <a class="name" href="$profileUrl">${xmlEncode(%userName)}</a>
         #if c.userId == %postAuthor and c.currentPost.subject.len == 0:
           <hr/><a href="${c.genThreadUrl(%postId, "edit")}">Edit post</a>
-        #elif c.isAdmin and c.currentPost.subject.len == 0:
+        #elif c.rank >= Moderator and c.currentPost.subject.len == 0:
           <hr/><a style="color: red;" href="${c.genThreadUrl(%postId, "edit")}">Edit post</a>
         #end if
       </div>
@@ -184,15 +189,15 @@
   </div>
   <form action="${c.req.makeUri(action, false) & "#preview"}" method="POST">
     #if action == "doreply":
-      ${HiddenField(c, "subject", title)}
+      ${hiddenField(c, "subject", title)}
     #else:
-      ${FieldValid(c, "subject", "Subject:")}
-      ${TextWidget(c, "subject", title, maxlength=100)}
+      ${fieldValid(c, "subject", "Subject:")}
+      ${textWidget(c, "subject", title, maxlength=100)}
       <br />
     #end if
-    ${FieldValid(c, "content", "Content:")}<br />
-    ${TextAreaWidget(c, "content", content)}<br />
-    ${FormSession(c, action)}
+    ${fieldValid(c, "content", "Content:")}<br />
+    ${textAreaWidget(c, "content", content)}<br />
+    ${formSession(c, action)}
 
   #  if isEdit:
     <input type="checkbox" name="delete" value="Delete">Delete Post<br />
@@ -226,20 +231,20 @@
 <form action="${c.req.makeUri("/doregister", false)}" method="POST">
   <table border="0">
     <tr>
-      <td>${FieldValid(c, "name", "Username:")}</td>
-      <td>${TextWidget(c, "name", reuseText, maxlength=20)}</td>
+      <td>${fieldValid(c, "name", "Username:")}</td>
+      <td>${textWidget(c, "name", reuseText, maxlength=20)}</td>
     </tr>
     <tr>
-      <td>${FieldValid(c, "new_password", "Password:")}</td>
+      <td>${fieldValid(c, "new_password", "Password:")}</td>
       <td><input type="password" name="new_password" /></td>
     </tr>
     <tr>
-      <td>${FieldValid(c, "email", "E-Mail:")}</td>
-      <td>${TextWidget(c, "email", reuseText, maxlength=300)}</td>
+      <td>${fieldValid(c, "email", "E-Mail:")}</td>
+      <td>${textWidget(c, "email", reuseText, maxlength=300)}</td>
     </tr>
     <tr>
-      <td>${FieldValid(c, "antibot", "What is " & antibot(c) & "?")}</td>
-      <td>${TextWidget(c, "antibot", "", maxlength=4)}</td>
+      <td>${fieldValid(c, "antibot", "What is " & antibot(c) & "?")}</td>
+      <td>${textWidget(c, "antibot", "", maxlength=4)}</td>
     </tr>
   </table>
   #if c.errorMsg != "":
@@ -288,7 +293,7 @@
 #
 #
 #proc genSearchResults(c: var TForumData,
-#                       results: iterator: db_sqlite.Row {.closure, tags: [FReadDB].},
+#                       results: iterator: db_sqlite.Row {.closure, tags: [ReadDbEffect].},
 #                       count: var int): string =
 #  const threadId = 0
 #  const threadName = 1
@@ -326,7 +331,7 @@
         <div style="padding: 8px 0"><a href="$profileUrl">${xmlEncode(%userName)}</a></div>
         #if c.userId == %postAuthor and c.currentPost.subject.len == 0:
           <hr/><a href="${c.genThreadUrl(%postId, "edit", %threadId)}">Edit post</a>
-        #elif c.isAdmin and c.currentPost.subject.len == 0:
+        #elif c.rank >= Moderator and c.currentPost.subject.len == 0:
           <hr/><a style="color: red;" href="${c.genThreadUrl(%postId, "edit", %threadId)}">Edit post</a>
         #end if
       </div>
@@ -383,12 +388,12 @@
 <form action="${c.req.makeUri("/doresetpassword", false)}" method="POST">
   <table border="0">
     <tr>
-      <td>${FieldValid(c, "nick", "Your nickname:")}</td>
+      <td>${fieldValid(c, "nick", "Your nickname:")}</td>
       <td><input type="text" name="nick" maxlength="20" /></td>
     </tr>
     <tr>
-      <td>${FieldValid(c, "antibot", "What is " & antibot(c) & "?")}</td>
-      <td>${TextWidget(c, "antibot", "", maxlength=4)}</td>
+      <td>${fieldValid(c, "antibot", "What is " & antibot(c) & "?")}</td>
+      <td>${textWidget(c, "antibot", "", maxlength=4)}</td>
     </tr>
   </table>
   #if c.errorMsg != "":

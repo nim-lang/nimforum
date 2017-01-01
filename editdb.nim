@@ -1,11 +1,12 @@
 
-import strutils, db_sqlite
+import strutils, db_sqlite, ranks
 
-var db = Open(connection="nimforum.db", user="postgres", password="", 
+var db = open(connection="nimforum.db", user="postgres", password="",
               database="nimforum")
 
-db.exec(sql"""ALTER TABLE person add column
-  lastOnline timestamp
-""", [])
+db.exec(sql("update person set status = ?"), $User)
+db.exec(sql("update person set status = ? where ban <> ''"), $Troll)
+db.exec(sql("update person set status = ? where ban like '%spam%'"), $Spammer)
+db.exec(sql("update person set status = ? where admin"), $Admin)
 
 close(db)
