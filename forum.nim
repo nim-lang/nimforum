@@ -345,7 +345,7 @@ proc register(c: var TForumData, name, pass, antibot,
     sql("INSERT INTO person(name, password, email, salt, status, lastOnline) " &
         "VALUES (?, ?, ?, ?, ?, DATETIME('now'))"), name,
               password, email, salt,
-              when defined(dev): $User else: $EmailUnconfirmed)
+              when defined(dev): $Moderated else: $EmailUnconfirmed)
 
   return true
 
@@ -706,15 +706,11 @@ proc verifyIdentHash(c: var TForumData, name, epoch, ident: string): bool =
   if row[2].parseInt > (epoch.parseInt + 60): return false
   result = newIdent == ident
 
-proc setBan(c: var TForumData, nick, reason: string): bool =
+proc setStatus(c: var TForumData, nick: string, status: Rank;
+               reason: string): bool =
   const query =
-    sql("update person set ban = ? where name = ?")
-  return tryExec(db, query, reason, nick)
-
-proc setStatus(c: var TForumData, nick: string, status: Rank): bool =
-  const query =
-    sql("update person set status = ? where name = ?")
-  return tryExec(db, query, $status, nick)
+    sql("update person set status = ?, ban = ? where name = ?")
+  return tryExec(db, query, $status, reason, nick)
 
 proc deleteAll(c: var TForumData, nick: string): bool =
   const query =
@@ -758,9 +754,9 @@ proc getStats(c: var TForumData, simple: bool): TForumStats =
       let lastOnlineSeconds = getTime() - Time(secs)
       if lastOnlineSeconds < (60 * 5): # 5 minutes
         result.activeUsers.add((row[1], row[0].parseInt))
-      if row[4].parseInt > newestMemberCreation:
+      if row[3].parseInt > newestMemberCreation:
         result.newestMember = (row[1], row[0].parseInt)
-        newestMemberCreation = row[4].parseInt
+        newestMemberCreation = row[3].parseInt
 
 proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
   result = ""
@@ -895,14 +891,14 @@ proc gatherUserInfo(c: var TForumData, nick: string, ui: var TUserInfo): bool =
   const lastOnlineQuery =
       sql"""select strftime('%s', lastOnline), email, ban, status
             from person where id = ?"""
-  let row = db.getRow lastOnlineQuery
+  let row = db.getRow(lastOnlineQuery, $uid)
   ui.lastOnline = if row[0].len > 0: row[0].parseInt else: -1
   ui.email = row[1]
   ui.ban = row[2]
   ui.rank = parseEnum[Rank](row[3])
 
-proc genSetUserStatusUrl(c: var TForumData, nick: string, typ: string): string =
-  c.req.makeUri("/setUserStatus?nick=$1&type=$2" % [nick, typ])
+include "forms.tmpl"
+include "main.tmpl"
 
 proc genProfile(c: var TForumData, ui: TUserInfo): string =
   result = ""
@@ -948,28 +944,7 @@ proc genProfile(c: var TForumData, ui: TUserInfo): string =
       tr(
         th(""),
         td(if c.rank >= Moderator and c.rank > ui.rank:
-             if ui.rank >= EmailUnconfirmed:
-               htmlgen.a(
-                 href=c.genSetUserStatusUrl(ui.nick, "ban"),
-                     "Ban user")
-             else:
-               htmlgen.a(href=c.genSetUserStatusUrl(ui.nick, "unban"),
-                     "Unban user")
-           else: "")
-      ),
-      tr(
-        th(""),
-        td(if c.rank >= Moderator and c.rank > ui.rank:
-             if ui.rank == EmailUnconfirmed:
-               htmlgen.a(href=c.genSetUserStatusUrl(ui.nick, "activate"),
-                  "Confirm user's email")
-             elif ui.rank > Moderated:
-               htmlgen.a(href=c.genSetUserStatusUrl(ui.nick, "deactivate"),
-                  "Deactivate user")
-             elif ui.rank <= Moderated:
-               htmlgen.a(href=c.genSetUserStatusUrl(ui.nick, "activate"),
-                  "Activate user")
-             else: ""
+             c.genFormSetRank(ui)
            else: "")
       ),
       tr(
@@ -984,9 +959,6 @@ proc genProfile(c: var TForumData, ui: TUserInfo): string =
 
   result = htmlgen.`div`(id = "profile",
     htmlgen.`div`(id = "left", result))
-
-include "forms.tmpl"
-include "main.tmpl"
 
 proc prependRe(s: string): string =
   result = if s.len == 0:
@@ -1179,64 +1151,6 @@ routes:
     resp genMain(c, genFormPost(c, "donewthread", "New thread", "", "", false),
                  "New Thread - Nim Forum")
 
-  get "/setUserStatus/?":
-    createTFD()
-    cond(@"nick" != "")
-    cond(@"type" != "")
-    var formBody = "<input type=\"hidden\" name=\"nick\" value=\"" &
-                      @"nick" & "\">"
-    var del = false
-    var content = ""
-    echo("Got type: ", @"type")
-    case @"type"
-    of "ban":
-      formBody.add "<input type='text' name='reason' />" &
-          "<input type='submit' name='banBtn' value='Ban' />"
-      content =
-        htmlgen.p("Please enter a reason for banning this user:")
-    of "unban":
-      formBody.add "<input type='submit' name='unbanBtn' value='Unban' />"
-      content =
-        htmlgen.p("Are you sure you wish to unban ", htmlgen.b(@"nick"),
-          "?")
-      del = true
-    of "deactivate":
-      formBody.add "<input type='submit' name='actBtn' value='Deactivate' />"
-      content =
-        htmlgen.p("Are you sure you wish to deactivate ", htmlgen.b(@"nick"),
-          "?")
-    of "activate":
-      formBody.add "<input type='submit' name='actBtn' value='Activate' />"
-      content =
-        htmlgen.p("Are you sure you wish to activate ", htmlgen.b(@"nick"),
-          "?")
-      del = true
-    else: discard
-    formBody.add "<input type='hidden' name='del' value='" & $del & "'/>"
-    content = content & htmlgen.form(action = c.req.makeUri("/dosetban"),
-        `method` = "POST", formBody)
-    resp genMain(c, content, "Set user status - Nim Forum")
-
-  post "/dosetban":
-    createTFD()
-    cond(@"nick" != "")
-    if c.rank < Moderator:
-      resp genMain(c, "You cannot ban this user.", "Error - Nim Forum")
-    if @"reason" == "" and @"del" != "true":
-      resp genMain(c, "Invalid ban reason.", "Error - Nim Forum")
-
-    let result =
-      if @"del" == "true":
-        # Remove the ban.
-        setBan(c, @"nick", "")
-      else:
-        setBan(c, @"nick", @"reason")
-    if result:
-      redirect(c.req.makeUri("/profile/" & @"nick"))
-    else:
-      resp genMain(c, "Failed to change the ban status of user.",
-          "Error - Nim Forum")
-
   get "/deleteAll/?":
     createTFD()
     cond(@"nick" != "")
@@ -1263,6 +1177,33 @@ routes:
       resp genMain(c, "Failed to delete all user's posts and threads.",
           "Error - NimForum")
 
+  post "/dosetrank/?":
+    createTFD()
+    cond(@"nick" != "")
+
+    if c.rank < Moderator:
+      resp genMain(c, "You cannot change this user's rank.", "Error - Nim Forum")
+
+    var ui: TUserInfo
+    if not gatherUserInfo(c, @"nick", ui):
+      resp genMain(c, "User " & @"nick" & " does not exist.", "Error - Nim Forum")
+    #elif ui.
+    # XXX check that moderator can make themselves admins
+    echo(@"rank")
+    echo(@"reason")
+    when false:
+      let result =
+        if @"del" == "true":
+          # Remove the ban.
+          setBan(c, @"nick", "")
+        else:
+          setBan(c, @"nick", @"reason")
+      if result:
+        redirect(c.req.makeUri("/profile/" & @"nick"))
+      else:
+        resp genMain(c, "Failed to change the ban status of user.",
+            "Error - Nim Forum")
+
   get "/setpassword/?":
     createTFD()
     cond(@"nick" != "")
@@ -1286,7 +1227,7 @@ routes:
     if verifyIdentHash(c, @"nick", $epoch, @"ident"):
       let ban = parseEnum[Rank](db.getValue(sql"select status from person where name = ?", @"nick"))
       if ban == EmailUnconfirmed:
-        success = setStatus(c, @"nick", Moderated)
+        success = setStatus(c, @"nick", Moderated, "")
 
     if success:
       resp genMain(c, "Account activated", "Nim Forum")

@@ -6,9 +6,11 @@
 #
 #
 #proc genThreadsList(c: var TForumData, count: var int): string =
+#  const queryAdmin = sql"""select id, name, views, modified from thread
+#                           order by modified desc limit ?, ?"""
 #  const query = sql"""select id, name, views, modified from thread
 #                    where id in (select thread from post where author in
-#                             (select id from person where ban <> 'MODERATED'))
+#                             (select id from person where status <> 'MODERATED'))
 #                    order by modified desc limit ?, ?"""
 #  const threadId = 0
 #  const name = 1
@@ -37,7 +39,8 @@
   </div>
 </div>
 <div id="talk-threads">
-#  for row in rows(db, query, $((c.pageNum-1) * ThreadsPerPage), $ThreadsPerPage):
+#  for row in rows(db, if c.rank >= Moderator: queryAdmin else: query,
+#                  $((c.pageNum-1) * ThreadsPerPage), $ThreadsPerPage):
 #  inc(count)
   <div>
     <div class="topic">
@@ -115,10 +118,11 @@
 #
 #
 #proc genPostsList(c: var TForumData, threadId: string, count: var int): string =
-#  const query = sql"""select p.id, u.name, p.header, p.content, p.creation, p.author, u.email from post p,
+#  let query = sql("""select p.id, u.name, p.header, p.content, p.creation, p.author, u.email from post p,
 #                      person u
-#                      where u.id = p.author and p.thread = ? and p.ban <> 'MODERATED'
-#                      order by p.id limit ?, ?"""
+#                      where u.id = p.author and p.thread = ? $#
+#                      order by p.id limit ?, ?""" %
+#              (if c.rank >= Moderator: "" else: "and p.status <> 'MODERATED'"))
 #  const postId = 0
 #  const userName = 1
 #  const postHeader = 2
@@ -253,6 +257,27 @@
       </div>
   #end if
   <input type="submit" value="Register">
+</form>
+#end proc
+#
+#proc genFormSetRank(c: var TForumData; ui: TUserInfo): string =
+#  result = ""
+<form action="${c.req.makeUri("/dosetrank/" & ui.nick, false)}" method="POST">
+  <table border="0">
+    <tr>
+      <th>Reason</th>
+      <td>${textWidget(c, "reason", ui.ban, maxlength=100)}</td>
+    </tr>
+    <tr>
+      <th>Rank</th>
+      <td><select name = "rank">
+#      for i in low(Rank)..high(Rank):
+        <option ${if i == ui.rank: "selected" else: ""}>
+          $i
+        </option>
+#      end for
+      </td></select>
+    </tr>
 </form>
 #end proc
 #
