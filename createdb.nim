@@ -37,7 +37,6 @@ create table if not exists person(
   creation timestamp not null default (DATETIME('now')),
   salt varbin(128) not null,
   status varchar(30) not null,
-  admin bool default false,
   lastOnline timestamp not null default (DATETIME('now'))
 );""" % [TUserName, TPassword, TEmail]), [])
 #  echo "person table already exists"

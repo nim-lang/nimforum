@@ -58,8 +58,8 @@ type
     totalUsers: int
     totalPosts: int
     totalThreads: int
-    newestMember: tuple[nick: string, id: int, isAdmin: bool]
-    activeUsers: seq[tuple[nick: string, id: int, isAdmin: bool]]
+    newestMember: tuple[nick: string, id: int]
+    activeUsers: seq[tuple[nick: string, id: int]]
 
   TUserInfo = object
     nick: string
@@ -750,16 +750,16 @@ proc getStats(c: var TForumData, simple: bool): TForumStats =
   if not simple:
     var newestMemberCreation = 0
     result.activeUsers = @[]
-    result.newestMember = ("", -1, false)
+    result.newestMember = ("", -1)
     const getUsersQuery =
-      sql"select id, name, admin, strftime('%s', lastOnline), strftime('%s', creation) from person"
+      sql"select id, name, strftime('%s', lastOnline), strftime('%s', creation) from person"
     for row in fastRows(db, getUsersQuery):
       let secs = if row[3] == "": 0 else: row[3].parseint
       let lastOnlineSeconds = getTime() - Time(secs)
       if lastOnlineSeconds < (60 * 5): # 5 minutes
-        result.activeUsers.add((row[1], row[0].parseInt, row[2].parseBool))
+        result.activeUsers.add((row[1], row[0].parseInt))
       if row[4].parseInt > newestMemberCreation:
-        result.newestMember = (row[1], row[0].parseInt, row[2].parseBool)
+        result.newestMember = (row[1], row[0].parseInt)
         newestMemberCreation = row[4].parseInt
 
 proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
