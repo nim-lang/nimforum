@@ -7,10 +7,11 @@
 #
 #proc genThreadsList(c: var TForumData, count: var int): string =
 #  const queryAdmin = sql"""select id, name, views, modified from thread
+#                           where 1 or id = ?
 #                           order by modified desc limit ?, ?"""
 #  const query = sql"""select id, name, views, modified from thread
 #                    where id in (select thread from post where author in
-#                             (select id from person where status <> 'MODERATED'))
+#                             (select id from person where status <> 'Moderated' or id = ?))
 #                    order by modified desc limit ?, ?"""
 #  const threadId = 0
 #  const name = 1
@@ -40,7 +41,7 @@
 </div>
 <div id="talk-threads">
 #  for row in rows(db, if c.rank >= Moderator: queryAdmin else: query,
-#                  $((c.pageNum-1) * ThreadsPerPage), $ThreadsPerPage):
+#                  c.userId, $((c.pageNum-1) * ThreadsPerPage), $ThreadsPerPage):
 #  inc(count)
   <div>
     <div class="topic">
@@ -120,9 +121,9 @@
 #proc genPostsList(c: var TForumData, threadId: string, count: var int): string =
 #  let query = sql("""select p.id, u.name, p.header, p.content, p.creation, p.author, u.email from post p,
 #                      person u
-#                      where u.id = p.author and p.thread = ? $#
+#                      where u.id = p.author and p.thread = ? and $#
 #                      order by p.id limit ?, ?""" %
-#              (if c.rank >= Moderator: "" else: "and p.status <> 'MODERATED'"))
+#              (if c.rank >= Moderator: "(1 or u.id = ?)" else: "(u.status <> 'Moderated' or p.author = ?)"))
 #  const postId = 0
 #  const userName = 1
 #  const postHeader = 2
@@ -132,7 +133,7 @@
 #  const userEmail = 6
 #  result = ""
 #  count = 0
-#  let posts = getAllRows(db, query, threadId, $((c.pageNum-1) * PostsPerPage), $PostsPerPage)
+#  let posts = getAllRows(db, query, threadId, c.userId, $((c.pageNum-1) * PostsPerPage), $PostsPerPage)
 #  if posts.len < 1: return ""
 #  end if
 <div id="talk-head">
@@ -278,6 +279,8 @@
 #      end for
       </td></select>
     </tr>
+  </table>
+  <input type="submit" value="Change">
 </form>
 #end proc
 #

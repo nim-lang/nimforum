@@ -392,9 +392,7 @@ proc getBanErrorMsg(banValue: string; rank: Rank): string =
   of Inactive: return "Your account has been deactivated."
   of EmailUnconfirmed:
     return "You need to confirm your email first."
-  of Moderated:
-    return "Your posts await moderation."
-  of User, Moderator, Admin:
+  of Moderated, User, Moderator, Admin:
     return ""
 
 proc checkLoggedIn(c: var TForumData) =
@@ -1177,7 +1175,7 @@ routes:
       resp genMain(c, "Failed to delete all user's posts and threads.",
           "Error - NimForum")
 
-  post "/dosetrank/?":
+  post "/dosetrank/?@nick?/?":
     createTFD()
     cond(@"nick" != "")
 
@@ -1187,22 +1185,15 @@ routes:
     var ui: TUserInfo
     if not gatherUserInfo(c, @"nick", ui):
       resp genMain(c, "User " & @"nick" & " does not exist.", "Error - Nim Forum")
-    #elif ui.
-    # XXX check that moderator can make themselves admins
-    echo(@"rank")
-    echo(@"reason")
-    when false:
-      let result =
-        if @"del" == "true":
-          # Remove the ban.
-          setBan(c, @"nick", "")
-        else:
-          setBan(c, @"nick", @"reason")
-      if result:
-        redirect(c.req.makeUri("/profile/" & @"nick"))
-      else:
-        resp genMain(c, "Failed to change the ban status of user.",
-            "Error - Nim Forum")
+    let newRank = parseEnum[Rank](@"rank")
+    if newRank > c.rank:
+      resp genMain(c, "You cannot change this user's rank to this value.", "Error - Nim Forum")
+
+    if setStatus(c, @"nick", newRank, @"reason"):
+      redirect(c.req.makeUri("/profile/" & @"nick"))
+    else:
+      resp genMain(c, "Failed to change the ban status of user.",
+          "Error - Nim Forum")
 
   get "/setpassword/?":
     createTFD()
