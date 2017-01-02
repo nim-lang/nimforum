@@ -388,8 +388,7 @@ proc getBanErrorMsg(banValue: string; rank: Rank): string =
     return "You have been banned: " & banValue
   case rank
   of Spammer: return "You are a spammer."
-  of Troll: return "You are a troll."
-  of Inactive: return "Your account has been deactivated."
+  of Troll: return "You have been banned."
   of EmailUnconfirmed:
     return "You need to confirm your email first."
   of Moderated, User, Moderator, Admin:

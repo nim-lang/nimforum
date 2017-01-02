@@ -6,7 +6,7 @@
 #
 #
 #proc genThreadsList(c: var TForumData, count: var int): string =
-#  const queryAdmin = sql"""select id, name, views, modified from thread
+#  const queryModAdmin = sql"""select id, name, views, modified from thread
 #                    where id in (select thread from post where author in
 #                             (select id from person where status not in ('Spammer') or id = ?))
 #                           order by modified desc limit ?, ?"""
@@ -41,7 +41,7 @@
   </div>
 </div>
 <div id="talk-threads">
-#  for row in rows(db, if c.rank >= Moderator: queryAdmin else: query,
+#  for row in rows(db, if c.rank >= Moderator: queryModAdmin else: query,
 #                  c.userId, $((c.pageNum-1) * ThreadsPerPage), $ThreadsPerPage):
 #  inc(count)
   <div>
