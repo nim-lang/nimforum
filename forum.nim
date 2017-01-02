@@ -704,17 +704,23 @@ proc verifyIdentHash(c: var TForumData, name, epoch, ident: string): bool =
   if row[2].parseInt > (epoch.parseInt + 60): return false
   result = newIdent == ident
 
-proc setStatus(c: var TForumData, nick: string, status: Rank;
-               reason: string): bool =
-  const query =
-    sql("update person set status = ?, ban = ? where name = ?")
-  return tryExec(db, query, $status, reason, nick)
-
 proc deleteAll(c: var TForumData, nick: string): bool =
   const query =
     sql("delete from post where author = (select id from person where name = ?)")
   result = tryExec(db, query, nick)
   result = result and updateThreads(c) >= 0
+
+proc setStatus(c: var TForumData, nick: string, status: Rank;
+               reason: string): bool =
+  const query =
+    sql("update person set status = ?, ban = ? where name = ?")
+  result = tryExec(db, query, $status, reason, nick)
+  when false:
+    # for now we filter Spammers in forms.tmpl, so that a moderator
+    # cannot accidentically delete all of a user's posts. We go even
+    # further than that and show spammers their own spam postings.
+    if status == Spammer and result:
+      result = deleteAll(c, nick)
 
 proc setPassword(c: var TForumData, nick, pass: string): bool =
   const query =

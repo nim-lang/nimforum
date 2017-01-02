@@ -7,11 +7,12 @@
 #
 #proc genThreadsList(c: var TForumData, count: var int): string =
 #  const queryAdmin = sql"""select id, name, views, modified from thread
-#                           where 1 or id = ?
+#                    where id in (select thread from post where author in
+#                             (select id from person where status not in ('Spammer') or id = ?))
 #                           order by modified desc limit ?, ?"""
 #  const query = sql"""select id, name, views, modified from thread
 #                    where id in (select thread from post where author in
-#                             (select id from person where status <> 'Moderated' or id = ?))
+#                             (select id from person where status not in ('Moderated', 'Spammer') or id = ?))
 #                    order by modified desc limit ?, ?"""
 #  const threadId = 0
 #  const name = 1
@@ -122,6 +123,7 @@
 #  let query = sql("""select p.id, u.name, p.header, p.content, p.creation, p.author, u.email from post p,
 #                      person u
 #                      where u.id = p.author and p.thread = ? and $#
+#                      and (u.status <> 'Spammer' or p.author = ?)
 #                      order by p.id limit ?, ?""" %
 #              (if c.rank >= Moderator: "(1 or u.id = ?)" else: "(u.status <> 'Moderated' or p.author = ?)"))
 #  const postId = 0
@@ -133,7 +135,7 @@
 #  const userEmail = 6
 #  result = ""
 #  count = 0
-#  let posts = getAllRows(db, query, threadId, c.userId, $((c.pageNum-1) * PostsPerPage), $PostsPerPage)
+#  let posts = getAllRows(db, query, threadId, c.userId, c.userId, $((c.pageNum-1) * PostsPerPage), $PostsPerPage)
 #  if posts.len < 1: return ""
 #  end if
 <div id="talk-head">
