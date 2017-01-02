@@ -36,8 +36,7 @@ create table if not exists person(
   email $# not null,
   creation timestamp not null default (DATETIME('now')),
   salt varbin(128) not null,
-  status integer not null,
-  admin bool default false,
+  status varchar(30) not null,
   lastOnline timestamp not null default (DATETIME('now'))
 );""" % [TUserName, TPassword, TEmail]), [])
 #  echo "person table already exists"

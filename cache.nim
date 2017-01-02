@@ -16,13 +16,13 @@ proc newCacheHolder*(): CacheHolder =
   result.caches = initTable[string, CacheInfo]()
 
 proc invalidate*(cache: CacheHolder, name: string) =
-  cache.caches.mget(name.normalizePath()).valid = false
+  cache.caches[name.normalizePath()].valid = false
 
 proc invalidateAll*(cache: CacheHolder) =
   for key, val in mpairs(cache.caches):
     val.valid = false
 
-template get*(cache: CacheHolder, name: string, grabValue: expr): expr =
+template get*(cache: CacheHolder, name: string, grabValue: untyped): untyped =
   ## Check to see if the cache contains value for ``name``. If it does and the
   ## cache is valid then doesn't recalculate it but returns the cached version.
   mixin normalizePath
