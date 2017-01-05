@@ -90,6 +90,10 @@ create table if not exists antibot(
 );""", []):
   echo "antibot table already exists"
 
+
+db.exec sql"create index PersonStatusIdx on person(status);"
+db.exec sql"create index PostByAuthorIdx on post(thread, author);"
+
 # -------------------- Search --------------------------------------------------
 
 if not db.tryExec(sql"""
