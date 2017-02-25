@@ -106,7 +106,7 @@ pre .EscapeSequence
         background:url("/images/glow-line-vert.png") no-repeat; }
 
 
-#body { z-index:1; position:relative; background:rgba(220,231,248,.6); }
+#body { z-index:1; position:relative; background:rgba(220,231,248,.6); color:black; }
 #body.docs { margin:0 40px 20px 320px; }
 #body.forum { margin:0 40px 20px 40px; min-height: 700px; }
 
