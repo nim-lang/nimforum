@@ -202,7 +202,7 @@ proc formatTimestamp(t: int): string =
 
 proc getGravatarUrl(email: string, size = 80): string =
   let emailMD5 = email.toLowerAscii.toMD5
-  return ("http://www.gravatar.com/avatar/" & $emailMD5 & "?s=" & $size &
+  return ("https://www.gravatar.com/avatar/" & $emailMD5 & "?s=" & $size &
      "&d=identicon")
 
 proc genGravatar(email: string, size: int = 80): string =
