@@ -69,6 +69,7 @@ type
     email: string
     ban: string
     rank: Rank
+    lastIp: string
 
   ForumError = object of Exception
 
@@ -900,6 +901,10 @@ proc gatherUserInfo(c: var TForumData, nick: string, ui: var TUserInfo): bool =
   ui.ban = row[2]
   ui.rank = parseEnum[Rank](row[3])
 
+  const lastIpQuery = sql"select `ip` from `session` where `userid` = ? order by `id` desc limit 1;"
+  let ipRow = db.getRow(lastIpQuery, $uid)
+  ui.lastIp = ipRow[0]
+
 include "forms.tmpl"
 include "main.tmpl"
 
@@ -943,6 +948,12 @@ proc genProfile(c: var TForumData, ui: TUserInfo): string =
       tr(
         th("Status"),
         td($ui.rank)
+      ),
+      tr(
+        th(if c.rank >= Moderator: "Last IP" else: ""),
+        td(if c.rank >= Moderator:
+             htmlgen.a(href="http://whatismyipaddress.com/ip/" & encodeUrl(ui.lastIp), ui.lastIp)
+           else: "")
       ),
       tr(
         th(""),
