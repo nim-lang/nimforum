@@ -22,6 +22,8 @@ type
     smtpUser: string
     smtpPassword: string
     mlistAddress: string
+    recaptchaSecretKey*: string
+    recaptchaSiteKey*: string
 
 var docConfig: StringTableRef
 
@@ -38,6 +40,8 @@ proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
     result.smtpUser = root{"smtpUser"}.getStr("")
     result.smtpPassword = root{"smtpPassword"}.getStr("")
     result.mlistAddress = root{"mlistAddress"}.getStr("")
+    result.recaptchaSecretKey = root{"recaptchaSecretKey"}.getStr("")
+    result.recaptchaSiteKey = root{"recaptchaSiteKey"}.getStr("")
   except:
     echo("[WARNING] Couldn't read config file: ", filename)
 

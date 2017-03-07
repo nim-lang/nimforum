@@ -8,8 +8,8 @@
 
 import
   os, strutils, times, md5, strtabs, cgi, math, db_sqlite,
-  captchas, scgi, jester, asyncdispatch, asyncnet, cache, sequtils,
-  parseutils, utils, random, rst, ranks
+  scgi, jester, asyncdispatch, asyncnet, cache, sequtils,
+  parseutils, utils, random, rst, ranks, recaptcha
 
 when not defined(windows):
   import bcrypt # TODO
@@ -77,6 +77,8 @@ var
   db: DbConn
   isFTSAvailable: bool
   config: Config
+  useCaptcha: bool
+  captcha: ReCaptcha
 
 proc init(c: var TForumData) =
   c.userPass = ""
@@ -314,8 +316,16 @@ proc register(c: var TForumData, name, pass, antibot,
     return setError(c, "new_password", "Invalid password!")
 
   # captcha validation:
-  if not isCaptchaCorrect(c, antibot):
-    return setError(c, "antibot", "Answer to captcha incorrect!")
+  if useCaptcha:
+    var captchaValid: bool = false
+    try:
+      captchaValid = waitFor captcha.verify(antibot)
+    except:
+      echo("[ERROR] Error checking captcha: " & getCurrentExceptionMsg())
+      captchaValid = false
+
+    if not captchaValid:
+      return setError(c, "antibot", "Answer to captcha incorrect!")
 
   # email validation
   if not ('@' in email and '.' in email):
@@ -1123,7 +1133,7 @@ routes:
 
   post "/doregister":
     createTFD()
-    if c.register(@"name", @"new_password", @"antibot", @"email"):
+    if c.register(@"name", @"new_password", @"g-recaptcha-response", @"email"):
       resp genMain(c, "You are now registered. You must now confirm your" &
           " email address by clicking the link sent to " & @"email",
           "Registration successful - Nim Forum")
@@ -1353,6 +1363,11 @@ when isMainModule:
   isFTSAvailable = db.getAllRows(sql("SELECT name FROM sqlite_master WHERE " &
       "type='table' AND name='post_fts'")).len == 1
   config = loadConfig()
+  if len(config.recaptchaSecretKey) > 0 and len(config.recaptchaSiteKey) > 0:
+    useCaptcha = true
+    captcha = initReCaptcha(config.recaptchaSecretKey, config.recaptchaSiteKey)
+  else:
+    useCaptcha = false
   var http = true
   if paramCount() > 0:
     if paramStr(1) == "scgi":

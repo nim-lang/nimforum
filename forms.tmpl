@@ -249,10 +249,12 @@
       <td>${fieldValid(c, "email", "E-Mail:")}</td>
       <td>${textWidget(c, "email", reuseText, maxlength=300)}</td>
     </tr>
+    #if useCaptcha:
     <tr>
-      <td>${fieldValid(c, "antibot", "What is " & antibot(c) & "?")}</td>
-      <td>${textWidget(c, "antibot", "", maxlength=4)}</td>
+      <td>${fieldValid(c, "g-recaptcha-response", "Captcha:")}</td>
+      <td>${captcha.render(includeNoScript=true)}</td>
     </tr>
+    #end if
   </table>
   #if c.errorMsg != "":
       <div style="float: left; width: 100%;">
