@@ -276,19 +276,6 @@ proc validThreadId(c: TForumData): bool =
   result = getValue(db, sql"select id from thread where id = ?",
                     $c.threadId).len > 0
 
-proc antibot(c: var TForumData): string =
-  let a = random(10)+1
-  let b = random(1000)+1
-  let answer = $(a+b)
-
-  exec(db, sql"delete from antibot where ip = ?", c.req.ip)
-  let captchaId = tryInsertID(db,
-    sql"insert into antibot(ip, answer) values (?, ?)", c.req.ip,
-    answer).int mod 10_000
-  let captchaFile = getCaptchaFilename(captchaId)
-  createCaptcha(captchaFile, $a & "+" & $b)
-  result = """<img src="$1" />""" % c.req.getCaptchaUrl(captchaId)
-
 const
   SecureChars = {'A'..'Z', 'a'..'z', '0'..'9', '_', '\128'..'\255'}
 
@@ -297,13 +284,7 @@ proc setError(c: var TForumData, field, msg: string): bool {.inline.} =
   c.errorMsg = "Error: " & msg
   return false
 
-proc isCaptchaCorrect(c: var TForumData, antibot: string): bool =
-  ## Determines whether the user typed in the captcha correctly.
-  let correctRes = getValue(db,
-      sql"select answer from antibot where ip = ?", c.req.ip)
-  return antibot == correctRes
-
-proc register(c: var TForumData, name, pass, antibot,
+proc register(c: var TForumData, name, pass, antibot, userIp,
               email: string): bool =
   # Username validation:
   if name.len == 0 or not allCharsInSet(name, SecureChars):
@@ -319,13 +300,13 @@ proc register(c: var TForumData, name, pass, antibot,
   if useCaptcha:
     var captchaValid: bool = false
     try:
-      captchaValid = waitFor captcha.verify(antibot)
+      captchaValid = waitFor captcha.verify(antibot, userIp)
     except:
       echo("[ERROR] Error checking captcha: " & getCurrentExceptionMsg())
       captchaValid = false
 
     if not captchaValid:
-      return setError(c, "antibot", "Answer to captcha incorrect!")
+      return setError(c, "g-recaptcha-response", "Answer to captcha incorrect!")
 
   # email validation
   if not ('@' in email and '.' in email):
@@ -360,10 +341,19 @@ proc register(c: var TForumData, name, pass, antibot,
 
   return true
 
-proc resetPassword(c: var TForumData, nick, antibot: string): bool =
-  # Validate captcha
-  if not isCaptchaCorrect(c, antibot):
-    return setError(c, "antibot", "Answer to captcha incorrect!")
+proc resetPassword(c: var TForumData, nick, antibot, userIp: string): bool =
+  # captcha validation:
+  if useCaptcha:
+    var captchaValid: bool = false
+    try:
+      captchaValid = waitFor captcha.verify(antibot, userIp)
+    except:
+      echo("[ERROR] Error checking captcha: " & getCurrentExceptionMsg())
+      captchaValid = false
+
+    if not captchaValid:
+      return setError(c, "g-recaptcha-response", "Answer to captcha incorrect!")
+
   # Gather some extra information to determine ident hash.
   let epoch = $int(epochTime())
   let row = db.getRow(
@@ -1133,7 +1123,7 @@ routes:
 
   post "/doregister":
     createTFD()
-    if c.register(@"name", @"new_password", @"g-recaptcha-response", @"email"):
+    if c.register(@"name", @"new_password", @"g-recaptcha-response", request.host, @"email"):
       resp genMain(c, "You are now registered. You must now confirm your" &
           " email address by clicking the link sent to " & @"email",
           "Registration successful - Nim Forum")
@@ -1302,7 +1292,7 @@ routes:
     echo(request.params)
     cond(@"nick" != "")
 
-    if resetPassword(c, @"nick", @"antibot"):
+    if resetPassword(c, @"nick", @"g-recaptcha-response", request.host):
       resp genMain(c, "Email sent!", "Reset Password - Nim Forum")
     else:
       resp genMain(c, genFormResetPassword(c), "Reset Password - Nim Forum")

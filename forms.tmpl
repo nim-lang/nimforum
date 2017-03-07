@@ -423,10 +423,12 @@
       <td>${fieldValid(c, "nick", "Your nickname:")}</td>
       <td><input type="text" name="nick" maxlength="20" /></td>
     </tr>
+    #if useCaptcha:
     <tr>
-      <td>${fieldValid(c, "antibot", "What is " & antibot(c) & "?")}</td>
-      <td>${textWidget(c, "antibot", "", maxlength=4)}</td>
+      <td>${fieldValid(c, "g-recaptcha-response", "Captcha:")}</td>
+      <td>${captcha.render(includeNoScript=true)}</td>
     </tr>
+    #end if
   </table>
   #if c.errorMsg != "":
       <div style="float: left; width: 100%;">
