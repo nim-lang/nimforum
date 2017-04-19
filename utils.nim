@@ -110,8 +110,8 @@ proc sendMail(config: Config, subject, message, recipient: string, from_addr = "
     echo("[WARNING] Cannot send mail: no smtp server configured (smtpAddress).")
     return
 
-  var client = newAsyncSmtp(config.smtpAddress, Port(config.smtpPort))
-  await client.connect()
+  var client = newAsyncSmtp()
+  await client.connect(config.smtpAddress, Port(config.smtpPort))
   if config.smtpUser.len > 0:
     await client.auth(config.smtpUser, config.smtpPassword)
 
