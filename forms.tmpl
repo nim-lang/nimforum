@@ -5,7 +5,7 @@
 #end template
 #
 #
-#proc genThreadsList(c: var TForumData, count: var int): string =
+#proc genThreadsList(c: TForumData, count: var int): string =
 #  const queryModAdmin = sql"""select id, name, views, modified from thread
 #                    where id in (select thread from post where author in
 #                             (select id from person where status not in ('Spammer') or id = ?))
@@ -92,7 +92,7 @@
 #end proc
 #
 #
-#proc genPostPreview(c: var TForumData,
+#proc genPostPreview(c: TForumData,
 #                    title, content, author, date: string): string =
 #  result = ""
 <a name="preview"></a>
@@ -119,7 +119,7 @@
 #end proc
 #
 #
-#proc genPostsList(c: var TForumData, threadId: string, count: var int): string =
+#proc genPostsList(c: TForumData, threadId: string, count: var int): string =
 #  let query = sql("""select p.id, u.name, p.header, p.content, p.creation, p.author, u.email from post p,
 #                      person u
 #                      where u.id = p.author and p.thread = ? and $#
@@ -180,7 +180,7 @@
 #
 #proc genMarkHelp(): string
 #end proc
-#proc genFormPost(c: var TForumData, action: string,
+#proc genFormPost(c: TForumData, action: string,
 #                 topText, title, content: string, isEdit: bool): string =
 #  result = ""
 <br />
@@ -225,7 +225,7 @@
 #end proc
 #
 #
-#proc genFormRegister(c: var TForumData): string =
+#proc genFormRegister(c: TForumData): string =
 #  result = ""
 <div id="talk-head">
     <div class="info-post">
@@ -249,10 +249,12 @@
       <td>${fieldValid(c, "email", "E-Mail:")}</td>
       <td>${textWidget(c, "email", reuseText, maxlength=300)}</td>
     </tr>
+    #if useCaptcha:
     <tr>
-      <td>${fieldValid(c, "antibot", "What is " & antibot(c) & "?")}</td>
-      <td>${textWidget(c, "antibot", "", maxlength=4)}</td>
+      <td>${fieldValid(c, "g-recaptcha-response", "Captcha:")}</td>
+      <td>${captcha.render(includeNoScript=true)}</td>
     </tr>
+    #end if
   </table>
   #if c.errorMsg != "":
       <div style="float: left; width: 100%;">
@@ -263,7 +265,7 @@
 </form>
 #end proc
 #
-#proc genFormSetRank(c: var TForumData; ui: TUserInfo): string =
+#proc genFormSetRank(c: TForumData; ui: TUserInfo): string =
 #  result = ""
 <form action="${c.req.makeUri("/dosetrank/" & ui.nick, false)}" method="POST">
   <table border="0">
@@ -286,7 +288,7 @@
 </form>
 #end proc
 #
-#proc genFormLogin(c: var TForumData): string =
+#proc genFormLogin(c: TForumData): string =
 #  result = ""
 #  if not c.loggedIn:
   <form action="${c.req.makeUri("/dologin", false)}" method="POST">
@@ -305,7 +307,7 @@
 #end proc
 #
 #
-#proc genListOnline(c: var TForumData, stats: TForumStats): string =
+#proc genListOnline(c: TForumData, stats: TForumStats): string =
 #  result = ""
 #  var active: seq[string] = @[]
 #  for i in stats.activeUsers:
@@ -322,7 +324,7 @@
 #
 #
 #
-#proc genSearchResults(c: var TForumData,
+#proc genSearchResults(c: TForumData,
 #                       results: iterator: db_sqlite.Row {.closure, tags: [ReadDbEffect].},
 #                       count: var int): string =
 #  const threadId = 0
@@ -405,7 +407,7 @@
 #end proc
 #
 #
-#proc genFormResetPassword(c: var TForumData): string =
+#proc genFormResetPassword(c: TForumData): string =
 #  result = ""
 <div id="talk-head">
     <div class="info-post">
@@ -421,10 +423,12 @@
       <td>${fieldValid(c, "nick", "Your nickname:")}</td>
       <td><input type="text" name="nick" maxlength="20" /></td>
     </tr>
+    #if useCaptcha:
     <tr>
-      <td>${fieldValid(c, "antibot", "What is " & antibot(c) & "?")}</td>
-      <td>${textWidget(c, "antibot", "", maxlength=4)}</td>
+      <td>${fieldValid(c, "g-recaptcha-response", "Captcha:")}</td>
+      <td>${captcha.render(includeNoScript=true)}</td>
     </tr>
+    #end if
   </table>
   #if c.errorMsg != "":
       <div style="float: left; width: 100%;">

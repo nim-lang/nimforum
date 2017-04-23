@@ -8,4 +8,4 @@ license       = "MIT"
 bin = "forum"
 
 [Deps]
-Requires: "nim >= 0.14.0, cairo#head, jester#head, bcrypt#head"
+Requires: "nim >= 0.14.0, cairo#head, jester#head, bcrypt#head, recaptcha >= 1.0.0"

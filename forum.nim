@@ -8,8 +8,8 @@
 
 import
   os, strutils, times, md5, strtabs, cgi, math, db_sqlite,
-  captchas, scgi, jester, asyncdispatch, asyncnet, cache, sequtils,
-  parseutils, utils, random, rst, ranks
+  scgi, jester, asyncdispatch, asyncnet, cache, sequtils,
+  parseutils, utils, random, rst, ranks, recaptcha
 
 when not defined(windows):
   import bcrypt # TODO
@@ -37,7 +37,7 @@ type
 
   TPost = tuple[subject, content: string]
 
-  TForumData = object of TSession
+  TForumData = ref object of TSession
     req: Request
     userid: string
     actionContent: string
@@ -77,8 +77,10 @@ var
   db: DbConn
   isFTSAvailable: bool
   config: Config
+  useCaptcha: bool
+  captcha: ReCaptcha
 
-proc init(c: var TForumData) =
+proc init(c: TForumData) =
   c.userPass = ""
   c.userName = ""
   c.threadId = unselectedThread
@@ -141,16 +143,16 @@ proc genThreadUrl(c: TForumData, postId = "", action = "", threadid = "", pageNu
     result.add("#" & postId)
   result = c.req.makeUri(result, absolute = false)
 
-proc formSession(c: var TForumData, nextAction: string): string =
+proc formSession(c: TForumData, nextAction: string): string =
   return """<input type="hidden" name="threadid" value="$1" />
             <input type="hidden" name="postid" value="$2" />""" % [
     $c.threadId, $c.postid]
 
-proc urlButton(c: var TForumData, text, url: string): string =
+proc urlButton(c: TForumData, text, url: string): string =
   return ("""<a class="url_button" href="$1">$2</a>""") % [
     url, text]
 
-proc genButtons(c: var TForumData, btns: seq[TStyledButton]): string =
+proc genButtons(c: TForumData, btns: seq[TStyledButton]): string =
   if btns.len == 1:
     var anchor = ""
 
@@ -274,35 +276,16 @@ proc validThreadId(c: TForumData): bool =
   result = getValue(db, sql"select id from thread where id = ?",
                     $c.threadId).len > 0
 
-proc antibot(c: var TForumData): string =
-  let a = random(10)+1
-  let b = random(1000)+1
-  let answer = $(a+b)
-
-  exec(db, sql"delete from antibot where ip = ?", c.req.ip)
-  let captchaId = tryInsertID(db,
-    sql"insert into antibot(ip, answer) values (?, ?)", c.req.ip,
-    answer).int mod 10_000
-  let captchaFile = getCaptchaFilename(captchaId)
-  createCaptcha(captchaFile, $a & "+" & $b)
-  result = """<img src="$1" />""" % c.req.getCaptchaUrl(captchaId)
-
 const
   SecureChars = {'A'..'Z', 'a'..'z', '0'..'9', '_', '\128'..'\255'}
 
-proc setError(c: var TForumData, field, msg: string): bool {.inline.} =
+proc setError(c: TForumData, field, msg: string): bool {.inline.} =
   c.invalidField = field
   c.errorMsg = "Error: " & msg
   return false
 
-proc isCaptchaCorrect(c: var TForumData, antibot: string): bool =
-  ## Determines whether the user typed in the captcha correctly.
-  let correctRes = getValue(db,
-      sql"select answer from antibot where ip = ?", c.req.ip)
-  return antibot == correctRes
-
-proc register(c: var TForumData, name, pass, antibot,
-              email: string): bool =
+proc register(c: TForumData, name, pass, antibot, userIp,
+              email: string): Future[bool] {.async.} =
   # Username validation:
   if name.len == 0 or not allCharsInSet(name, SecureChars):
     return setError(c, "name", "Invalid username!")
@@ -314,8 +297,16 @@ proc register(c: var TForumData, name, pass, antibot,
     return setError(c, "new_password", "Invalid password!")
 
   # captcha validation:
-  if not isCaptchaCorrect(c, antibot):
-    return setError(c, "antibot", "Answer to captcha incorrect!")
+  if useCaptcha:
+    var captchaValid: bool = false
+    try:
+      captchaValid = await captcha.verify(antibot, userIp)
+    except:
+      echo("[ERROR] Error checking captcha: " & getCurrentExceptionMsg())
+      captchaValid = false
+
+    if not captchaValid:
+      return setError(c, "g-recaptcha-response", "Answer to captcha incorrect!")
 
   # email validation
   if not ('@' in email and '.' in email):
@@ -350,10 +341,19 @@ proc register(c: var TForumData, name, pass, antibot,
 
   return true
 
-proc resetPassword(c: var TForumData, nick, antibot: string): bool =
-  # Validate captcha
-  if not isCaptchaCorrect(c, antibot):
-    return setError(c, "antibot", "Answer to captcha incorrect!")
+proc resetPassword(c: TForumData, nick, antibot, userIp: string): Future[bool] {.async.} =
+  # captcha validation:
+  if useCaptcha:
+    var captchaValid: bool = false
+    try:
+      captchaValid = await captcha.verify(antibot, userIp)
+    except:
+      echo("[ERROR] Error checking captcha: " & getCurrentExceptionMsg())
+      captchaValid = false
+
+    if not captchaValid:
+      return setError(c, "g-recaptcha-response", "Answer to captcha incorrect!")
+
   # Gather some extra information to determine ident hash.
   let epoch = $int(epochTime())
   let row = db.getRow(
@@ -378,7 +378,7 @@ proc resetPassword(c: var TForumData, nick, antibot: string): bool =
 
   return true
 
-proc logout(c: var TForumData) =
+proc logout(c: TForumData) =
   const query = sql"delete from session where ip = ? and password = ?"
   c.username = ""
   c.userpass = ""
@@ -395,7 +395,7 @@ proc getBanErrorMsg(banValue: string; rank: Rank): string =
   of Moderated, User, Moderator, Admin:
     return ""
 
-proc checkLoggedIn(c: var TForumData) =
+proc checkLoggedIn(c: TForumData) =
   if not c.req.cookies.hasKey("sid"): return
   let pass = c.req.cookies["sid"]
   if execAffectedRows(db,
@@ -425,7 +425,7 @@ proc checkLoggedIn(c: var TForumData) =
   else:
     echo("SID not found in sessions. Assuming logged out.")
 
-proc incrementViews(c: var TForumData) =
+proc incrementViews(c: TForumData) =
   const query = sql"update thread set views = views + 1 where id = ?"
   exec(db, query, $c.threadId)
 
@@ -435,7 +435,7 @@ proc isPreview(c: TForumData): bool =
 proc isDelete(c: TForumData): bool =
   result = c.req.params.hasKey("delete")
 
-proc validateRst(c: var TForumData, content: string): bool =
+proc validateRst(c: TForumData, content: string): bool =
   result = true
   try:
     discard rstToHtml(content)
@@ -513,7 +513,7 @@ template writeToDb(c, cr, setPostId: untyped) =
   if setPostId:
     c.postId = retID.int
 
-proc updateThreads(c: var TForumData): int =
+proc updateThreads(c: TForumData): int =
   ## Removes threads if they have no posts, or changes their modified field
   ## if they still contain posts.
   const query =
@@ -531,7 +531,7 @@ proc updateThreads(c: var TForumData): int =
       result = -1
       discard setError(c, "", "database error")
 
-proc edit(c: var TForumData, postId: int): bool =
+proc edit(c: TForumData, postId: int): bool =
   checkLogin(c)
   if c.isPreview:
     retrPost(c)
@@ -564,8 +564,8 @@ proc edit(c: var TForumData, postId: int): bool =
       exec(db, crud(crUpdate, "thread", "name"), subject, $c.threadId)
     result = true
 
-proc gatherUserInfo(c: var TForumData, nick: string, ui: var TUserInfo): bool
-proc spamCheck(c: var TForumData, subject, content: string): bool =
+proc gatherUserInfo(c: TForumData, nick: string, ui: var TUserInfo): bool
+proc spamCheck(c: TForumData, subject, content: string): bool =
   # Check current user's info
   var ui: TUserInfo
   if gatherUserInfo(c, c.userName, ui):
@@ -595,7 +595,7 @@ proc spamCheck(c: var TForumData, subject, content: string): bool =
        word in contentAlphabet.toLowerAscii():
       return true
 
-proc rateLimitCheck(c: var TForumData): bool =
+proc rateLimitCheck(c: TForumData): bool =
   const query40 =
     sql("SELECT count(*) FROM post where author = ? and " &
         "(strftime('%s', 'now') - strftime('%s', creation)) < 40")
@@ -614,7 +614,7 @@ proc rateLimitCheck(c: var TForumData): bool =
   if last300s > 6: return true
   return false
 
-proc makeThreadURL(c: var TForumData): string =
+proc makeThreadURL(c: TForumData): string =
   c.req.makeUri("/t/" & $c.threadId)
 
 template postChecks() {.dirty.} =
@@ -624,7 +624,7 @@ template postChecks() {.dirty.} =
   if rateLimitCheck(c):
     return setError(c, "subject", "You're posting too fast.")
 
-proc reply(c: var TForumData): bool =
+proc reply(c: TForumData): bool =
   # reply to an existing thread
   checkLogin(c)
   retrPost(c)
@@ -642,7 +642,7 @@ proc reply(c: var TForumData): bool =
           threadUrl=c.makeThreadURL())
     result = true
 
-proc newThread(c: var TForumData): bool =
+proc newThread(c: TForumData): bool =
   # create new conversation thread (permanent or transient)
   const query = sql"insert into thread(name, views, modified) values (?, 0, DATETIME('now'))"
   checkLogin(c)
@@ -665,7 +665,7 @@ proc newThread(c: var TForumData): bool =
           threadUrl=c.makeThreadURL())
     result = true
 
-proc login(c: var TForumData, name, pass: string): bool =
+proc login(c: TForumData, name, pass: string): bool =
   # get form data:
   const query =
     sql"select id, name, password, email, salt, status, ban from person where name = ?"
@@ -693,7 +693,7 @@ proc login(c: var TForumData, name, pass: string): bool =
   else:
     return c.setError("password", "Login failed!")
 
-proc verifyIdentHash(c: var TForumData, name, epoch, ident: string): bool =
+proc verifyIdentHash(c: TForumData, name, epoch, ident: string): bool =
   const query =
     sql"select password, salt, strftime('%s', lastOnline) from person where name = ?"
   var row = getRow(db, query, name)
@@ -704,13 +704,13 @@ proc verifyIdentHash(c: var TForumData, name, epoch, ident: string): bool =
   if row[2].parseInt > (epoch.parseInt + 60): return false
   result = newIdent == ident
 
-proc deleteAll(c: var TForumData, nick: string): bool =
+proc deleteAll(c: TForumData, nick: string): bool =
   const query =
     sql("delete from post where author = (select id from person where name = ?)")
   result = tryExec(db, query, nick)
   result = result and updateThreads(c) >= 0
 
-proc setStatus(c: var TForumData, nick: string, status: Rank;
+proc setStatus(c: TForumData, nick: string, status: Rank;
                reason: string): bool =
   const query =
     sql("update person set status = ?, ban = ? where name = ?")
@@ -722,13 +722,13 @@ proc setStatus(c: var TForumData, nick: string, status: Rank;
     if status == Spammer and result:
       result = deleteAll(c, nick)
 
-proc setPassword(c: var TForumData, nick, pass: string): bool =
+proc setPassword(c: TForumData, nick, pass: string): bool =
   const query =
     sql("update person set password = ?, salt = ? where name = ?")
   var salt = makeSalt()
   result = tryExec(db, query, makePassword(pass, salt), salt, nick)
 
-proc hasReplyBtn(c: var TForumData): bool =
+proc hasReplyBtn(c: TForumData): bool =
   result = c.req.pathInfo != "/donewthread" and c.req.pathInfo != "/doreply"
   result = result and c.req.params.getOrDefault("action") notin ["reply", "edit"]
   # If the user is not logged in and there are no page numbers then we shouldn't
@@ -737,7 +737,7 @@ proc hasReplyBtn(c: var TForumData): bool =
   result = result and (pages > 1 or c.loggedIn)
   return c.threadId >= 0 and result
 
-proc getStats(c: var TForumData, simple: bool): TForumStats =
+proc getStats(c: TForumData, simple: bool): TForumStats =
   const totalUsersQuery =
     sql"select count(*) from person"
   result.totalUsers = getValue(db, totalUsersQuery).parseInt
@@ -762,7 +762,7 @@ proc getStats(c: var TForumData, simple: bool): TForumStats =
         result.newestMember = (row[1], row[0].parseInt)
         newestMemberCreation = row[3].parseInt
 
-proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
+proc genPagenumNav(c: TForumData, stats: TForumStats): string =
   result = ""
   var
     firstUrl = ""
@@ -835,22 +835,22 @@ proc genPagenumNav(c: var TForumData, stats: TForumStats): string =
   result.add(nextTag)
   result.add(lastTag)
 
-proc gatherTotalPostsByID(c: var TForumData, thrid: int): int =
+proc gatherTotalPostsByID(c: TForumData, thrid: int): int =
   ## Gets the total post count of a thread.
   result = getValue(db, sql"select count(*) from post where thread = ?", $thrid).parseInt
 
-proc gatherTotalPosts(c: var TForumData) =
+proc gatherTotalPosts(c: TForumData) =
   if c.totalPosts > 0: return
   # Gather some data.
   const totalPostsQuery =
       sql"select count(*) from post p, person u where u.id = p.author and p.thread = ?"
   c.totalPosts = getValue(db, totalPostsQuery, $c.threadId).parseInt
 
-proc getPagesInThread(c: var TForumData): int =
+proc getPagesInThread(c: TForumData): int =
   c.gatherTotalPosts() # Get total post count
   result = ceil(c.totalPosts / PostsPerPage).int-1
 
-proc getPagesInThreadByID(c: var TForumData, thrid: int): int =
+proc getPagesInThreadByID(c: TForumData, thrid: int): int =
   result = ceil(c.gatherTotalPostsByID(thrid) / PostsPerPage).int
 
 proc getThreadTitle(thrid: int, pageNum: int): string =
@@ -858,7 +858,7 @@ proc getThreadTitle(thrid: int, pageNum: int): string =
   if pageNum notin {0,1}:
     result.add(" - Page " & $pageNum)
 
-proc genPagenumLocalNav(c: var TForumData, thrid: int): string =
+proc genPagenumLocalNav(c: TForumData, thrid: int): string =
   result = ""
   const maxPostPages = 6 # Maximum links to pages shown.
   const hmpp = maxPostPages div 2
@@ -878,7 +878,7 @@ proc genPagenumLocalNav(c: var TForumData, thrid: int): string =
 
   result = htmlgen.span(class = "pages", result)
 
-proc gatherUserInfo(c: var TForumData, nick: string, ui: var TUserInfo): bool =
+proc gatherUserInfo(c: TForumData, nick: string, ui: var TUserInfo): bool =
   ui.nick = nick
   const getUIDQuery = sql"select id from person where name = ?"
   var uid = getValue(db, getUIDQuery, nick)
@@ -908,7 +908,7 @@ proc gatherUserInfo(c: var TForumData, nick: string, ui: var TUserInfo): bool =
 include "forms.tmpl"
 include "main.tmpl"
 
-proc genProfile(c: var TForumData, ui: TUserInfo): string =
+proc genProfile(c: TForumData, ui: TUserInfo): string =
   result = ""
 
   result.add(htmlgen.`div`(id = "talk-head",
@@ -982,6 +982,7 @@ proc prependRe(s: string): string =
 
 template createTFD() =
   var c {.inject.}: TForumData
+  new(c)
   init(c)
   c.req = request
   c.startTime = epochTime()
@@ -1123,7 +1124,7 @@ routes:
 
   post "/doregister":
     createTFD()
-    if c.register(@"name", @"new_password", @"antibot", @"email"):
+    if await c.register(@"name", @"new_password", @"g-recaptcha-response", request.host, @"email"):
       resp genMain(c, "You are now registered. You must now confirm your" &
           " email address by clicking the link sent to " & @"email",
           "Registration successful - Nim Forum")
@@ -1292,7 +1293,7 @@ routes:
     echo(request.params)
     cond(@"nick" != "")
 
-    if resetPassword(c, @"nick", @"antibot"):
+    if await resetPassword(c, @"nick", @"g-recaptcha-response", request.host):
       resp genMain(c, "Email sent!", "Reset Password - Nim Forum")
     else:
       resp genMain(c, genFormResetPassword(c), "Reset Password - Nim Forum")
@@ -1353,6 +1354,11 @@ when isMainModule:
   isFTSAvailable = db.getAllRows(sql("SELECT name FROM sqlite_master WHERE " &
       "type='table' AND name='post_fts'")).len == 1
   config = loadConfig()
+  if len(config.recaptchaSecretKey) > 0 and len(config.recaptchaSiteKey) > 0:
+    useCaptcha = true
+    captcha = initReCaptcha(config.recaptchaSecretKey, config.recaptchaSiteKey)
+  else:
+    useCaptcha = false
   var http = true
   if paramCount() > 0:
     if paramStr(1) == "scgi":
