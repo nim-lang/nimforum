@@ -32,7 +32,7 @@ changing the dependencies slightly.
 
 ```
 [Deps]
-Requires: "nim >= 0.14.0, jester#head, bcrypt#head, recaptcha >= 1.0.0"
+Requires: "nim >= 0.14.0, jester#head, bcrypt >= 0.2.1, recaptcha >= 1.0.0"
 ```
 
 # Running the forum
