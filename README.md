@@ -4,19 +4,18 @@ This is Nim's forum. Available at http://forum.nim-lang.org.
 
 ## Building
 
-You can use ``nimble`` (available [here](https://github.com/nim-lang/nimble)
+You can use ``nimble`` (available [here](https://github.com/nim-lang/nimble))
 to get all the necessary
 [dependencies](https://github.com/nim-lang/nimforum/blob/master/nimforum.nimble#L11).
 
 Clone this repo and execute ``nimble build`` in this repositories directory.
 
-_See also: Running the forum for how to create the database_
+See also: <a href="#running-the-forum">Running the forum</a> for how to create the database.
 
 ## Dependencies
 
-The code depends on the RST parser of the Nim
-compiler and on Jester. The captchas for registration uses the
-[reCaptcha module](https://github.com/euantorano/recaptcha.nim).
+The code depends on the RST parser of the Nim compiler and on Jester.  
+The captchas for registration uses the [reCaptcha module](https://github.com/euantorano/recaptcha.nim).
 
 #### bcrypt
 
