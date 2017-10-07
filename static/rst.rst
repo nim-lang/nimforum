@@ -1,5 +1,4 @@
-===========================================================================
-       reStructuredText cheat sheet
+reStructuredText cheat sheet
 ===========================================================================
 
 This is a cheat sheet for the *reStructuredText* dialect as implemented by
@@ -14,7 +13,7 @@ Elements of **markdown** are also supported.
 
 
 Inline elements
-===============
+---------------
 
 Ordinary text may contain *inline elements*:
 
@@ -30,20 +29,20 @@ Plain text                        Result
 ===============================   ============================================
 
 Links
-=====
+-----
 
-Links are either direct URLs like ``http://nim-lang.org`` or written like
+Links are either direct URLs like ``https://nim-lang.org`` or written like
 this::
   
-  `Nim <http://nim-lang.org>`_
+  `Nim <https://nim-lang.org>`_
   
 Or like this::
 
-  `<http://nim-lang.org>`_
+  `<https://nim-lang.org>`_
 
 
 Code blocks
-===========
+-----------
 
 are done this way::
 
@@ -81,7 +80,7 @@ Is rendered as:
 
 
 Literal blocks
-==============
+--------------
 
 Are introduced by '::' and a newline. The block is indicated by indentation: 
 
@@ -98,7 +97,7 @@ Is rendered as::
 
 
 Bullet lists
-============
+------------
 
 look like this::
 
@@ -123,7 +122,7 @@ Is rendered as:
 
 
 Enumerated lists
-================
+----------------
 
 are written like this::
 
@@ -143,7 +142,7 @@ Is rendered as:
 
 
 Quoting someone
-===============
+---------------
 
 quotes are just::
 
@@ -160,7 +159,7 @@ Is rendered as:
 
 
 Definition lists
-================
+----------------
 
 are written like this::
 
@@ -190,7 +189,7 @@ how
 
 
 Tables
-======
+------
 
 Only *simple tables* are supported. They are of the form::
 
@@ -218,3 +217,10 @@ Cell 4                  Cell 5; any           Cell 6
                         multiple lines
 Cell 7                  Cell 8                Cell 9
 ==================      ===============       ===================
+
+Images
+------
+
+```
+.. image:: path/to/img.png
+```
