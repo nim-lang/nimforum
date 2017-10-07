@@ -3,7 +3,7 @@
 ===========================================================================
 
 This is a cheat sheet for the *reStructuredText* dialect as implemented by
-Nimrod's documentation generator which has been reused for this forum. :-)
+Nim's documentation generator which has been reused for this forum.
 
 See also the
 `official RST cheat sheet <http://docutils.sourceforge.net/docs/user/rst/cheatsheet.txt>`_ 
@@ -32,14 +32,14 @@ Plain text                        Result
 Links
 =====
 
-Links are either direct URLs like ``http://nimrod-lang.org`` or written like
+Links are either direct URLs like ``http://nim-lang.org`` or written like
 this::
   
-  `Nimrod <http://nimrod-lang.org>`_
+  `Nim <http://nim-lang.org>`_
   
 Or like this::
 
-  `<http://nimrod-lang.org>`_
+  `<http://nim-lang.org>`_
 
 
 Code blocks
@@ -47,7 +47,7 @@ Code blocks
 
 are done this way::
 
-  .. code-block:: nimrod
+  .. code-block:: nim
     
     if x == "abc":
       echo "xyz"
@@ -55,25 +55,25 @@ are done this way::
 
 Is rendered as:
 
-.. code-block:: nimrod
+.. code-block:: nim
   
   if x == "abc":
     echo "xyz"
 
 
-Except Nimrod, the programming languages C, C++, Java and C# have highlighting
+Except Nim, the programming languages C, C++, Java and C# have highlighting
 support.
 
 An alternative github-like syntax is also supported. This has the advantage
 that no excessive indentation is needed::
 
-  ```nimrod  
+  ```nim  
     if x == "abc":
       echo "xyz"```
 
 Is rendered as:
 
-.. code-block:: nimrod
+.. code-block:: nim
   
   if x == "abc":
     echo "xyz"
