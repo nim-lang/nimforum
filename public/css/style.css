@@ -721,13 +721,20 @@ blockquote p {
   background-color: lightslategray;
   text-decoration: none;
   float: right;
-  color: #FFF;
+  color: #e5e8ef;
   display: block;
+  padding: 0.3em 0.5em 0.3em 0.5em;
+  border: none;
+  border-bottom: 0.2em solid #b9b9b9
+}
+
+.runDiv > button:active{
+  border: none;
+  border-top: 0.2em solid #b9b9b9
 }
 
 .runDiv > .resDiv {
   width: 80%;
-  margin-left: 1em;
   padding: 0.2em 1em 0.2em 1em;
   display: inline-block;
 }
