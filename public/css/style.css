@@ -711,3 +711,30 @@ blockquote p {
   color: rgb(109, 109, 109) !important;
 
 }
+
+.runDiv > hr {
+  border: 1px solid slategray;
+}
+
+.runDiv > button{
+  cursor: pointer;
+  background-color: lightslategray;
+  text-decoration: none;
+  float: right;
+  color: #FFF;
+  display: block;
+}
+
+.runDiv > .resDiv {
+  width: 80%;
+  margin-left: 1em;
+  padding: 0.2em 1em 0.2em 1em;
+  display: inline-block;
+}
+
+.successComp {
+  color: lightgreen;
+}
+.failedComp {
+  color: lightcoral;
+}
