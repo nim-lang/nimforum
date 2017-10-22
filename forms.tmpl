@@ -195,9 +195,9 @@
           var resDiv = document.createElement("DIV")
           resDiv.setAttribute("class", "resDiv successComp")
           if (res.log != "Compilation Failed\u000A"){
-            resDiv.innerHTML = res.log
+            resDiv.textContent = res.log
           } else {
-            resDiv.innerHTML = res.compileLog
+            resDiv.textContent = res.compileLog
             resDiv.setAttribute("class","resDiv failedComp")
           }
           runDiv.appendChild(resDiv)        
