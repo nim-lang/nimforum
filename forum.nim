@@ -1346,6 +1346,8 @@ routes:
     resp genMain(c, page)
   get "/search-help":
     textPage "static/search-help"
+  get "/rst":
+    textPage "static/rst"
 
 when isMainModule:
   randomize()
