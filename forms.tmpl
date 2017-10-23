@@ -175,6 +175,48 @@
     </div>
   </div>
 #  end for
+<script>
+  // tiny helper that run the code in the playground
+  var els = Array.prototype.slice.call(document.getElementsByClassName("listing"))
+  els.forEach(function(element) {
+    var runDiv = document.createElement("DIV")
+    runDiv.setAttribute("class", "runDiv")
+    var btn = document.createElement("BUTTON")
+    var t = document.createTextNode("Run")
+    var code = element.innerText
+    btn.appendChild(t)
+    btn.onclick = function(){
+      var httpRequest = new XMLHttpRequest();
+      httpRequest.open("POST", "https://play.nim-lang.org/compile", true)
+      function displayContents(e){
+        if (httpRequest.readyState!=httpRequest.DONE){return} 
+        if (httpRequest.status == 200){
+          var res = JSON.parse(httpRequest.responseText)
+          // this works because only 1 `element` is inside `element`
+          var resDiv = element.getElementsByClassName("resDiv")[0]
+          if (resDiv == null) {
+            resDiv = document.createElement("DIV")
+            runDiv.appendChild(resDiv)          
+          }
+          if (res.log != "Compilation Failed\u000A"){
+            resDiv.textContent = res.log
+            resDiv.setAttribute("class", "resDiv successComp")          
+          } else {
+            resDiv.textContent = res.compileLog
+            resDiv.setAttribute("class","resDiv failedComp")
+          }
+        } else {
+          console.log("There was a problem with the request.")
+        }
+      }
+      httpRequest.onreadystatechange = displayContents
+      httpRequest.send(JSON.stringify({"code": code, "compilationTarget": "c"}))
+    }
+    runDiv.appendChild(document.createElement("HR"))
+    runDiv.appendChild(btn)
+    element.appendChild(runDiv)
+  }, this);
+</script>
 </div>
 #end proc
 #

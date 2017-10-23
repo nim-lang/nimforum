@@ -441,7 +441,7 @@ div#sidebar .content
 
 }
 
-div#sidebar .content .button
+div#sidebar .content .button, .runDiv>button
 {
   background-color: rgba(0,0,0,0.2);
   text-decoration: none;
@@ -710,4 +710,32 @@ blockquote {
 blockquote p {
   color: rgb(109, 109, 109) !important;
 
+}
+
+.runDiv > hr {
+  border: 1px solid #80828d;
+}
+
+.runDiv > button {
+  cursor: pointer;
+  border: none; /* remove border from runDiv>button */
+  border-bottom: 2px solid rgba(0,0,0,0.24);
+  background-color: #80828d;
+}
+
+.runDiv>button:hover {
+  border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.runDiv > .resDiv {
+  width: 80%;
+  padding: 0.2em 1em 0.2em 1em;
+  display: inline-block;
+}
+
+.successComp {
+  color: lightgreen;
+}
+.failedComp {
+  color: lightcoral;
 }
