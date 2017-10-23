@@ -441,7 +441,7 @@ div#sidebar .content
 
 }
 
-div#sidebar .content .button
+div#sidebar .content .button, .runDiv>button
 {
   background-color: rgba(0,0,0,0.2);
   text-decoration: none;
@@ -713,24 +713,18 @@ blockquote p {
 }
 
 .runDiv > hr {
-  border: 1px solid slategray;
+  border: 1px solid #80828d;
 }
 
-.runDiv > button{
+.runDiv > button {
   cursor: pointer;
-  background-color: lightslategray;
-  text-decoration: none;
-  float: right;
-  color: #e5e8ef;
-  display: block;
-  padding: 0.3em 0.5em 0.3em 0.5em;
-  border: none;
-  border-bottom: 0.2em solid #b9b9b9
+  border: none; /* remove border from runDiv>button */
+  border-bottom: 2px solid rgba(0,0,0,0.24);
+  background-color: #80828d;
 }
 
-.runDiv > button:active{
-  border: none;
-  border-top: 0.2em solid #b9b9b9
+.runDiv>button:hover {
+  border-bottom: 2px solid rgba(255, 255, 255, 0.5);
 }
 
 .runDiv > .resDiv {
