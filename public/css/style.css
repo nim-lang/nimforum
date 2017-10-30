@@ -753,7 +753,5 @@ blockquote p {
 }
 .date > a, .date > a:hover, .date > a:visited {
   color: #3D3D3D !important;
-}
-.date > a:hover {
   text-decoration: none !important;
 }
