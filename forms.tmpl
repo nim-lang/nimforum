@@ -115,6 +115,7 @@
       </div>
     </div>
   </div>
+  <script>appendRunBtn()</script>
 </div>
 #end proc
 #
@@ -177,45 +178,73 @@
 #  end for
 <script>
   // tiny helper that run the code in the playground
-  var els = Array.prototype.slice.call(document.getElementsByClassName("listing"))
-  els.forEach(function(element) {
-    var runDiv = document.createElement("DIV")
-    runDiv.setAttribute("class", "runDiv")
-    var btn = document.createElement("BUTTON")
-    var t = document.createTextNode("Run")
-    var code = element.innerText
-    btn.appendChild(t)
+  function appendEachRunBtn(element) {
+    if (element.getElementsByClassName("runDiv").length>0){
+      return; // already has a run btn
+    }
+    var runDiv = document.createElement("DIV");
+    var btn = document.createElement("BUTTON");
+    var t = document.createTextNode("Run");
+    var playLink = document.createElement("a")
+    var code = element.textContent;
+    var spinners = [" ◆ "," ◇ "];  
+    playLink.title = "Edit in playground" 
+    playLink.textContent = "Edit" 
+    playLink.setAttribute('href', "https://play.nim-lang.org?code="+encodeURIComponent(code));  
+    playLink.setAttribute("class", "button");
+    playLink.setAttribute("target", "_blank");
+    runDiv.setAttribute("class", "runDiv");
+    btn.appendChild(t);
     btn.onclick = function(){
       var httpRequest = new XMLHttpRequest();
-      httpRequest.open("POST", "https://play.nim-lang.org/compile", true)
+      var start = null;
+      httpRequest.open("POST", "https://play.nim-lang.org/compile", true);    
+      btn.textContent = spinners[1];
+      function step(timestamp) {
+        if (!start) start = timestamp;
+        if (timestamp - start > 500) {
+          if (btn.textContent == spinners[0]) { btn.textContent = spinners[1] }
+          else { btn.textContent = spinners[0] }          
+          start = null;
+        }
+        if (httpRequest.status != 200){ window.requestAnimationFrame(step) }
+        else { btn.textContent = "Run" }
+      }
       function displayContents(e){
-        if (httpRequest.readyState!=httpRequest.DONE){return} 
+        if (httpRequest.readyState!=httpRequest.DONE){ return } 
         if (httpRequest.status == 200){
-          var res = JSON.parse(httpRequest.responseText)
-          // this works because only 1 `element` is inside `element`
-          var resDiv = element.getElementsByClassName("resDiv")[0]
+          var res = JSON.parse(httpRequest.responseText);
+          // this works because only 1 `resDiv` is inside `element`
+          var resDiv = element.getElementsByClassName("resDiv")[0];
           if (resDiv == null) {
-            resDiv = document.createElement("DIV")
-            runDiv.appendChild(resDiv)          
+            resDiv = document.createElement("DIV");
+            runDiv.appendChild(resDiv);
           }
-          if (res.log != "Compilation Failed\u000A"){
-            resDiv.textContent = res.log
-            resDiv.setAttribute("class", "resDiv successComp")          
+          if (res.compileLog.lastIndexOf("[SuccessX]") != -1){
+            resDiv.textContent = res.log;
+            resDiv.setAttribute("class", "resDiv successComp");
           } else {
-            resDiv.textContent = res.compileLog
-            resDiv.setAttribute("class","resDiv failedComp")
+            resDiv.textContent = res.compileLog;
+            resDiv.setAttribute("class","resDiv failedComp");
           }
         } else {
-          console.log("There was a problem with the request.")
+          console.log("There was a problem with the request.");
         }
       }
-      httpRequest.onreadystatechange = displayContents
-      httpRequest.send(JSON.stringify({"code": code, "compilationTarget": "c"}))
+      httpRequest.onreadystatechange = displayContents;
+      httpRequest.send(JSON.stringify({"code": code, "compilationTarget": "c"}));
+      window.requestAnimationFrame(step);
     }
-    runDiv.appendChild(document.createElement("HR"))
-    runDiv.appendChild(btn)
-    element.appendChild(runDiv)
-  }, this);
+    runDiv.appendChild(document.createElement("HR"));
+    runDiv.appendChild(btn);
+    runDiv.appendChild(playLink);
+    element.appendChild(runDiv);
+  }
+  function appendRunBtn(){
+    var els = Array.prototype.slice.call(document.getElementsByClassName("langNim"));
+    els.forEach(appendEachRunBtn, this);
+  }
+  appendRunBtn()
 </script>
 </div>
 #end proc

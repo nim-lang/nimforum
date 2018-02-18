@@ -453,7 +453,7 @@ div#sidebar .content
 
 }
 
-div#sidebar .content .button, .runDiv>button
+div#sidebar .content .button, .runDiv>button, .runDiv>a
 {
   background-color: rgba(0,0,0,0.2);
   text-decoration: none;
@@ -728,14 +728,21 @@ blockquote p {
   border: 1px solid #80828d;
 }
 
-.runDiv > button {
+.runDiv > a {
+  color: #FFF !important;
+  padding: 3.5pt;
+  margin-right: 3pt;
+}
+
+.runDiv > button, .runDiv > a {
   cursor: pointer;
   border: none; /* remove border from runDiv>button */
   border-bottom: 2px solid rgba(0,0,0,0.24);
   background-color: #80828d;
 }
 
-.runDiv>button:hover {
+.runDiv>button:hover, .runDiv > a:hover {
+  text-decoration: none !important;
   border-bottom: 2px solid rgba(255, 255, 255, 0.5);
 }
 

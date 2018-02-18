@@ -28,6 +28,7 @@ type
 var docConfig: StringTableRef
 
 docConfig = rstgen.defaultConfig()
+docConfig["doc.listing_start"] = "<pre class=\"listing $2\">"
 docConfig["doc.smiley_format"] = "/images/smilieys/$1.png"
 
 proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
