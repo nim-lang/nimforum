@@ -170,7 +170,7 @@
         #except EParseError:
         #  c.errorMsg = getCurrentExceptionMsg()
         #end
-        <span class="date">${xmlEncode(%postCreation)}</span>
+        <span class="date"><a href="${c.genThreadUrl(%postId, "", $threadId, $(c.pageNum))}">${xmlEncode(%postCreation)}</a></span>
       </div>
     </div>
   </div>
