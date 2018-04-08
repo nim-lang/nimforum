@@ -621,8 +621,8 @@ template postChecks() {.dirty.} =
   if spamCheck(c, subject, content):
     echo("[WARNING] Found spam: ", subject)
     return true
-  #if rateLimitCheck(c):
-  #  return setError(c, "subject", "You're posting too fast.")
+  if rateLimitCheck(c):
+    return setError(c, "subject", "You're posting too fast.")
 
 proc reply(c: TForumData): bool =
   # reply to an existing thread
@@ -1113,7 +1113,7 @@ routes:
       setCookie("sid", c.userpass, daysForward(7))
       if @"path" != "":
         redirect @"path"
-        redirect(uri("/"))
+      redirect(uri("/"))
     else:
       c.isThreadsList = true
       var count = 0
