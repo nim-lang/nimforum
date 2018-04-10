@@ -1099,7 +1099,6 @@ routes:
   get "/profile/@nick/?":
     createTFD()
     cond(@"nick" != "")
-    echo "Theme: " & c.theme
     var userinfo: TUserInfo
     if gatherUserInfo(c, @"nick", userinfo):
       resp genMain(c, c.genProfile(userinfo),
