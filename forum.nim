@@ -1098,9 +1098,6 @@ routes:
     if (@"postid").len > 0:
       parseInt(@"postid", c.postId, -1..1000_000)
 
-  template finishLogin() =
-    setCookie("sid", c.userpass, daysForward(7))
-    redirect(uri("/"))
 
   template handleError(action: string, topText: string, isEdit: bool) =
     if c.isPreview:
@@ -1113,7 +1110,10 @@ routes:
   post "/dologin":
     createTFD()
     if login(c, @"name", @"password"):
-      finishLogin()
+      setCookie("sid", c.userpass, daysForward(7))
+      if @"path" != "":
+        redirect @"path"
+      redirect(uri("/"))
     else:
       c.isThreadsList = true
       var count = 0

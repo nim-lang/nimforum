@@ -112,7 +112,7 @@
         #else:
           <div class="title">Login</div>
           <div class="content">
-            <form name="login" action="${frontQuery}dologin" method="POST">
+            <form name="login" action="${frontQuery}dologin?path=${if c.req.path == "/dologin": "/" else: c.req.path}" method="POST">
               <span>Username: </span><input type="text" name="name" />
               <span>Password: </span><input type="password" name="password" />
               <input type="submit" style="display: none;"
