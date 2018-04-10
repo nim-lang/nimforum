@@ -7,11 +7,13 @@
 #  else:
 #    stats = c.getStats(true)
 #  end if
+#
+#  let currentTheme = if c.theme == "" or c.theme == "style.css": "style.css" else: "themes/" & c.theme
 <!doctype html>
 <html lang="en">
 <head>
   <title>${xmlEncode(title)}</title>
-  <link rel="stylesheet" href="${c.req.makeUri("css/style.css", absolute = false)}">
+  <link rel="stylesheet" href="${c.req.makeUri("css/" & currentTheme, absolute = false)}">
   <link rel="shortcut icon" href="${c.req.makeUri("favicon.ico", absolute = false)}">${additional_headers}
   <meta charset="UTF-8">
 </head>
