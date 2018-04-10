@@ -62,6 +62,7 @@ type
     activeUsers: seq[tuple[nick: string, id: int]]
 
   TUserInfo = object
+    id: string
     nick: string
     posts: int
     threads: int
@@ -881,28 +882,28 @@ proc genPagenumLocalNav(c: TForumData, thrid: int): string =
 proc gatherUserInfo(c: TForumData, nick: string, ui: var TUserInfo): bool =
   ui.nick = nick
   const getUIDQuery = sql"select id from person where name = ?"
-  var uid = getValue(db, getUIDQuery, nick)
-  if uid == "": return false
+  ui.id = getValue(db, getUIDQuery, nick)
+  if ui.id == "": return false
   result = true
   const totalPostsQuery =
       sql"select count(*) from post where author = ?"
-  ui.posts = getValue(db, totalPostsQuery, uid).parseInt
+  ui.posts = getValue(db, totalPostsQuery, ui.id).parseInt
   const totalThreadsQuery =
       sql("select count(*) from thread where id in (select thread from post where" &
          " author = ? and post.id in (select min(id) from post group by thread))")
 
-  ui.threads = getValue(db, totalThreadsQuery, uid).parseInt
+  ui.threads = getValue(db, totalThreadsQuery, ui.id).parseInt
   const lastOnlineQuery =
       sql"""select strftime('%s', lastOnline), email, ban, status
             from person where id = ?"""
-  let row = db.getRow(lastOnlineQuery, $uid)
+  let row = db.getRow(lastOnlineQuery, $ui.id)
   ui.lastOnline = if row[0].len > 0: row[0].parseInt else: -1
   ui.email = row[1]
   ui.ban = row[2]
   ui.rank = parseEnum[Rank](row[3])
 
   const lastIpQuery = sql"select `ip` from `session` where `userid` = ? order by `id` desc limit 1;"
-  let ipRow = db.getRow(lastIpQuery, $uid)
+  let ipRow = db.getRow(lastIpQuery, $ui.id)
   ui.lastIp = ipRow[0]
 
 include "forms.tmpl"
@@ -910,6 +911,11 @@ include "main.tmpl"
 
 proc genProfile(c: TForumData, ui: TUserInfo): string =
   result = ""
+
+  const isMailOnQuery = sql"select `mailNewComment` from `person` where `id` = ?;"
+  var mailStatus = "Mail notification is off"
+  if ui.id == c.userid and getValue(db, isMailOnQuery, ui.id) == "1":
+      mailStatus = "Mail notification is on"
 
   result.add(htmlgen.`div`(id = "talk-head",
     htmlgen.`div`(class="info-post",
@@ -948,6 +954,12 @@ proc genProfile(c: TForumData, ui: TUserInfo): string =
       tr(
         th("Status"),
         td($ui.rank)
+      ),
+      tr(
+        th(if ui.id == c.userid: "Email notify" else: ""),
+        td(if ui.id == c.userid:
+             htmlgen.a(href="/profile/emails/" & encodeUrl(ui.id), mailStatus)
+           else: "")
       ),
       tr(
         th(if c.rank >= Moderator: "Last IP" else: ""),
@@ -1078,6 +1090,18 @@ routes:
     else:
       halt()
 
+  get "/profile/emails/@userID":
+    createTFD()
+    cond(@"userID" == c.userid)
+    const isMailOnQuery = sql"select `mailNewComment` from `person` where `id` = ?;"
+    if getValue(db, isMailOnQuery, c.userid) == "1":
+      discard tryExec(db, sql("update person set mailNewComment = ? where id = ?"), "0", c.userid)
+    else:
+      discard tryExec(db, sql("update person set mailNewComment = ? where id = ?"), "1", c.userid)
+
+    redirect "/profile/" & c.username
+
+
   get "/login/?":
     createTFD()
     resp genMain(c, genFormLogin(c), "Log in - Nim Forum")
@@ -1143,6 +1167,7 @@ routes:
     createTFD()
     readIDs()
     if reply(c):
+      asyncCheck sendEmailNewReply(db, config, c.userid, c.username, $c.threadId, $c.postId)
       redirect(c.genThreadUrl(pageNum = $(c.getPagesInThread+1)) & "#" & $c.postId)
     else:
       var count = 0
