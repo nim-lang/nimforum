@@ -914,8 +914,7 @@ proc genProfile(c: TForumData, ui: TUserInfo): string =
 
   const isMailOnQuery = sql"select `mailNewComment` from `person` where `id` = ?;"
   var mailStatus = "Mail notification is off"
-  if ui.id == c.userid: 
-    if getValue(db, isMailOnQuery, ui.id) == "1":
+  if ui.id == c.userid and getValue(db, isMailOnQuery, ui.id) == "1":
       mailStatus = "Mail notification is on"
 
   result.add(htmlgen.`div`(id = "talk-head",
@@ -1091,9 +1090,9 @@ routes:
     else:
       halt()
 
-  get "/profile/emails/@uiuserID":
+  get "/profile/emails/@userID":
     createTFD()
-    cond(@"uiuserID" == c.userid)
+    cond(@"userID" == c.userid)
     const isMailOnQuery = sql"select `mailNewComment` from `person` where `id` = ?;"
     if getValue(db, isMailOnQuery, c.userid) == "1":
       discard tryExec(db, sql("update person set mailNewComment = ? where id = ?"), "0", c.userid)
