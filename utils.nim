@@ -1,5 +1,5 @@
 import asyncdispatch, smtp, strutils, json, os, rst, rstgen, xmltree, strtabs,
-  htmlparser, streams, parseutils
+  htmlparser, streams, parseutils, db_sqlite
 from times import getTime, getGMTime, format
 
 proc parseInt*(s: string, value: var int, validRange: Slice[int]) {.
@@ -190,3 +190,71 @@ via the following link:
 
 Thank you for registering and becoming a part of the Nim community!""" % [user, activateUrl]
   await sendMail(config, "Nim Forum Account Email Confirmation", message, email)
+
+
+
+proc pageNumber(postCount: int): int =
+  ## Find current page number
+  ##
+  ## Proc needs to be redefined. It does only support
+  ## up to 20 pages. Otherwise it just takes the first
+  ## two first digits. This will lead to a wrong page (-1)
+  ## at. 191, 201, etc.
+  case postCount
+  of 1..10: return 1
+  of 11..20:  return 2
+  of 21..30: return 3
+  of 31..40: return 4
+  of 41..50: return 5
+  of 51..60: return 6
+  of 61..70: return 7
+  of 71..80: return 8
+  of 81..90: return 9
+  of 91..100: return 10
+  of 101..110: return 11
+  of 111..120: return 12
+  of 121..130: return 13
+  of 131..140: return 14
+  of 141..150: return 15
+  of 151..160: return 16  
+  of 161..170: return 17  
+  of 171..180: return 18
+  of 181..190: return 19  
+  of 191..200: return 20  
+  else: return parseInt(($postCount).substr(0,1))
+
+
+proc sendEmailNewReply*(db: DbConn, config: Config, userID, userName, threadID, postID: string) {.async.} =
+  ## Send email to user with a new reply, to a thread they follow.
+  ## This only applies to users, who actively has enabled this feature.
+
+  let userNotify = getAllRows(db, sql"SELECT DISTINCT person.id, person.email FROM post LEFT JOIN person ON person.id = post.author WHERE person.mailNewComment = ? AND post.thread = ?;", "1", threadID)
+
+  if userNotify.len() == 0:
+    return
+
+  let postInfo = getRow(db, sql"SELECT thread.name,	post.content, person.name, post.creation, (SELECT count(DISTINCT post.id) FROM post WHERE thread = ?) AS numberOfPosts FROM post LEFT JOIN thread ON thread.id = post.thread LEFT JOIN person ON person.id = post.author WHERE thread.id = ? AND post.id = ?", threadID, threadID, postID)
+
+  var pageNumber = pageNumber(parseInt(postInfo[4]))
+
+  let message = """Hello $6,
+
+There is a new reply to thread you are following. There are now $5 replies in total.
+
+Thread: <a href="www.forum.nim-lang.org/t/$7/$9#$8">$1</a>
+
+New reply:
+- Author: $3
+- Creation: $4
+- Reply:
+$2
+
+---
+Thank you for being a part of the Nim community!""" % [postInfo[0], postInfo[1], postInfo[2], postInfo[3], postInfo[4], userName, threadID, postID, $pageNumber]
+
+  for userEmail in userNotify:
+    if userEmail[0] == userID:  # If user matches the author, then skip the mail
+      continue
+
+    await sendMail(config, "Nim Forum New reply on " & postInfo[0].substr(0,50), message, userEmail[1])
+    await sleepAsync(200)
