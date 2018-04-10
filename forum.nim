@@ -34,6 +34,7 @@ type
     postid: int
     userName, userPass, email: string
     rank: Rank
+    theme: string
 
   TPost = tuple[subject, content: string]
 
@@ -62,6 +63,7 @@ type
     activeUsers: seq[tuple[nick: string, id: int]]
 
   TUserInfo = object
+    id: string
     nick: string
     posts: int
     threads: int
@@ -83,6 +85,7 @@ var
 proc init(c: TForumData) =
   c.userPass = ""
   c.userName = ""
+  c.theme = ""
   c.threadId = unselectedThread
   c.postId = -1
 
@@ -408,10 +411,11 @@ proc checkLoggedIn(c: TForumData) =
       c.req.ip, pass)
 
     let row = getRow(db,
-      sql"select name, email, status, ban from person where id = ?", c.userid)
+      sql"select name, email, status, ban, theme from person where id = ?", c.userid)
     c.username = ||row[0]
     c.email = ||row[1]
     c.rank = parseEnum[Rank](||row[2])
+    c.theme = row[4]
     let ban = getBanErrorMsg(||row[3], c.rank)
     if ban.len > 0:
       discard c.setError("name", ban)
@@ -668,7 +672,7 @@ proc newThread(c: TForumData): bool =
 proc login(c: TForumData, name, pass: string): bool =
   # get form data:
   const query =
-    sql"select id, name, password, email, salt, status, ban from person where name = ?"
+    sql"select id, name, password, email, salt, status, ban, theme from person where name = ?"
   if name.len == 0:
     return c.setError("name", "Username cannot be nil.")
   var success = false
@@ -682,6 +686,7 @@ proc login(c: TForumData, name, pass: string): bool =
       c.username = row[1]
       c.userpass = row[2]
       c.email = row[3]
+      c.theme = row[7]
       success = true
       break
   if success:
@@ -881,28 +886,28 @@ proc genPagenumLocalNav(c: TForumData, thrid: int): string =
 proc gatherUserInfo(c: TForumData, nick: string, ui: var TUserInfo): bool =
   ui.nick = nick
   const getUIDQuery = sql"select id from person where name = ?"
-  var uid = getValue(db, getUIDQuery, nick)
-  if uid == "": return false
+  ui.id = getValue(db, getUIDQuery, nick)
+  if ui.id == "": return false
   result = true
   const totalPostsQuery =
       sql"select count(*) from post where author = ?"
-  ui.posts = getValue(db, totalPostsQuery, uid).parseInt
+  ui.posts = getValue(db, totalPostsQuery, ui.id).parseInt
   const totalThreadsQuery =
       sql("select count(*) from thread where id in (select thread from post where" &
          " author = ? and post.id in (select min(id) from post group by thread))")
 
-  ui.threads = getValue(db, totalThreadsQuery, uid).parseInt
+  ui.threads = getValue(db, totalThreadsQuery, ui.id).parseInt
   const lastOnlineQuery =
       sql"""select strftime('%s', lastOnline), email, ban, status
             from person where id = ?"""
-  let row = db.getRow(lastOnlineQuery, $uid)
+  let row = db.getRow(lastOnlineQuery, $ui.id)
   ui.lastOnline = if row[0].len > 0: row[0].parseInt else: -1
   ui.email = row[1]
   ui.ban = row[2]
   ui.rank = parseEnum[Rank](row[3])
 
   const lastIpQuery = sql"select `ip` from `session` where `userid` = ? order by `id` desc limit 1;"
-  let ipRow = db.getRow(lastIpQuery, $uid)
+  let ipRow = db.getRow(lastIpQuery, $ui.id)
   ui.lastIp = ipRow[0]
 
 include "forms.tmpl"
@@ -926,6 +931,23 @@ proc genProfile(c: TForumData, ui: TUserInfo): string =
   let t2 = if ui.lastOnline != -1: getGMTime(Time(ui.lastOnline))
            else: getGMTime(getTime())
 
+  var themes = ""
+  var customTheme = " selected "
+  for i in walkFiles(getAppDir() & "/public/css/themes/*"):
+    let themeName = splitFile(i).name & splitFile(i).ext
+    if c.theme == themeName:
+      themes.add("<option selected value=\"" & themeName & "\">" &  splitFile(i).name & "</option>")
+      customTheme = ""
+    else:
+      themes.add("<option value=\"" & themeName & "\">" &  splitFile(i).name & "</option>")
+
+  themes.add("<option value=\"style.css\">Default</option>")
+
+  if themes != "":
+    themes = """<form name="settheme" method="post" action="/profile/theme/""" & c.userid & """" id="setTheme"><select id="setTheme" name="theme">""" & themes & """</select><a href="#" onclick="document.forms['settheme'].submit()" class="button">Set theme</a></form>"""
+
+  
+
   result.add(htmlgen.`div`(id = "info",
     htmlgen.table(
       tr(
@@ -948,6 +970,12 @@ proc genProfile(c: TForumData, ui: TUserInfo): string =
       tr(
         th("Status"),
         td($ui.rank)
+      ),
+      tr(
+        th(if ui.id == c.userid: "Theme" else: ""),
+        td(if ui.id == c.userid:
+            themes
+           else: "")
       ),
       tr(
         th(if c.rank >= Moderator: "Last IP" else: ""),
@@ -1071,12 +1099,22 @@ routes:
   get "/profile/@nick/?":
     createTFD()
     cond(@"nick" != "")
+    echo "Theme: " & c.theme
     var userinfo: TUserInfo
     if gatherUserInfo(c, @"nick", userinfo):
       resp genMain(c, c.genProfile(userinfo),
                    @"nick" & "'s profile - Nim Forum")
     else:
       halt()
+
+  post "/profile/theme/@userID":
+    createTFD()
+    cond(@"userID" == c.userid)
+
+    if @"theme" == "style.css" or existsFile(getAppDir() & "/public/css/themes/" & @"theme"):
+      discard tryExec(db, sql("update person set theme = ? where id = ?"), @"theme", c.userid)
+  
+    redirect "/profile/" & c.username
 
   get "/login/?":
     createTFD()

@@ -1,26 +1,26 @@
 
 a, a * { cursor:pointer; }
 
-html { margin:0; overflow-x:auto; }
+html { margin:0; }
 body {
-    overflow-x:hidden;
-    min-width:1030px;
-    margin:0;
-    font: 13pt Helvetica,Arial,sans-serif;
-    background:#152534 url("/images/bg.png") no-repeat fixed center top; }
+  font: 13pt Helvetica,Arial,sans-serif;
+  margin:0;
+  min-width:1030px;
+  overflow-x:hidden;
+}
 
 pre {
+  background:rgba(0,0,0,.75);
+  border-left:8px solid rgba(0,0,0,.3);
   color: #F5F5F5;
-  overflow:auto;
-  margin:0;
-  padding:15px 10px;
+  font-family: "DejaVu Sans Mono", monospace;
   font-size:10pt;
   font-style:normal;
   line-height:14pt;
-  background:rgba(0,0,0,.75);
-  border-left:8px solid rgba(0,0,0,.3);
   margin-bottom: 10pt;
-  font-family: "DejaVu Sans Mono", monospace;
+  margin:0;
+  overflow:auto;
+  padding:15px 10px;
 }
 pre, pre * { cursor:text; }
 pre .Comment { color:#6D6D6D; font-style:italic; }
@@ -44,14 +44,15 @@ pre .EscapeSequence
 .page-layout { margin:0 auto; width:1000px; }
 .docs-layout { margin:0 40px; }
 .talk-layout { margin:0 40px; }
-.wide-layout { margin:0 auto; }
+.wide-layout { margin:0 auto; width: 100%;}
 
 #head {
-    height:100px;
-    margin-bottom: 40px;
-    background:url("/images/head.png") repeat-x bottom; }
+  background: #152534 url(/images/bg.png) no-repeat fixed center top;
+  height:100px;
+  margin-bottom: 40px;
+}
 #head.docs { margin-left:280px; background:rgba(0,0,0,.25) url("/images/head-fade.png") no-repeat right top; }
-#head > div { position:relative }
+#head > div { position:absolute }
 
     #head-logo {
         position:absolute;
@@ -74,14 +75,14 @@ pre .EscapeSequence
   #head.docs #head-logo-link { left:-260px; }
   #head.forum #head-logo-link { left:30px; }
 
-    #head-links { position:absolute; right:0; bottom:13px; }
+    #head-links { float: right; bottom:13px; }
     #head.docs #head-links,
     #head.forum #head-links { right:20px; }
     #head-links > a {
         display:block;
         float:left;
         padding:10px 25px 25px 25px;
-        color:rgba(255,255,255,.5);
+        color:rgb(255, 255, 255);
         font-size:14pt;
         text-decoration:none;
         letter-spacing:1px;
@@ -118,7 +119,7 @@ pre .EscapeSequence
         background:url("/images/glow-line-vert.png") no-repeat; }
 
 
-#body { z-index:1; position:relative; background:rgba(220,231,248,.6); color:black; }
+#body { z-index:1; position:relative; background:rgba(255, 255, 255, 0.6); color:black; }
 #body.docs { margin:0 40px 20px 320px; }
 #body.forum { margin:0 40px 20px 40px; min-height: 700px; }
 
@@ -128,7 +129,7 @@ pre .EscapeSequence
         left:0;
         right:0;
         height:35px;
-        background:rgba(0,0,0,.25); }
+        background:rgba(0,0,0,.85); }
 
     #body-border-left {
         position:absolute;
@@ -136,7 +137,7 @@ pre .EscapeSequence
         top:-25px;
         bottom:-25px;
         width:35px;
-        background:rgba(0,0,0,.25); }
+        background:rgba(0,0,0,.85); }
 
     #body-border-right {
         position:absolute;
@@ -144,7 +145,7 @@ pre .EscapeSequence
         top:-25px;
         bottom:-25px;
         width:35px;
-        background:rgba(0,0,0,.25); }
+        background:rgba(0,0,0,.85); }
 
     #body-border-bottom {
         position:absolute;
@@ -152,7 +153,7 @@ pre .EscapeSequence
         right:10px;
         bottom:-25px;
         height:35px;
-        background:rgba(0,0,0,.25); }
+        background:rgba(0,0,0,.85); }
 
     #body.docs #body-border,
     #body.forum #body-border { left:10px; right:10px; }
@@ -171,14 +172,14 @@ pre .EscapeSequence
         right:100px;
         height:3px;
         background:url("/images/glow-line2.png") no-repeat right; }
-
+      
     #content { padding:40px 0; }
     #content.page { width:680px; min-height:800px; padding-left:20px; }
     #content h1 { font-size:20pt; letter-spacing:1px; color:rgba(0,0,0,.75); }
     #content h2 { font-size:16pt; letter-spacing:1px; color:rgba(0,0,0,.7); margin-top:40px; }
     #content p { color: #1D1D1D; margin: 5pt 0pt; }
-    #content a { color:#CEDAE9; text-decoration:none; }
-    #content a:hover { color:#fff;  }
+    #content a { color:rgb(36, 37, 38); text-decoration:none; }
+    #content a:hover { color:rgb(79, 79, 79);  }
     #content ul { padding-left:20px; }
     #content li { margin-bottom:10px; text-align:justify; }
 
@@ -188,7 +189,7 @@ pre .EscapeSequence
     #talk-heads > .detail { width:15%; }
     #talk-heads > .activity { width:25%; }
     #talk-heads > .users { width:15%; }
-    #talk-heads > div > div { margin:0 10px 10px 10px; padding:0 10px 10px 10px; border-bottom:1px dashed rgba(0,0,0,0.4); }
+    #talk-heads > div > div { margin:0 10px 0px 10px; padding:0 10px 10px 10px; }
     #talk-heads > .topic > div { margin-left:0; }
     #talk-heads > .activity > div { margin-right:0; }
 
@@ -202,8 +203,15 @@ pre .EscapeSequence
       overflow:auto;
       border-radius:3px;
       border:8px solid rgba(0,0,0,.8);
-      border-top:none;
-      border-bottom:none;
+      border-top: 1px solid black;
+      border-bottom: 1px solid black;
+      -webkit-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75);
+      -moz-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75);
+      box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75);
+      margin-bottom: 8px;
+    }
+    #talk-thread  > div {
+      border: 1px solid rgba(0,0,0,.8);
     }
     #talk-threads > div
     {
@@ -325,9 +333,7 @@ pre .EscapeSequence
     #talk-info {
       overflow:auto;
       border-radius:3px;
-      border:8px solid rgba(0,0,0,.2);
-      border-top:none;
-      border-bottom:none;
+      border: 1px solid black;
       background:rgba(0,0,0,0.1); }
     #talk-head { margin-bottom:20px; }
     #talk-info { margin-top:20px; }
@@ -340,11 +346,11 @@ pre .EscapeSequence
     #talk-head > .user,
     #talk-info > .user { width:20%; background:rgba(0,0,0,.2); }
     #talk-head > .user-post,
-    #talk-info > .user-post { width: 15%; background:rgba(0,0,0,.2); }
+    #talk-info > .user-post { width: 15%; background:rgba(0,0,0,.63); }
     #talk-info > .user-post .reply { font-weight:bold; padding-left:22px; background:url("/images/forum-reply.png") no-repeat left; }
     #talk-info > .user-post a span
     {
-      color: #CEDAE9 !important;
+      color: rgb(238, 239, 240) !important;
     }
     #talk-info > .user-post > a > div:hover > span
     {
@@ -389,10 +395,10 @@ pre .EscapeSequence
     .forum-user-info,
     .forum-user-info * { cursor:help }
 
-#foot { height:150px; position:relative; top:-10px; letter-spacing:1px; }
+#foot { height:150px; position:relative; top:20px; letter-spacing:1px; }
 #foot.home { background:url("/images/foot.png") repeat-x top; height:200px; }
 #foot.docs { margin-left:320px; margin-right:40px; }
-#foot.forum { margin-left:40px; margin-right:40px; }
+#foot.forum { background-color: black; }
 #foot > div { position:relative; }
 #foot.home > div { width:960px; }
 #foot h4 { font-size:11pt; color:rgba(255,255,255,.4); margin:40px 0 6px 0; }
@@ -400,8 +406,8 @@ pre .EscapeSequence
 
     #foot-links { float:left; }
     #foot-links > div { float:left; padding:0 40px 0 0; line-height:120%; }
-    #foot-links a { display:block; font-size:10pt; color:rgba(255,255,255,.3); text-decoration:none; }
-    #foot-legal { float:right; font-size:10pt; color:rgba(255,255,255,.3); line-height:150%; text-align:right; }
+    #foot-links a { display:block; font-size:10pt; color:rgb(255, 255, 255);; text-decoration:none; }
+    #foot-legal { float:right; font-size:10pt; color:rgba(255,255,255); line-height:150%; text-align:right; }
     #foot-legal a { color:inherit; text-decoration:none; }
     #foot-legal > h4 > a { color:inherit; }
 
@@ -423,18 +429,10 @@ article#content
 div#sidebar
 {
   background-color: rgba(255, 255, 255, 0.1);
-
-  border-left: 8px solid rgba(0, 0, 0, 0.8);
-  border-right: 8px solid rgba(0, 0, 0, 0.8);
-  border-bottom: 8px solid rgba(0, 0, 0, 0.8);
   border-radius: 3px;
-
   width: 15%;
-  margin-top: 40px;
-
   display: inline-block;
   float: right;
-
   color: #FFF;
 }
 
@@ -444,30 +442,61 @@ div#sidebar .title
   color: #FFF;
   text-align: center;
   padding: 10pt;
+  margin-top: 25px;
+  border-left: 2px solid rgba(0, 0, 0, 0.8);
+  border-right: 2px solid rgba(0, 0, 0, 0.8);
+  border-top: 2px solid rgba(0, 0, 0, 0.8);
 }
 
 div#sidebar .content
 {
   padding: 12pt;
   overflow: auto;
-
+  background: rgba(186, 186, 186, 0.6);
+  border-left: 2px solid rgba(0, 0, 0, 0.8);
+  border-right: 2px solid rgba(0, 0, 0, 0.8);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.8);
 }
 
 div#sidebar .content .button, .runDiv>button, .runDiv>a
 {
-  background-color: rgba(0,0,0,0.2);
+  background-color: rgb(125, 129, 133);
   text-decoration: none;
   color: #FFF;
   padding: 4pt;
   float: right;
-  border-bottom: 2px solid rgba(0,0,0,0.24);
   font-size: 11pt;
   margin-top: 5pt;
+  background: #d6d6d6;
+  background-image: -webkit-linear-gradient(top, #d6d6d6, #adadad);
+  background-image: -moz-linear-gradient(top, #d6d6d6, #adadad);
+  background-image: -ms-linear-gradient(top, #d6d6d6, #adadad);
+  background-image: -o-linear-gradient(top, #d6d6d6, #adadad);
+  background-image: linear-gradient(to bottom, #d6d6d6, #adadad);
+  -webkit-border-radius: 3;
+  -moz-border-radius: 3;
+  border-radius: 3px;
+  color: #1f1f1f;
+  border: 1px solid black;
+  text-decoration: none;
+  -webkit-box-shadow: 1px 1px 2px 0px rgba(128,121,128,1);
+  -moz-box-shadow: 1px 1px 2px 0px rgba(128,121,128,1);
+  box-shadow: 1px 1px 2px 0px rgba(128,121,128,1);
+  cursor: pointer;
+}
+div#sidebar .content .button:hover
+{
+  background: #c0bcbc;
+  background-image: -webkit-linear-gradient(top, #bababa, #979797);
+  background-image: -moz-linear-gradient(top, #bababa, #979797);
+  background-image: -ms-linear-gradient(top, #bababa, #979797);
+  background-image: -o-linear-gradient(top, #bababa, #979797);
+  background-image: linear-gradient(to bottom, #bababa, #979797);
 }
 
 div#sidebar .content .button:hover
 {
-  border-bottom: 2px solid rgba(0,0,0,0.5);
+  background-color: rgb(78, 83, 87);
 }
 
 div#sidebar .content input
@@ -502,20 +531,15 @@ div#sidebar .content a.user:hover
   color: #FFF;
 }
 
-div#sidebar .user .button
+div#sidebar .user .button,
+div#sidebar .user .logout
 {
   float: left;
   margin-top: 5pt;
   width: 52.5%;
+  text-align: center;
 }
 
-div#sidebar .user .logout
-{
-  clear: left;
-  width: 52pt;
-  text-align: center;
-  margin-left: 0pt;
-}
 
 div#sidebar .user .avatar > img
 {
@@ -528,10 +552,12 @@ div#sidebar .content .search
   margin: auto;
   display: block;
   width: 95%;
+  cursor: pointer;
+  color: black;
 }
 
 div#sidebar .content a#passreset {
-  color: #CEDAE9;
+  color: rgb(36, 37, 38);
   font-size: 9pt;
   display: block;
   text-decoration: none;
@@ -542,7 +568,32 @@ div#sidebar .content a#passreset:hover {
   color: #fff;
 }
 
-
+input[type=submit] {
+  background: #d6d6d6;
+  background-image: -webkit-linear-gradient(top, #d6d6d6, #adadad);
+  background-image: -moz-linear-gradient(top, #d6d6d6, #adadad);
+  background-image: -ms-linear-gradient(top, #d6d6d6, #adadad);
+  background-image: -o-linear-gradient(top, #d6d6d6, #adadad);
+  background-image: linear-gradient(to bottom, #d6d6d6, #adadad);
+  -webkit-border-radius: 3;
+  -moz-border-radius: 3;
+  border-radius: 3px;
+  color: #1f1f1f;
+  padding: 3px 20px 3px 20px;
+  text-decoration: none;
+  -webkit-box-shadow: 1px 1px 2px 0px rgba(128,121,128,1);
+  -moz-box-shadow: 1px 1px 2px 0px rgba(128,121,128,1);
+  box-shadow: 1px 1px 2px 0px rgba(128,121,128,1);
+  cursor: pointer;
+}
+input[type=submit]:hover {
+  background: #c0bcbc;
+  background-image: -webkit-linear-gradient(top, #bababa, #979797);
+  background-image: -moz-linear-gradient(top, #bababa, #979797);
+  background-image: -ms-linear-gradient(top, #bababa, #979797);
+  background-image: -o-linear-gradient(top, #bababa, #979797);
+  background-image: linear-gradient(to bottom, #bababa, #979797);
+}
 
 span.error
 {
@@ -565,9 +616,14 @@ section#body #content span.error
 
 article#content form
 {
-  border-right: 8px solid rgba(0, 0, 0, 0.2);
   background-color: rgba(255, 255, 255, 0.1);
   padding: 10pt 20pt;
+}
+#replywrapper form {
+  border: 1px solid black;
+  -webkit-box-shadow: 0px 0px 5px 1px rgba(0,0,0,0.75);
+  -moz-box-shadow: 0px 0px 5px 1px rgba(0,0,0,0.75);
+  box-shadow: 0px 0px 5px 1px rgba(0,0,0,0.75);
 }
 
 article#content form > input, article#content form > textarea
@@ -587,10 +643,6 @@ article#content form > textarea
   height: 200px;
 }
 
-article#content form > input:focus, article#content form > textarea:focus
-{
-  border: 1px solid #1cb3ec;
-}
 
 hr
 {
@@ -689,6 +741,7 @@ img.rssfeed {
   background-color: #cbcfd6;
   padding: 2pt 10pt;
   margin-top: 10pt;
+  border: 1px solid grey;
 }
 
 #markhelp .markheading {
@@ -762,7 +815,6 @@ blockquote p {
   color: #3D3D3D !important;
   text-decoration: none !important;
 }
-
 
 /* Profile page */
 form#setTheme {

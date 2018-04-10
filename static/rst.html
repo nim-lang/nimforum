@@ -1,0 +1,170 @@
+<div>
+<h1 id="restructuredtext-cheat-sheet">reStructuredText cheat sheet</h1><p>This is a cheat sheet for the <em>reStructuredText</em> dialect as implemented by Nim&#x27;s documentation generator which has been reused for this forum.</p>
+<p>See also the <a href="http://docutils.sourceforge.net/docs/user/rst/cheatsheet.txt" class="reference external">official RST cheat sheet</a> or the <a href="http://docutils.sourceforge.net/docs/user/rst/quickref.html" class="reference external">quick reference</a> for further information.</p>
+<p>Elements of <strong>markdown</strong> are also supported.</p>
+
+<h2 id="inline-elements">Inline elements</h2><p>Ordinary text may contain <em>inline elements</em>:</p>
+<table class="docutils" border="1"><tr>
+      <th>Plain text</th>
+      <th>Result</th>
+    </tr>
+<tr>
+      <td><tt class="docutils literal"><span class="pre">*italic text*</span></tt></td>
+      <td><em>italic text</em></td>
+    </tr>
+<tr>
+      <td><tt class="docutils literal"><span class="pre">**bold text**</span></tt></td>
+      <td><strong>bold text</strong></td>
+    </tr>
+<tr>
+      <td><tt class="docutils literal"><span class="pre">***italic bold text***</span></tt></td>
+      <td><strong><em>italic bold text</em></strong></td>
+    </tr>
+<tr>
+      <td>``verbatim text ``</td>
+      <td><tt class="docutils literal"><span class="pre">verbatim text</span></tt></td>
+    </tr>
+<tr>
+      <td><tt class="docutils literal"><span class="pre">http:&#x2F;&#x2F;docutils.sf.net&#x2F;</span></tt></td>
+      <td><a href="http://docutils.sf.net" class="reference external">http:&#x2F;&#x2F;docutils.sf.net</a>&#x2F;</td>
+    </tr>
+<tr>
+      <td><tt class="docutils literal"><span class="pre">\\escape</span></tt></td>
+      <td>\escape</td>
+    </tr>
+</table>
+<h2 id="links">Links</h2><p>Links are either direct URLs like <tt class="docutils literal"><span class="pre">https:&#x2F;&#x2F;nim-lang.org</span></tt> or written like this:<pre>
+`Nim &lt;https:&#x2F;&#x2F;nim-lang.org&gt;`_</pre>
+</p>
+<p>Or like this:<pre>
+`&lt;https:&#x2F;&#x2F;nim-lang.org&gt;`_</pre>
+</p>
+
+<h2 id="code-blocks">Code blocks</h2><p>are done this way:<pre>
+.. code-block:: nim
+  
+  if x == &quot;abc&quot;:
+    echo &quot;xyz&quot;</pre>
+</p>
+<p>Is rendered as:</p>
+<pre class="listing langNim"><span class="Keyword">if</span> <span class="Identifier">x</span> <span class="Operator">==</span> <span class="StringLit">&quot;abc&quot;</span><span class="Punctuation">:</span>
+  <span class="Identifier">echo</span> <span class="StringLit">&quot;xyz&quot;</span></pre><p>Except Nim, the programming languages C, C++, Java and C# have highlighting support.</p>
+<p>An alternative github-like syntax is also supported. This has the advantage that no excessive indentation is needed:<pre>
+```nim
+  if x == &quot;abc&quot;:
+    echo &quot;xyz&quot;```</pre>
+</p>
+<p>Is rendered as:</p>
+<pre class="listing langNim"><span class="Keyword">if</span> <span class="Identifier">x</span> <span class="Operator">==</span> <span class="StringLit">&quot;abc&quot;</span><span class="Punctuation">:</span>
+  <span class="Identifier">echo</span> <span class="StringLit">&quot;xyz&quot;</span></pre>
+<h2 id="literal-blocks">Literal blocks</h2><p>Are introduced by &#x27;::&#x27; and a newline. The block is indicated by indentation:</p>
+<pre>::
+  if x == &quot;abc&quot;:
+    echo &quot;xyz&quot;</pre>
+<p>Is rendered as:<pre>
+if x == &quot;abc&quot;:
+  echo &quot;xyz&quot;</pre>
+</p>
+
+<h2 id="bullet-lists">Bullet lists</h2><p>look like this:<pre>
+* Item 1
+* Item 2 that
+  spans over multiple lines
+* Item 3
+* Item 4
+  - bullet lists may nest
+  - item 3b
+  - valid bullet characters are ``+``, ``*`` and ``-``</pre>
+</p>
+<p>Is rendered as:</p>
+<ul class="simple"><li>Item 1</li>
+<li>Item 2 that spans over multiple lines</li>
+<li>Item 3</li>
+<li>Item 4<ul class="simple"><li>bullet lists may nest</li>
+<li>item 3b</li>
+<li>valid bullet characters are <tt class="docutils literal"><span class="pre">+</span></tt>, <tt class="docutils literal"><span class="pre">*</span></tt> and <tt class="docutils literal"><span class="pre">-</span></tt></li>
+</ul>
+</li>
+</ul>
+
+<h2 id="enumerated-lists">Enumerated lists</h2><p>are written like this:<pre>
+1. This is the first item
+2. This is the second item
+3. Enumerators are arabic numbers,
+   single letters, or roman numerals
+#. This item is auto-enumerated</pre>
+</p>
+<p>Is rendered as:</p>
+<ol class="simple"><li>This is the first item</li>
+<li>This is the second item</li>
+<li>Enumerators are arabic numbers, single letters, or roman numerals</li>
+<li>This item is auto-enumerated</li>
+</ol>
+
+<h2 id="quoting-someone">Quoting someone</h2><p>quotes are just:<pre>
+**Someone said**:  Indented paragraphs,
+    
+    and they may nest.</pre>
+</p>
+<p>Is rendered as:</p>
+<blockquote><p><strong>Someone said</strong>:  Indented paragraphs,<blockquote><p>and they may nest.</p></blockquote>
+</p></blockquote>
+
+<h2 id="definition-lists">Definition lists</h2><p>are written like this:<pre>
+what
+  Definition lists associate a term with
+  a definition.
+
+how
+  The term is a one-line phrase, and the
+  definition is one or more paragraphs or
+  body elements, indented relative to the
+  term. Blank lines are not allowed
+  between term and definition.</pre>
+</p>
+<p>and look like:</p>
+<dl class="docutils"><dt>what</dt>
+<dd>Definition lists associate a term with a definition.</dd>
+<dt>how</dt>
+<dd>The term is a one-line phrase, and the definition is one or more paragraphs or body elements, indented relative to the term. Blank lines are not allowed between term and definition.</dd>
+</dl>
+
+<h2 id="tables">Tables</h2><p>Only <em>simple tables</em> are supported. They are of the form:<pre>
+==================      ===============       ===================
+header 1                header 2              header n
+==================      ===============       ===================
+Cell 1                  Cell 2                Cell 3
+Cell 4                  Cell 5; any           Cell 6
+                        cell that is
+                        not in column 1
+                        may span over
+                        multiple lines
+Cell 7                  Cell 8                Cell 9
+==================      ===============       ===================</pre>
+</p>
+<p>This results in:</p>
+<table class="docutils" border="1"><tr>
+      <th>header 1</th>
+      <th>header 2</th>
+      <th>header n</th>
+    </tr>
+<tr>
+      <td>Cell 1</td>
+      <td>Cell 2</td>
+      <td>Cell 3</td>
+    </tr>
+<tr>
+      <td>Cell 4</td>
+      <td>Cell 5; any cell that is not in column 1 may span over multiple lines</td>
+      <td>Cell 6</td>
+    </tr>
+<tr>
+      <td>Cell 7</td>
+      <td>Cell 8</td>
+      <td>Cell 9</td>
+    </tr>
+</table>
+<h2 id="images">Images</h2><p><pre class="listing langNone">
+.. image:: path&#x2F;to&#x2F;img.png
+</pre></p>
+</div>

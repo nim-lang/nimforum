@@ -762,15 +762,3 @@ blockquote p {
   color: #3D3D3D !important;
   text-decoration: none !important;
 }
-
-
-/* Profile page */
-form#setTheme {
-  border-right: none!important;
-  background-color: transparent!important;
-  padding: 0px!important;
-}
-#info select#setTheme {
-  width: 180px;
-  margin-right: 5px;
-}
