@@ -13,6 +13,9 @@ $primary-color: #2e5bec;
   margin-left: $control-padding-x;
 }
 
+table th {
+  font-size: 0.65rem;
+}
 // Spectre fixes.
 // - Weird avatar outline.
 .avatar {
