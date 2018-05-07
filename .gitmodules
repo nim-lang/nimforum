@@ -1,0 +1,3 @@
+[submodule "redesign/spectre"]
+	path = redesign/spectre
+	url = https://github.com/picturepan2/spectre
