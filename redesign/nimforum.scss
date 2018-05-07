@@ -5,6 +5,11 @@ $primary-color: #2e5bec;
 // $dark-color: #3e396b;
 $label-color: #7cd2ff;
 
+// Define nav bar colours.
+$navbar-color: #17181f;
+$navbar-border-color-dark: $navbar-color;
+$navbar-primary-color: #fee860;
+
 // Import full Spectre source code
 @import "spectre/src/spectre";
 
@@ -30,8 +35,23 @@ $navbar-height: 60px;
 $logo-height: $navbar-height - 20px;
 
 #main-navbar {
-  background-color: #17181f;
+  background-color: $navbar-color;
   height: $navbar-height;
+
+  // Unfortunately we must colour the controls in the navbar manually.
+  .form-input, .btn {
+    border-color: $navbar-border-color-dark;
+  }
+
+  .btn-primary {
+    background-color: $navbar-primary-color;
+    color: $navbar-color;
+  }
+
+  .form-input:focus, .btn:focus {
+    box-shadow: none;
+  }
+
 }
 
 #img-logo {
