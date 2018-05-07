@@ -47,3 +47,19 @@ $logo-height: $navbar-height - 20px;
   margin-bottom: $control-padding-y;
 }
 
+// - Thread table
+$super-popular-color: #f86713;
+$popular-color: darken($super-popular-color, 25%);
+$views-color: #545d70;
+
+.super-popular-text {
+  color: $super-popular-color;
+}
+
+.popular-text {
+  color: $popular-color;
+}
+
+.views-text {
+  color: $views-color;
+}
