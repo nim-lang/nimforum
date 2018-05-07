@@ -75,3 +75,25 @@ $views-color: #545d70;
   padding-right: 0.3rem;
   border-radius: 5rem;
 }
+
+.last-visit-separator {
+  td {
+    border-bottom: 1px solid $super-popular-color;
+    line-height: 0.1rem;
+    padding: 0;
+    text-align: center;
+  }
+
+  span {
+    color: $super-popular-color;
+    padding: 0 8px;
+    font-size: 0.7rem;
+    background-color: $body-bg;
+  }
+}
+
+.last-visit {
+  td {
+    border: none;
+  }
+}
