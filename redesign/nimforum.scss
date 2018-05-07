@@ -6,3 +6,23 @@ $dark-color: #3e396b;
 
 // Import full Spectre source code
 @import "spectre/src/spectre";
+
+// Custom styles.
+// - Navigation bar.
+$navbar-height: 60px;
+$logo-height: $navbar-height - 20px;
+
+#main-navbar {
+  background-color: #17181f;
+  height: $navbar-height;
+}
+
+#img-logo {
+  vertical-align: middle;
+  height: $logo-height;
+}
+
+.navbar-control {
+  margin-left: $control-padding-x;
+
+}
