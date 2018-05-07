@@ -97,3 +97,12 @@ $views-color: #545d70;
     border: none;
   }
 }
+
+.triangle {
+  width: 0;
+  height: 0;
+  border-left: 0.3rem solid transparent;
+  border-right: 0.3rem solid transparent;
+  border-bottom: 0.6rem solid #98c766;
+  display: inline-block;
+}
