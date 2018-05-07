@@ -3,6 +3,7 @@
 // Define variables to override default ones
 $primary-color: #2e5bec;
 // $dark-color: #3e396b;
+$label-color: #7cd2ff;
 
 // Import full Spectre source code
 @import "spectre/src/spectre";
@@ -16,6 +17,7 @@ $primary-color: #2e5bec;
 table th {
   font-size: 0.65rem;
 }
+
 // Spectre fixes.
 // - Weird avatar outline.
 .avatar {
@@ -62,4 +64,14 @@ $views-color: #545d70;
 
 .views-text {
   color: $views-color;
+}
+
+.label-custom {
+  color: white;
+  background-color: $label-color;
+
+  font-size: 0.6rem;
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
+  border-radius: 5rem;
 }
