@@ -13,6 +13,12 @@ $primary-color: #2e5bec;
   margin-left: $control-padding-x;
 }
 
+// Spectre fixes.
+// - Weird avatar outline.
+.avatar {
+  background: transparent;
+}
+
 // Custom styles.
 // - Navigation bar.
 $navbar-height: 60px;
@@ -37,3 +43,4 @@ $logo-height: $navbar-height - 20px;
   margin-top: $control-padding-y;
   margin-bottom: $control-padding-y;
 }
+
