@@ -7,6 +7,12 @@ $dark-color: #3e396b;
 // Import full Spectre source code
 @import "spectre/src/spectre";
 
+// Global styles.
+// - TODO: Make these non-global.
+.btn {
+  margin-left: $control-padding-x;
+}
+
 // Custom styles.
 // - Navigation bar.
 $navbar-height: 60px;
@@ -24,5 +30,10 @@ $logo-height: $navbar-height - 20px;
 
 .navbar-control {
   margin-left: $control-padding-x;
+}
 
+// - Main buttons
+#main-buttons {
+  margin-top: $control-padding-y;
+  margin-bottom: $control-padding-y;
 }
