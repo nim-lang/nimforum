@@ -249,3 +249,19 @@ blockquote {
 .quote-link {
   float: right;
 }
+
+.user-mention {
+  @extend .chip;
+  vertical-align: initial;
+  font-weight: bold;
+  display: inline-block;
+  font-size: 85%;
+  height: inherit;
+  padding: 0.08rem 0.4rem;
+  background-color: darken($bg-color-dark, 5%);
+
+  img {
+    @extend .avatar;
+    @extend .avatar-sm;
+  }
+}
