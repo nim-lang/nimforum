@@ -4,6 +4,7 @@
 $primary-color: #f99c19;
 // $dark-color: #3e396b;
 $label-color: #7cd2ff;
+$filter-color: #f1f1f1;
 
 // Define nav bar colours.
 $navbar-color: #17181f;
@@ -15,8 +16,8 @@ $navbar-primary-color: #fee860;
 
 // Global styles.
 // - TODO: Make these non-global.
-.btn {
-  margin-left: $control-padding-x;
+.btn, .form-input {
+  margin-right: $control-padding-x;
 }
 
 table th {
@@ -62,14 +63,18 @@ $logo-height: $navbar-height - 20px;
   height: $logo-height;
 }
 
-.navbar-control {
-  margin-left: $control-padding-x;
-}
-
 // - Main buttons
 #main-buttons {
   margin-top: $control-padding-y;
   margin-bottom: $control-padding-y;
+
+  .dropdown > .btn {
+    background: $filter-color;
+    border-color: darken($filter-color, 5%);
+    color: invert($filter-color);
+
+    margin-right: $control-padding-x*2;
+  }
 }
 
 // - Thread table
