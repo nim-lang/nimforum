@@ -36,7 +36,10 @@ $logo-height: $navbar-height - 20px;
 
 #main-navbar {
   background-color: $navbar-color;
-  height: $navbar-height;
+
+  .navbar {
+    height: $navbar-height;
+  }
 
   // Unfortunately we must colour the controls in the navbar manually.
   .form-input, .btn {
