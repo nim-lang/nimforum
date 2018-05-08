@@ -152,7 +152,7 @@ $views-color: #545d70;
 }
 
 .posts {
-  @extend .grid-sm;
+  @extend .grid-md;
   @extend .container;
   margin: 0;
   padding: 0;
