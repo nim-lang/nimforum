@@ -36,6 +36,22 @@ table th {
 $navbar-height: 60px;
 $logo-height: $navbar-height - 20px;
 
+.navbar-button {
+  border-color: $navbar-border-color-dark;
+  background-color: $navbar-primary-color;
+  color: $navbar-color;
+
+  &:focus {
+    box-shadow: none;
+  }
+
+  &:hover {
+    background-color: darken($navbar-primary-color, 20%);
+    color: $navbar-color;
+    border-color: $navbar-border-color-dark;
+  }
+}
+
 #main-navbar {
   background-color: $navbar-color;
 
@@ -44,17 +60,16 @@ $logo-height: $navbar-height - 20px;
   }
 
   // Unfortunately we must colour the controls in the navbar manually.
-  .form-input, .btn {
+  .form-input {
     border-color: $navbar-border-color-dark;
   }
 
-  .btn-primary {
-    background-color: $navbar-primary-color;
-    color: $navbar-color;
+  .form-input:focus {
+    box-shadow: none;
   }
 
-  .form-input:focus, .btn:focus {
-    box-shadow: none;
+  .btn-primary {
+    @extend .navbar-button;
   }
 
 }
@@ -263,5 +278,15 @@ blockquote {
   img {
     @extend .avatar;
     @extend .avatar-sm;
+  }
+}
+
+.code-buttons {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+
+  .btn-primary {
+    margin-bottom: $control-padding-y;
   }
 }
