@@ -65,8 +65,8 @@ $logo-height: $navbar-height - 20px;
 
 // - Main buttons
 #main-buttons {
-  margin-top: $control-padding-y;
-  margin-bottom: $control-padding-y;
+  margin-top: $control-padding-y*2;
+  margin-bottom: $control-padding-y*2;
 
   .dropdown > .btn {
     background: $filter-color;
