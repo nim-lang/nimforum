@@ -2,9 +2,9 @@
 // https://picturepan2.github.io/spectre/getting-started.html#installation
 // Define variables to override default ones
 $primary-color: #f99c19;
-// $dark-color: #3e396b;
+// $dark-color: #17181f;
 $label-color: #7cd2ff;
-$filter-color: #f1f1f1;
+$secondary-btn-color: #f1f1f1;
 
 // Define nav bar colours.
 $navbar-color: #17181f;
@@ -69,9 +69,9 @@ $logo-height: $navbar-height - 20px;
   margin-bottom: $control-padding-y*2;
 
   .dropdown > .btn {
-    background: $filter-color;
-    border-color: darken($filter-color, 5%);
-    color: invert($filter-color);
+    background: $secondary-btn-color;
+    border-color: darken($secondary-btn-color, 5%);
+    color: invert($secondary-btn-color);
 
     margin-right: $control-padding-x*2;
   }
@@ -133,4 +133,96 @@ $views-color: #545d70;
   border-right: 0.3rem solid transparent;
   border-bottom: 0.6rem solid #98c766;
   display: inline-block;
+}
+
+// - Thread view
+.title {
+  margin-top: $control-padding-y*2;
+  margin-bottom: $control-padding-y*2;
+
+  p {
+    font-size: 1.4rem;
+    font-weight: bold;
+
+    color: darken($dark-color, 20%);
+
+    margin: 0;
+  }
+}
+
+.posts {
+  @extend .grid-sm;
+  @extend .container;
+  margin: 0;
+}
+
+.post {
+  @extend .tile;
+}
+
+.post-icon {
+  @extend .tile-icon;
+}
+
+.post-avatar {
+  @extend .avatar;
+  @extend .avatar-xl;
+}
+
+.post-main {
+  @extend .tile-content;
+
+  margin-bottom: $control-padding-y-lg*2;
+}
+
+.post-title {
+  margin-bottom: $control-padding-y*2;
+
+  .post-username {
+    font-weight: bold;
+    display: inline-block;
+  }
+
+  .post-time {
+    float: right;
+  }
+}
+
+.post-content {
+
+}
+
+.post-buttons {
+  float: right;
+
+  > div {
+    display: inline-block;
+  }
+
+  .btn {
+    background: transparent;
+    border-color: transparent;
+    color: darken($secondary-btn-color, 40%);
+
+    margin: 0;
+    margin-left: $control-padding-y-sm;
+  }
+
+  .btn:hover {
+    background: $secondary-btn-color;
+    border-color: darken($secondary-btn-color, 5%);
+    color: invert($secondary-btn-color);
+  }
+
+  .btn:focus {
+    @include control-shadow(darken($secondary-btn-color, 50%));
+  }
+
+  .btn:active {
+    box-shadow: inset 0 0 .4rem .01rem darken($secondary-btn-color, 80%);
+  }
+
+  .like-button i {
+    color: #f783ac;
+  }
 }
