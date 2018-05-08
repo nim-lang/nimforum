@@ -154,10 +154,13 @@ $views-color: #545d70;
   @extend .grid-sm;
   @extend .container;
   margin: 0;
+  padding: 0;
 }
 
 .post {
   @extend .tile;
+  border-top: 1px solid $border-color;
+  padding-top: $control-padding-y-lg;
 }
 
 .post-icon {
