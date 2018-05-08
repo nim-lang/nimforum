@@ -290,3 +290,15 @@ blockquote {
     margin-bottom: $control-padding-y;
   }
 }
+
+.execution-result {
+  @extend .toast;
+
+  h6 {
+    font-family: $base-font-family;
+  }
+}
+
+.execution-success {
+  @extend .toast-success;
+}
