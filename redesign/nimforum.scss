@@ -2,7 +2,8 @@
 // https://picturepan2.github.io/spectre/getting-started.html#installation
 // Define variables to override default ones
 $primary-color: #f99c19;
-// $dark-color: #17181f;
+$body-font-color: #292929;
+$dark-color: #525252;
 $label-color: #7cd2ff;
 $secondary-btn-color: #f1f1f1;
 
@@ -180,7 +181,7 @@ $views-color: #545d70;
 
 .post-title {
   margin-bottom: $control-padding-y*2;
-
+  color: lighten($body-font-color, 20%);
   .post-username {
     font-weight: bold;
     display: inline-block;
@@ -228,4 +229,23 @@ $views-color: #545d70;
   .like-button i {
     color: #f783ac;
   }
+}
+
+blockquote {
+  border-left: 0.2rem solid darken($bg-color, 10%);
+  background-color: $bg-color;
+
+  .detail {
+    margin-bottom: $control-padding-y;
+    color: lighten($body-font-color, 20%);
+  }
+}
+
+.quote-avatar {
+  @extend .avatar;
+  @extend .avatar-sm;
+}
+
+.quote-link {
+  float: right;
 }
