@@ -136,19 +136,38 @@ $views-color: #545d70;
   }
 }
 
-.last-visit {
+.no-border {
   td {
     border: none;
   }
 }
 
 .triangle {
+  // TODO: Abstract this into a "category" class.
   width: 0;
   height: 0;
   border-left: 0.3rem solid transparent;
   border-right: 0.3rem solid transparent;
   border-bottom: 0.6rem solid #98c766;
   display: inline-block;
+}
+
+.load-more-separator {
+  text-align: center;
+  color: darken($label-color, 35%);
+  // $border-color: desaturate(darken($label-color, 10%), 80%);
+  // border-top: 1px solid $border-color;
+  // border-bottom: 1px solid $border-color;
+  background-color: lighten($label-color, 15%);
+  text-transform: uppercase;
+  font-weight: bold;
+  font-size: 80%;
+  cursor: pointer;
+
+  td {
+    border: none;
+    padding: $control-padding-x $control-padding-y/2;
+  }
 }
 
 // - Thread view
