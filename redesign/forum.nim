@@ -1,4 +1,5 @@
 import strformat, times, options, json
+from dom import window, Location
 
 include karax/prelude
 
@@ -7,9 +8,21 @@ import threadlist, karaxutils
 
 type
   State = ref object
+    url: Location
 
 proc newState(): State =
-  State()
+  State(
+    url: window.location
+  )
+
+var state = newState()
+proc onPopState(event: dom.Event) =
+  # This event is usually only called when the user moves back in their
+  # history. I fire it in karaxutils.anchorCB as well to ensure the URL is
+  # always updated. This should be moved into Karax in the future.
+  kout(kstring"New URL: ", window.location.href)
+  state.url = window.location
+  redraw()
 
 proc genHeader(): VNode =
   result = buildHtml(header(id="main-navbar")):
@@ -27,11 +40,13 @@ proc genHeader(): VNode =
           italic(class="fas fa-sign-in-alt")
           text " Log in"
 
-var state = newState()
-
 proc render(): VNode =
   result = buildHtml(tdiv()):
     genHeader()
-    renderThreadList()
+    if "/t/" in state.url.pathname:
+      text "</thread>"
+    else:
+      renderThreadList()
 
+window.onPopState = onPopState
 setRenderer render

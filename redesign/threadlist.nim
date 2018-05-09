@@ -95,7 +95,7 @@ when defined(js):
         td():
           if thread.isLocked:
             italic(class="fas fa-lock fa-xs")
-          text thread.topic
+          a(href=makeUri("/t/" & $thread.id), onClick=anchorCB): text thread.topic
         td():
           if thread.category.id.len > 0:
             tdiv(class="triangle",
