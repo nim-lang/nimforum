@@ -39,10 +39,12 @@ when defined(js):
   type
     State = ref object
       list: Option[ThreadList]
+      loading: bool
 
   proc newState(): State =
     State(
-      list: none[ThreadList]()
+      list: none[ThreadList](),
+      loading: false
     )
 
   var
@@ -119,6 +121,7 @@ when defined(js):
           text renderActivity(thread.activity)
 
   proc onThreadList(httpStatus: int, response: kstring) =
+    state.loading = false
     let parsed = parseJson($response)
     let list = to(parsed, ThreadList)
 
@@ -128,6 +131,11 @@ when defined(js):
       state.list.get().lastVisit = list.lastVisit
     else:
       state.list = some(list)
+
+  proc onLoadMore(ev: Event, n: VNode) =
+    state.loading = true
+    let start = state.list.get().threads.len
+    ajaxGet(baseUrl & "threads.json?start=" & $start, @[], onThreadList)
 
   proc genThreadList(): VNode =
     if state.list.isNone:
@@ -163,8 +171,12 @@ when defined(js):
 
             if list.moreCount > 0:
               tr(class="load-more-separator"):
-                td(colspan="6"):
-                  span(text "load more threads")
+                if state.loading:
+                  td(colspan="6"):
+                    tdiv(class="loading loading-lg")
+                else:
+                  td(colspan="6", onClick=onLoadMore):
+                    span(text "load more threads")
 
   proc renderThreadList*(): VNode =
     result = buildHtml(tdiv):
