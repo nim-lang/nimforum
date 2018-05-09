@@ -155,9 +155,6 @@ $views-color: #545d70;
 .load-more-separator {
   text-align: center;
   color: darken($label-color, 35%);
-  // $border-color: desaturate(darken($label-color, 10%), 80%);
-  // border-top: 1px solid $border-color;
-  // border-bottom: 1px solid $border-color;
   background-color: lighten($label-color, 15%);
   text-transform: uppercase;
   font-weight: bold;
@@ -327,6 +324,10 @@ blockquote {
   .information-title {
     font-weight: bold;
   }
+
+  &.no-border {
+    border: none;
+  }
 }
 
 .information-icon {
@@ -338,4 +339,18 @@ blockquote {
     font-size: 1rem;
 
   }
+}
+
+.time-passed {
+  text-transform: uppercase;
+}
+
+.load-more-posts {
+  text-align: center;
+  color: darken($label-color, 35%);
+  background-color: lighten($label-color, 15%);
+  border: none;
+  text-transform: uppercase;
+  font-weight: bold;
+  cursor: pointer;
 }
