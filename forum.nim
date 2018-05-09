@@ -182,26 +182,26 @@ proc toInterval(diff: int64): TimeInterval =
   remaining -= hours * 3600
   let minutes = remaining div 60
   remaining -= minutes * 60
-  result = initInterval(0, remaining.int, minutes.int, hours.int, days.int,
+  result = initInterval(remaining.int, minutes.int, hours.int, days.int,
                         months.int, years.int)
 
 proc formatTimestamp(t: int): string =
-  let t2 = Time(t)
+  let t2 = fromUnix(t)
   let now = getTime()
-  let diff = (now - t2).toInterval()
-  if diff.years > 0:
-    return getGMTime(t2).format("MMMM d',' yyyy")
-  elif diff.months > 0:
-    return $diff.months & (if diff.months > 1: " months ago" else: " month ago")
-  elif diff.days > 0:
-    return $diff.days & (if diff.days > 1: " days ago" else: " day ago")
-  elif diff.hours > 0:
-    return $diff.hours & (if diff.hours > 1: " hours ago" else: " hour ago")
-  elif diff.minutes > 0:
-    return $diff.minutes &
-        (if diff.minutes > 1: " minutes ago" else: " minute ago")
-  else:
-    return "just now"
+  # let diff = (now - t2).toInterval()
+  # if diff.years > 0:
+  #   return getGMTime(t2).format("MMMM d',' yyyy")
+  # elif diff.months > 0:
+  #   return $diff.months & (if diff.months > 1: " months ago" else: " month ago")
+  # elif diff.days > 0:
+  #   return $diff.days & (if diff.days > 1: " days ago" else: " day ago")
+  # elif diff.hours > 0:
+  #   return $diff.hours & (if diff.hours > 1: " hours ago" else: " hour ago")
+  # elif diff.minutes > 0:
+  #   return $diff.minutes &
+  #       (if diff.minutes > 1: " minutes ago" else: " minute ago")
+  # else:
+  return "just now"
 
 proc getGravatarUrl(email: string, size = 80): string =
   let emailMD5 = email.toLowerAscii.toMD5
@@ -755,9 +755,10 @@ proc getStats(c: TForumData, simple: bool): TForumStats =
       sql"select id, name, strftime('%s', lastOnline), strftime('%s', creation) from person"
     for row in fastRows(db, getUsersQuery):
       let secs = if row[3] == "": 0 else: row[3].parseint
-      let lastOnlineSeconds = getTime() - Time(secs)
-      if lastOnlineSeconds < (60 * 5): # 5 minutes
-        result.activeUsers.add((row[1], row[0].parseInt))
+      when false:
+        let lastOnlineSeconds = getTime() - Time(secs)
+        if lastOnlineSeconds < (60 * 5): # 5 minutes
+          result.activeUsers.add((row[1], row[0].parseInt))
       if row[3].parseInt > newestMemberCreation:
         result.newestMember = (row[1], row[0].parseInt)
         newestMemberCreation = row[3].parseInt
@@ -854,6 +855,7 @@ proc getPagesInThreadByID(c: TForumData, thrid: int): int =
   result = ceil(c.gatherTotalPostsByID(thrid) / PostsPerPage).int
 
 proc getThreadTitle(thrid: int, pageNum: int): string =
+  echo thrid
   result = getValue(db, sql"select name from thread where id = ?", $thrid)
   if pageNum notin {0,1}:
     result.add(" - Page " & $pageNum)
@@ -923,7 +925,7 @@ proc genProfile(c: TForumData, ui: TUserInfo): string =
     )
   )
   result.add(htmlgen.`div`(id = "avatar", genGravatar(ui.email, 250)))
-  let t2 = if ui.lastOnline != -1: getGMTime(Time(ui.lastOnline))
+  let t2 = if ui.lastOnline != -1: getGMTime(fromUnix(ui.lastOnline))
            else: getGMTime(getTime())
 
   result.add(htmlgen.`div`(id = "info",
@@ -980,6 +982,23 @@ proc prependRe(s: string): string =
            elif s.startswith("Re:"): s
            else: "Re: " & s
 
+proc initialise() =
+  randomize()
+  db = open(connection="nimforum.db", user="postgres", password="",
+              database="nimforum")
+  isFTSAvailable = db.getAllRows(sql("SELECT name FROM sqlite_master WHERE " &
+      "type='table' AND name='post_fts'")).len == 1
+  config = loadConfig()
+  if len(config.recaptchaSecretKey) > 0 and len(config.recaptchaSiteKey) > 0:
+    useCaptcha = true
+    captcha = initReCaptcha(config.recaptchaSecretKey, config.recaptchaSiteKey)
+  else:
+    useCaptcha = false
+  var http = true
+  if paramCount() > 0:
+    if paramStr(1) == "scgi":
+      http = false
+
 template createTFD() =
   var c {.inject.}: TForumData
   new(c)
@@ -991,6 +1010,9 @@ template createTFD() =
   c.config = config
   if request.cookies.len > 0:
     checkLoggedIn(c)
+
+
+initialise()
 
 routes:
   get "/":
@@ -1104,9 +1126,9 @@ routes:
 
   template handleError(action: string, topText: string, isEdit: bool) =
     if c.isPreview:
-      body.add genPostPreview(c, @"subject", @"content",
+      body().add genPostPreview(c, @"subject", @"content",
                               c.userName, $getGMTime(getTime()))
-    body.add genFormPost(c, action, topText, reuseText, reuseText, isEdit)
+    body().add genFormPost(c, action, topText, reuseText, reuseText, isEdit)
     resp genMain(c, body(), "Nim Forum - " &
                             (if c.isPreview: "Preview" else: "Error"))
 
@@ -1185,8 +1207,8 @@ routes:
     cond(@"nick" != "")
     if c.rank < Moderator:
       resp genMain(c, "You cannot delete this user's data.", "Error - Nim Forum")
-    let result = deleteAll(c, @"nick")
-    if result:
+    let res = deleteAll(c, @"nick")
+    if res:
       redirect(c.req.makeUri("/profile/" & @"nick"))
     else:
       resp genMain(c, "Failed to delete all user's posts and threads.",
@@ -1348,25 +1370,3 @@ routes:
     textPage "static/search-help"
   get "/rst":
     textPage "static/rst"
-
-when isMainModule:
-  randomize()
-  db = open(connection="nimforum.db", user="postgres", password="",
-              database="nimforum")
-  isFTSAvailable = db.getAllRows(sql("SELECT name FROM sqlite_master WHERE " &
-      "type='table' AND name='post_fts'")).len == 1
-  config = loadConfig()
-  if len(config.recaptchaSecretKey) > 0 and len(config.recaptchaSiteKey) > 0:
-    useCaptcha = true
-    captcha = initReCaptcha(config.recaptchaSecretKey, config.recaptchaSiteKey)
-  else:
-    useCaptcha = false
-  var http = true
-  if paramCount() > 0:
-    if paramStr(1) == "scgi":
-      http = false
-
-  #run("", port = TPort(9000), http = http)
-
-  runForever()
-  db.close()
