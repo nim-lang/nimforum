@@ -1050,9 +1050,10 @@ routes:
             where thread = ?
             order by creation asc limit 1;"""
     const usersListQuery =
-      sql"""select distinct name, email, strftime('%s',lastOnline)
+      sql"""select distinct name, email, strftime('%s', lastOnline)
             from person where id in
-              (select author from post where thread = ?);"""
+              (select author from post where thread = ?)
+            limit 5;""" # TODO: Order by most posts.
 
     let thrCount = getValue(db, sql"select count(*) from thread;").parseInt()
     let moreCount = max(0, thrCount - (start + count))

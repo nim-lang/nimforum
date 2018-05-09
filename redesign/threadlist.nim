@@ -40,6 +40,7 @@ when defined(js):
           img(src=user.avatarUrl, title=user.name)
           if user.isOnline:
             italic(class="avatar-presense online")
+        text " "
 
   proc renderActivity(activity: int64): string =
     let currentTime = getTime()
@@ -66,11 +67,12 @@ when defined(js):
             italic(class="fas fa-lock fa-xs")
           text thread.topic
         td():
-          tdiv(class="triangle",
-               style=style(
-                 (StyleAttr.borderBottom, kstring"0.6rem solid " & thread.category.color)
-          )):
-            text thread.category.id
+          if thread.category.id.len > 0:
+            tdiv(class="triangle",
+                 style=style(
+                   (StyleAttr.borderBottom, kstring"0.6rem solid " & thread.category.color)
+            )):
+              text thread.category.id
         genUserAvatars(thread.users)
         td(): text $thread.replies
         td(class=class({
@@ -79,7 +81,7 @@ when defined(js):
             "super-popular-text": thread.views > 5000
         })):
           if thread.views > 999:
-            text fmt"{thread.views/1000:.1f}"
+            text fmt"{thread.views/1000:.1f}k"
           else:
             text $thread.views
         td(class=class({"text-success": isNew, "text-gray": not isNew})): # TODO: Colors.
@@ -93,7 +95,7 @@ when defined(js):
             tr:
               th(text "Topic")
               th(text "Category")
-              th(text "Users")
+              th(style=style((StyleAttr.width, kstring"8rem"))): text "Users"
               th(text "Replies")
               th(text "Views")
               th(text "Activity")
@@ -103,7 +105,8 @@ when defined(js):
               let isLastVisit =
                 i+1 < list.threads.len and list.threads[i].activity < list.lastVisit
               let isNew = thread.creation < list.lastVisit
-              genThread(thread, isNew, noBorder=isLastVisit)
+              genThread(thread, isNew,
+                        noBorder=isLastVisit or i+1 == list.threads.len)
               if isLastVisit:
                 tr(class="last-visit-separator"):
                   td(colspan="6"):
