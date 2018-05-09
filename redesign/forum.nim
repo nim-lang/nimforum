@@ -33,23 +33,6 @@ proc genHeader(): VNode =
           italic(class="fas fa-sign-in-alt")
           text " Log in"
 
-proc genTopButtons(): VNode =
-  result = buildHtml():
-    section(class="navbar container grid-xl", id="main-buttons"):
-      section(class="navbar-section"):
-        tdiv(class="dropdown"):
-          a(href="#", class="btn dropdown-toggle"):
-            text "Filter "
-            italic(class="fas fa-caret-down")
-          ul(class="menu"):
-            li: text "community"
-            li: text "dev"
-        button(class="btn btn-primary"): text "Latest"
-        button(class="btn btn-link"): text "Most Active"
-        button(class="btn btn-link"): text "Categories"
-      section(class="navbar-section")
-
-
 var state = newState()
 
 proc onThreadList(httpStatus: int, response: kstring) =
