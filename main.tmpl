@@ -207,20 +207,20 @@
     <updated>${recent}</updated>
 # for row in rows(db, query, 10):
     <entry>
-        <title>${xmlEncode(%name)}</title>
-        <id>urn:entry:${%threadid}</id>
-        # let url = c.genThreadUrl(threadid = %threadid,
-        #   pageNum = $(ceil(parseInt(%postCount) / PostsPerPage).int)) &
-        #   "#" & %postId
+        <title>${xmlEncode(!name)}</title>
+        <id>urn:entry:${!threadid}</id>
+        # let url = c.genThreadUrl(threadid = !threadid,
+        #   pageNum = $(ceil(parseInt(!postCount) / PostsPerPage).int)) &
+        #   "#" & !postId
         <link rel="alternate" type="text/html"
           href="${c.req.makeUri(url)}"/>
-        <published>${%threadDate}</published>
-        <updated>${%threadDate}</updated>
-        <author><name>${xmlEncode(%postAuthor)}</name></author>
+        <published>${!threadDate}</published>
+        <updated>${!threadDate}</updated>
+        <author><name>${xmlEncode(!postAuthor)}</name></author>
         <content type="html"
->Posts ${%postCount}, ${xmlEncode(%postAuthor)} said:
+>Posts ${!postCount}, ${xmlEncode(!postAuthor)} said:
 &lt;p&gt;
-${xmlEncode(rstToHtml(%postContent))}</content>
+${xmlEncode(rstToHtml(!postContent))}</content>
     </entry>
 # end for
 </feed>
@@ -256,20 +256,20 @@ ${xmlEncode(rstToHtml(%postContent))}</content>
     <updated>${recent}</updated>
 # for row in rows(db, query, 10):
     <entry>
-        <title>${xmlEncode(%postHeader)}</title>
-        <id>urn:entry:${%postId}</id>
-        # let url = c.genThreadUrl(threadid = %postThread,
-        #   pageNum = $(ceil(parseInt(%postPosition) / PostsPerPage).int)) &
-        #   "#" & %postId
+        <title>${xmlEncode(!postHeader)}</title>
+        <id>urn:entry:${!postId}</id>
+        # let url = c.genThreadUrl(threadid = !postThread,
+        #   pageNum = $(ceil(parseInt(!postPosition) / PostsPerPage).int)) &
+        #   "#" & !postId
         <link rel="alternate" type="text/html"
           href="${c.req.makeUri(url)}"/>
-        <published>${%postRssDate}</published>
-        <updated>${%postRssDate}</updated>
-        <author><name>${xmlEncode(%postAuthor)}</name></author>
+        <published>${!postRssDate}</published>
+        <updated>${!postRssDate}</updated>
+        <author><name>${xmlEncode(!postAuthor)}</name></author>
         <content type="html"
->On ${xmlEncode(%postHumanDate)}, ${xmlEncode(%postAuthor)} said:
+>On ${xmlEncode(!postHumanDate)}, ${xmlEncode(!postAuthor)} said:
 &lt;p&gt;
-${xmlEncode(rstToHtml(%postContent))}</content>
+${xmlEncode(rstToHtml(!postContent))}</content>
     </entry>
 # end for
 </feed>

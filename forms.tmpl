@@ -1,6 +1,6 @@
 #? stdtmpl | standard
 #
-#template `%`(idx: untyped): untyped =
+#template `!`(idx: untyped): untyped =
 #  row[idx]
 #end template
 #
@@ -47,15 +47,15 @@
   <div>
     <div class="topic">
       <div>
-        <a href="${c.genThreadUrl(threadid = %threadid)}"
-           title="${xmlEncode(%name)}">${xmlEncode(%name)}</a>
-        ${genPagenumLocalNav(c, (%threadid).parseInt)}
+        <a href="${c.genThreadUrl(threadid = !threadid)}"
+           title="${xmlEncode(!name)}">${xmlEncode(!name)}</a>
+        ${genPagenumLocalNav(c, (!threadid).parseInt)}
       </div>
     </div>
 
     #let users = getAllRows(db,
     #  sql("select distinct name, email from person where id in " &
-    #      "(select author from post where thread = ?)"), %threadId)
+    #      "(select author from post where thread = ?)"), !threadId)
     <div class="users">
       <div>
         #for i in 0 .. min(6, users.len-1):
@@ -66,19 +66,19 @@
 
     #let latestReplyAuthor = getValue(db, sql("select name from person where id = " &
     #  "(select author from post where id = " &
-    #  "(select max(id) from post where thread = ?))"), %threadId)
+    #  "(select max(id) from post where thread = ?))"), !threadId)
 
     #let replyProfileUrl = c.req.makeUri("profile/", false) &
     #  xmlEncode(latestReplyAuthor)
 
-#    let posts = getValue(db, sql"select count(*) from post where thread = ?", %threadId)
+#    let posts = getValue(db, sql"select count(*) from post where thread = ?", !threadId)
     <div class="detail">
-      <div><div title="Views">${xmlEncode(%views)}</div></div>
+      <div><div title="Views">${xmlEncode(!views)}</div></div>
       <div><div title="Posts">$posts</div></div>
     </div>
 
     #let latestReplyDate = getValue(db, sql("SELECT strftime('%s', " &
-    #  "(select creation from post where id = (select max(id) from post where thread = ?)))"), %threadId)
+    #  "(select creation from post where id = (select max(id) from post where thread = ?)))"), !threadId)
     #let timeStr = formatTimestamp(latestReplyDate.parseInt())
     <div class="activity">
       <div>
@@ -150,28 +150,28 @@
 <div id="talk-thread">
 #  for row in posts:
 #    inc(count)
-  <a name="${%postId}"></a>
-  <div id="${%postId}">
+  <a name="${!postId}"></a>
+  <div id="${!postId}">
     <div class="author">
       <div>
-        #let profileUrl = c.req.makeUri("profile/", false) & xmlEncode(%userName)
-        <div class="avatar">${genGravatar(%userEmail)}</div>
-        <a class="name" href="$profileUrl">${xmlEncode(%userName)}</a>
-        #if c.userId == %postAuthor and c.currentPost.subject.len == 0:
-          <hr/><a href="${c.genThreadUrl(%postId, "edit")}">Edit post</a>
+        #let profileUrl = c.req.makeUri("profile/", false) & xmlEncode(!userName)
+        <div class="avatar">${genGravatar(!userEmail)}</div>
+        <a class="name" href="$profileUrl">${xmlEncode(!userName)}</a>
+        #if c.userId == !postAuthor and c.currentPost.subject.len == 0:
+          <hr/><a href="${c.genThreadUrl(!postId, "edit")}">Edit post</a>
         #elif c.rank >= Moderator and c.currentPost.subject.len == 0:
-          <hr/><a style="color: red;" href="${c.genThreadUrl(%postId, "edit")}">Edit post</a>
+          <hr/><a style="color: red;" href="${c.genThreadUrl(!postId, "edit")}">Edit post</a>
         #end if
       </div>
     </div>
     <div class="topic">
       <div>
         #try:
-          ${(%postContent).rstToHtml}
+          ${(!postContent).rstToHtml}
         #except EParseError:
         #  c.errorMsg = getCurrentExceptionMsg()
         #end
-        <span class="date"><a href="${c.genThreadUrl(%postId, "", $threadId, $(c.pageNum))}">${xmlEncode(%postCreation)}</a></span>
+        <span class="date"><a href="${c.genThreadUrl(!postId, "", $threadId, $(c.pageNum))}">${xmlEncode(!postCreation)}</a></span>
       </div>
     </div>
   </div>
@@ -421,43 +421,43 @@
 <div id="talk-thread" class="searchResults">
 #  for row in results():
 #    inc(count)
-#    let isThread = %what == "0"
+#    let isThread = !what == "0"
 #    inc(whCount[isThread])
-#    let postUrl = c.genThreadUrl(%postId,"",%threadId,"")
-#    let threadUrl = c.genThreadUrl("","",%threadId)
+#    let postUrl = c.genThreadUrl(!postId,"",!threadId,"")
+#    let threadUrl = c.genThreadUrl("","",!threadId)
 #    var headersDiffer = false
   <div>
     <div class="author">
       <div>
-        #let profileUrl = c.req.makeUri("profile/", false) & xmlEncode(%userName)
-        <div><a href="$profileUrl">${genGravatar(%userEmail, 40)}</a></div>
-        <div style="padding: 8px 0"><a href="$profileUrl">${xmlEncode(%userName)}</a></div>
-        #if c.userId == %postAuthor and c.currentPost.subject.len == 0:
-          <hr/><a href="${c.genThreadUrl(%postId, "edit", %threadId)}">Edit post</a>
+        #let profileUrl = c.req.makeUri("profile/", false) & xmlEncode(!userName)
+        <div><a href="$profileUrl">${genGravatar(!userEmail, 40)}</a></div>
+        <div style="padding: 8px 0"><a href="$profileUrl">${xmlEncode(!userName)}</a></div>
+        #if c.userId == !postAuthor and c.currentPost.subject.len == 0:
+          <hr/><a href="${c.genThreadUrl(!postId, "edit", !threadId)}">Edit post</a>
         #elif c.rank >= Moderator and c.currentPost.subject.len == 0:
-          <hr/><a style="color: red;" href="${c.genThreadUrl(%postId, "edit", %threadId)}">Edit post</a>
+          <hr/><a style="color: red;" href="${c.genThreadUrl(!postId, "edit", !threadId)}">Edit post</a>
         #end if
       </div>
     </div>
     <div class="topic">
       <div>
-        #if %postHeader != "":
+        #if !postHeader != "":
         <div class="postTitle">
           <span class="titleHeader">Post:</span>
           <a href="${postUrl}">
-            <span>${%postHeader}</span>
+            <span>${!postHeader}</span>
           </a>
         </div>
         #end if
         #if not isThread:
           #try:
-            ${(%postContent).rstToHtml}
+            ${(!postContent).rstToHtml}
           #except EParseError:
           #  c.errorMsg = getCurrentExceptionMsg()
-             ${xmlEncode(%postContent)}
+             ${xmlEncode(!postContent)}
           #end
         #end if
-        <span class="date">${xmlEncode(%postCreation)}</span>
+        <span class="date">${xmlEncode(!postCreation)}</span>
       </div>
     </div>
   </div>
