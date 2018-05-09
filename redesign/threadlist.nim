@@ -27,9 +27,6 @@ type
     lastVisit*: int64 ## Unix timestamp
     moreCount*: int ## How many more threads are left
 
-const
-  baseUrl = "http://localhost:5000/"
-
 when defined(js):
   include karax/prelude
   import karax / [vstyles, kajax, kdom]
@@ -135,11 +132,11 @@ when defined(js):
   proc onLoadMore(ev: Event, n: VNode) =
     state.loading = true
     let start = state.list.get().threads.len
-    ajaxGet(baseUrl & "threads.json?start=" & $start, @[], onThreadList)
+    ajaxGet("threads.json?start=" & $start, @[], onThreadList)
 
   proc genThreadList(): VNode =
     if state.list.isNone:
-      ajaxGet(baseUrl & "threads.json", @[], onThreadList)
+      ajaxGet("threads.json", @[], onThreadList)
 
       return buildHtml(tdiv(class="loading loading-lg"))
 

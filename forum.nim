@@ -1026,16 +1026,16 @@ routes:
         additionalHeaders = genRSSHeaders(c), showRssLinks = true)
     resp data
 
-  get "/karax.html":
+  get "/karax/":
     resp readFile("redesign/karax.html")
-  get "/nimforum.css":
+  get "/karax/nimforum.css":
     resp readFile("redesign/nimforum.css"), "text/css"
-  get "/nimcache/forum.js":
+  get "/karax/nimcache/forum.js":
     resp readFile("redesign/nimcache/forum.js"), "application/javascript"
-  get "/images/crown.png":
+  get "/karax/images/crown.png":
     resp readFile("redesign/images/crown.png"), "image/png"
 
-  get "/threads.json":
+  get "/karax/threads.json":
     var
       start = 0
       count = 30
