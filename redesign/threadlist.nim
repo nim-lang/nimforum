@@ -1,4 +1,4 @@
-import strformat, times
+import strformat, times, options, json
 
 type
   User* = object
@@ -27,13 +27,28 @@ type
     lastVisit*: int64 ## Unix timestamp
     moreCount*: int ## How many more threads are left
 
+const
+  baseUrl = "http://localhost:5000/"
+
 when defined(js):
   include karax/prelude
-  import karax / [vstyles]
+  import karax / [vstyles, kajax, kdom]
 
   import karaxutils
 
-  proc genTopButtons*(): VNode =
+  type
+    State = ref object
+      list: Option[ThreadList]
+
+  proc newState(): State =
+    State(
+      list: none[ThreadList]()
+    )
+
+  var
+    state = newState()
+
+  proc genTopButtons(): VNode =
     result = buildHtml():
       section(class="navbar container grid-xl", id="main-buttons"):
         section(class="navbar-section"):
@@ -103,7 +118,24 @@ when defined(js):
         td(class=class({"text-success": isNew, "text-gray": not isNew})): # TODO: Colors.
           text renderActivity(thread.activity)
 
-  proc genThreadList*(list: ThreadList): VNode =
+  proc onThreadList(httpStatus: int, response: kstring) =
+    let parsed = parseJson($response)
+    let list = to(parsed, ThreadList)
+
+    if state.list.isSome:
+      state.list.get().threads.add(list.threads)
+      state.list.get().moreCount = list.moreCount
+      state.list.get().lastVisit = list.lastVisit
+    else:
+      state.list = some(list)
+
+  proc genThreadList(): VNode =
+    if state.list.isNone:
+      ajaxGet(baseUrl & "threads.json", @[], onThreadList)
+
+      return buildHtml(tdiv(class="loading loading-lg"))
+
+    let list = state.list.get()
     result = buildHtml():
       section(class="container grid-xl"): # TODO: Rename to `.thread-list`.
         table(class="table"):
@@ -119,7 +151,8 @@ when defined(js):
             for i in 0 ..< list.threads.len:
               let thread = list.threads[i]
               let isLastVisit =
-                i+1 < list.threads.len and list.threads[i].activity < list.lastVisit
+                i+1 < list.threads.len and
+                list.threads[i].activity < list.lastVisit
               let isNew = thread.creation < list.lastVisit
               genThread(thread, isNew,
                         noBorder=isLastVisit or i+1 == list.threads.len)
@@ -132,3 +165,8 @@ when defined(js):
               tr(class="load-more-separator"):
                 td(colspan="6"):
                   span(text "load more threads")
+
+  proc renderThreadList*(): VNode =
+    result = buildHtml(tdiv):
+      genTopButtons()
+      genThreadList()
