@@ -9,7 +9,7 @@
 import
   os, strutils, times, md5, strtabs, cgi, math, db_sqlite,
   scgi, jester, asyncdispatch, asyncnet, cache, sequtils,
-  parseutils, utils, random, rst, ranks, recaptcha, json
+  parseutils, utils, random, rst, ranks, recaptcha, json, re
 
 import redesign/threadlist except User
 import redesign/[category, postlist]
@@ -1068,14 +1068,13 @@ routes:
         additionalHeaders = genRSSHeaders(c), showRssLinks = true)
     resp data
 
-  get "/karax/":
-    resp readFile("redesign/karax.html")
   get "/karax/nimforum.css":
     resp readFile("redesign/nimforum.css"), "text/css"
   get "/karax/nimcache/forum.js":
     resp readFile("redesign/nimcache/forum.js"), "application/javascript"
   get "/karax/images/crown.png":
     resp readFile("redesign/images/crown.png"), "image/png"
+
 
   get "/karax/threads.json":
     var
@@ -1154,6 +1153,8 @@ routes:
 
     resp $(%list), "application/json"
 
+  get re"/karax/(.+)?":
+    resp readFile("redesign/karax.html")
 
   get "/threadActivity.xml":
     createTFD()
