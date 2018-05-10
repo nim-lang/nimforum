@@ -1,5 +1,5 @@
 
-import options, json, times, httpcore, strformat
+import options, json, times, httpcore, strformat, sugar
 
 import threadlist, category
 type
@@ -25,6 +25,7 @@ type
                           ## older versions of the thread (title/category
                           ## changes).
     posts*: seq[Post]
+    moreCount*: int
 
 when defined(js):
   include karax/prelude
@@ -48,7 +49,7 @@ when defined(js):
   var
     state = newState()
 
-  proc onPostList(httpStatus: int, response: kstring) =
+  proc onPostList(httpStatus: int, response: kstring, start: int) =
     state.loading = false
     state.status = httpStatus.HttpCode
     if state.status != Http200: return
@@ -57,8 +58,12 @@ when defined(js):
     let list = to(parsed, PostList)
 
     if state.list.isSome and state.list.get().thread.id == list.thread.id:
-      state.list.get().posts.add(list.posts)
-      # TODO: Incorporate other possible changes?
+      var old = state.list.get()
+      for i in 0..<list.posts.len:
+        old.posts.insert(list.posts[i], i+start)
+
+      state.list = some(list)
+      state.list.get().posts = old.posts
     else:
       state.list = some(list)
 
@@ -97,12 +102,38 @@ when defined(js):
                   italic(class="fas fa-reply")
                   text " Reply"
 
+  proc onLoadMore(ev: Event, n: VNode) =
+    if state.loading: return
+
+    state.loading = true
+    let start = n.getAttr("data-start").parseInt()
+    let threadId = state.list.get().thread.id
+    let uri = makeUri("posts.json", [("start", $start), ("id", $threadId)])
+    ajaxGet(uri, @[], (s: int, r: kstring) => onPostList(s, r, start))
+
+  proc genLoadMore(start: int): VNode =
+    result = buildHtml():
+      tdiv(class="information load-more-posts",
+           onClick=onLoadMore,
+           "data-start" = $start):
+        tdiv(class="information-icon"):
+          italic(class="fas fa-comment-dots")
+        tdiv(class="information-main"):
+          if state.loading:
+            tdiv(class="loading loading-lg")
+          else:
+            tdiv(class="information-title"):
+              text "Load more posts "
+              span(class="more-post-count"):
+                text "(" & $state.list.get().moreCount & ")"
+
   proc renderPostList*(threadId: int, isLoggedIn: bool): VNode =
     if state.status != Http200:
       return renderError("Couldn't retrieve posts.")
 
     if state.list.isNone or state.list.get().thread.id != threadId:
-      ajaxGet(makeUri("posts.json?id=" & $threadId), @[], onPostList)
+      let uri = makeUri("posts.json", ("id", $threadId))
+      ajaxGet(uri, @[], (s: int, r: kstring) => onPostList(s, r, 0))
 
       return buildHtml(tdiv(class="loading loading-lg"))
 
@@ -115,3 +146,6 @@ when defined(js):
         tdiv(class="posts"):
           for post in list.posts:
             genPost(post, list.thread, isLoggedIn)
+
+          if list.moreCount > 0:
+            genLoadMore(list.posts.len)

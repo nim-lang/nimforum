@@ -25,6 +25,18 @@ proc makeUri*(relative: string, appName=appName): string =
           $window.location.search &
           $window.location.hash
 
+proc makeUri*(relative: string, params: varargs[(string, string)],
+              appName=appName): string =
+  var query = ""
+  for i in 0 ..< params.len:
+    let param = params[i]
+    if i != 0: query.add("&")
+    query.add(param[0] & "=" & param[1])
+
+  if query.len > 0:
+    makeUri(relative & "?" & query, appName)
+  else:
+    makeUri(relative, appName)
 
 proc anchorCB*(e: kdom.Event, n: VNode) = # TODO: Why does this need disamb?
   e.preventDefault()

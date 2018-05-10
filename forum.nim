@@ -1126,7 +1126,18 @@ routes:
            order by p.id limit ?, ?""" % modClause
       )
 
-    var list = PostList(posts: @[], history: @[], thread: thread)
+    let pstCount = getValue(
+      db,
+      sql"select count(*) from post where thread = ?;",
+      id
+    ).parseInt()
+    let moreCount = max(0, pstCount - (start + count))
+
+    var list = PostList(
+      posts: @[],
+      history: @[],
+      thread: thread,
+      moreCount: moreCount)
     for post in getAllRows(db, postsQuery, id, c.userId, c.userId,
                            start, count):
       list.posts.add(Post(

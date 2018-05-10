@@ -369,4 +369,15 @@ blockquote {
   text-transform: uppercase;
   font-weight: bold;
   cursor: pointer;
+
+  .information-main {
+    width: 100%;
+    text-align: left;
+  }
+
+  .more-post-count {
+    color: rgba(darken($label-color, 35%), 0.5);
+    margin-right: $control-padding-x*2;
+    float: right;
+  }
 }
