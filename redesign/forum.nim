@@ -4,7 +4,7 @@ from dom import window, Location
 include karax/prelude
 
 
-import threadlist, karaxutils
+import threadlist, postlist, karaxutils
 
 type
   State = ref object
@@ -44,7 +44,7 @@ proc render(): VNode =
   result = buildHtml(tdiv()):
     genHeader()
     if "/t/" in state.url.pathname:
-      text "</thread>"
+      renderPostList(3806, false)
     else:
       renderThreadList()
 

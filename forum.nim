@@ -12,6 +12,7 @@ import
   parseutils, utils, random, rst, ranks, recaptcha, json
 
 import redesign/threadlist except User
+import redesign/[category, postlist]
 
 when not defined(windows):
   import bcrypt # TODO
@@ -1013,6 +1014,47 @@ template createTFD() =
   if request.cookies.len > 0:
     checkLoggedIn(c)
 
+#[ DB functions. TODO: Move to another module? ]#
+
+proc selectUser(userRow: seq[string]): threadlist.User =
+  let isOnline = getTime().toUnix() - userRow[2].parseInt > (60*5)
+  return threadlist.User(
+    name: userRow[0],
+    avatarUrl: userRow[1].getGravatarUrl(),
+    isOnline: isOnline
+  )
+
+proc selectThread(threadRow: seq[string]): Thread =
+  const postsQuery =
+    sql"""select count(*), strftime('%s', creation) from post
+          where thread = ?
+          order by creation asc limit 1;"""
+  const usersListQuery =
+    sql"""select distinct name, email, strftime('%s', lastOnline)
+          from person where id in
+            (select author from post where thread = ?)
+          limit 5;""" # TODO: Order by most posts.
+
+  let posts = getRow(db, postsQuery, threadRow[0])
+
+  var thread = Thread(
+    id: threadRow[0].parseInt,
+    topic: threadRow[1],
+    category: Category(id: "", color: "#ff0000"), # TODO
+    users: @[],
+    replies: posts[0].parseInt,
+    views: threadRow[2].parseInt,
+    activity: threadRow[3].parseInt,
+    creation: posts[1].parseInt,
+    isLocked: false,
+    isSolved: false # TODO: ^ and this. Add a field to `post` to identify.
+  )
+
+  # Gather the users list.
+  for user in getAllRows(db, usersListQuery, thread.id):
+    thread.users.add(selectUser(user))
+
+  return thread
 
 initialise()
 
@@ -1037,55 +1079,70 @@ routes:
 
   get "/karax/threads.json":
     var
-      start = 0
-      count = 30
-    parseInt(@"start", start, 0..1_000_000)
-    parseInt(@"count", start, 0..1_000_000)
+      start = getInt(@"start", 0)
+      count = getInt(@"count", 30)
 
     const threadsQuery =
       sql"""select id, name, views, strftime('%s', modified) from thread
-            order by modified desc limit ?, ?;"""
-    const postsQuery =
-      sql"""select count(*), strftime('%s', creation) from post
-            where thread = ?
-            order by creation asc limit 1;"""
-    const usersListQuery =
-      sql"""select distinct name, email, strftime('%s', lastOnline)
-            from person where id in
-              (select author from post where thread = ?)
-            limit 5;""" # TODO: Order by most posts.
+            order by modified desc limit ?, ?;""" # TODO: Moderation
 
     let thrCount = getValue(db, sql"select count(*) from thread;").parseInt()
     let moreCount = max(0, thrCount - (start + count))
 
     var list = ThreadList(threads: @[], lastVisit: 0, moreCount: moreCount)
     for data in getAllRows(db, threadsQuery, start, count):
-      let posts = getRow(db, postsQuery, data[0])
-
-      var thread = Thread(
-        id: data[0].parseInt,
-        topic: data[1],
-        category: Category(id: "", color: "#ff0000"), # TODO
-        users: @[],
-        replies: posts[0].parseInt,
-        views: data[2].parseInt,
-        activity: data[3].parseInt,
-        creation: posts[1].parseInt,
-        isLocked: false,
-        isSolved: false # TODO: ^ and this. Add a field to `post` to identify.
-      )
-
-      # Gather the users list.
-      for user in getAllRows(db, usersListQuery, thread.id):
-        let isOnline = getTime().toUnix() - user[2].parseInt > (60*5)
-        thread.users.add(threadlist.User(
-          name: user[0],
-          avatarUrl: user[1].getGravatarUrl(),
-          isOnline: isOnline
-        ))
+      let thread = selectThread(data)
       list.threads.add(thread)
 
     resp $(%list), "application/json"
+
+  get "/karax/posts.json":
+    createTFD()
+    var
+      id = getInt(@"id", -1)
+      start = getInt(@"start", 0)
+      count = getInt(@"count", 5)
+    cond id != -1
+
+    const threadsQuery =
+      sql"""select id, name, views, strftime('%s', modified) from thread
+            where id = ?;"""
+
+    let threadRow = getRow(db, threadsQuery, id)
+    let thread = selectThread(threadRow)
+
+    let modClause =
+      if c.rank >= Moderator:
+        "(1 or u.id = ?)"
+      else:
+        "(u.status <> 'Moderated' or p.author = ?)"
+    let postsQuery =
+      sql(
+        """select p.id, p.content, strftime('%s', p.creation), p.author,
+                  u.name, u.email, strftime('%s', u.lastOnline)
+           from post p, person u
+           where u.id = p.author and p.thread = ? and $#
+                  and (u.status <> 'Spammer' or p.author = ?)
+           order by p.id limit ?, ?""" % modClause
+      )
+
+    var list = PostList(posts: @[], history: @[], thread: thread)
+    for post in getAllRows(db, postsQuery, id, c.userId, c.userId,
+                           start, count):
+      list.posts.add(Post(
+        id: post[0].parseInt,
+        author: selectUser(@[post[4], post[5], post[6]]),
+        likes: @[], # TODO:
+        seen: false, # TODO:
+        history: @[], # TODO:
+        info: PostInfo(
+          creation: post[2].parseInt,
+          content: post[1]
+        )
+      ))
+
+    resp $(%list), "application/json"
+
 
   get "/threadActivity.xml":
     createTFD()

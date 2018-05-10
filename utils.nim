@@ -15,6 +15,11 @@ proc parseInt*(s: string, value: var int, validRange: Slice[int]) {.
     discard
   if x in validRange: value = x
 
+proc getInt*(s: string, default = 0): int =
+  ## Safely parses an int and returns it.
+  result = default
+  parseInt(s, result, 0..1_000_000_000)
+
 type
   Config* = object
     smtpAddress: string

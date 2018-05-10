@@ -1,14 +1,12 @@
-import strformat, times, options, json
+import strformat, times, options, json, httpcore
+
+import category
 
 type
   User* = object
     name*: string
     avatarUrl*: string
     isOnline*: bool
-
-  Category* = object
-    id*: string
-    color*: string
 
   Thread* = object
     id*: int
@@ -31,17 +29,19 @@ when defined(js):
   include karax/prelude
   import karax / [vstyles, kajax, kdom]
 
-  import karaxutils
+  import karaxutils, error
 
   type
     State = ref object
       list: Option[ThreadList]
       loading: bool
+      status: HttpCode
 
   proc newState(): State =
     State(
       list: none[ThreadList](),
-      loading: false
+      loading: false,
+      status: Http200
     )
 
   var
@@ -63,16 +63,20 @@ when defined(js):
           button(class="btn btn-link"): text "Categories"
         section(class="navbar-section")
 
+  proc render*(user: User, class: string): VNode =
+    result = buildHtml():
+      figure(class=class):
+        img(src=user.avatarUrl, title=user.name)
+        if user.isOnline:
+          italic(class="avatar-presense online")
+
   proc genUserAvatars(users: seq[User]): VNode =
     result = buildHtml(td):
       for user in users:
-        figure(class="avatar avatar-sm"):
-          img(src=user.avatarUrl, title=user.name)
-          if user.isOnline:
-            italic(class="avatar-presense online")
+        render(user, "avatar avatar-sm")
         text " "
 
-  proc renderActivity(activity: int64): string =
+  proc renderActivity*(activity: int64): string =
     let currentTime = getTime()
     let activityTime = fromUnix(activity)
     let duration = currentTime - activityTime
@@ -97,12 +101,7 @@ when defined(js):
             italic(class="fas fa-lock fa-xs")
           a(href=makeUri("/t/" & $thread.id), onClick=anchorCB): text thread.topic
         td():
-          if thread.category.id.len > 0:
-            tdiv(class="triangle",
-                 style=style(
-                   (StyleAttr.borderBottom, kstring"0.6rem solid " & thread.category.color)
-            )):
-              text thread.category.id
+          render(thread.category)
         genUserAvatars(thread.users)
         td(): text $thread.replies
         td(class=class({
@@ -119,6 +118,9 @@ when defined(js):
 
   proc onThreadList(httpStatus: int, response: kstring) =
     state.loading = false
+    state.status = httpStatus.HttpCode
+    if state.status != Http200: return
+
     let parsed = parseJson($response)
     let list = to(parsed, ThreadList)
 
@@ -132,11 +134,14 @@ when defined(js):
   proc onLoadMore(ev: Event, n: VNode) =
     state.loading = true
     let start = state.list.get().threads.len
-    ajaxGet("threads.json?start=" & $start, @[], onThreadList)
+    ajaxGet(makeUri("threads.json?start=" & $start), @[], onThreadList)
 
   proc genThreadList(): VNode =
+    if state.status != Http200:
+      return renderError("Couldn't retrieve threads.")
+
     if state.list.isNone:
-      ajaxGet("threads.json", @[], onThreadList)
+      ajaxGet(makeUri("threads.json"), @[], onThreadList)
 
       return buildHtml(tdiv(class="loading loading-lg"))
 
