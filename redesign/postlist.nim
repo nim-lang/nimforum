@@ -56,7 +56,7 @@ when defined(js):
     let parsed = parseJson($response)
     let list = to(parsed, PostList)
 
-    if state.list.isSome:
+    if state.list.isSome and state.list.get().thread.id == list.thread.id:
       state.list.get().posts.add(list.posts)
       # TODO: Incorporate other possible changes?
     else:
@@ -101,7 +101,7 @@ when defined(js):
     if state.status != Http200:
       return renderError("Couldn't retrieve posts.")
 
-    if state.list.isNone:
+    if state.list.isNone or state.list.get().thread.id != threadId:
       ajaxGet(makeUri("posts.json?id=" & $threadId), @[], onPostList)
 
       return buildHtml(tdiv(class="loading loading-lg"))

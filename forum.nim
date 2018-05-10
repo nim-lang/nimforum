@@ -1046,8 +1046,8 @@ proc selectThread(threadRow: seq[string]): Thread =
     views: threadRow[2].parseInt,
     activity: threadRow[3].parseInt,
     creation: posts[1].parseInt,
-    isLocked: false,
-    isSolved: false # TODO: ^ and this. Add a field to `post` to identify.
+    isLocked: false, # TODO:
+    isSolved: false # TODO: Add a field to `post` to identify the solution.
   )
 
   # Gather the users list.

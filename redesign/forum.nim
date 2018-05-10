@@ -1,8 +1,8 @@
-import strformat, times, options, json
+import strformat, times, options, json, tables, future
 from dom import window, Location
 
 include karax/prelude
-
+import jester/patterns
 
 import threadlist, postlist, karaxutils
 
@@ -40,13 +40,32 @@ proc genHeader(): VNode =
           italic(class="fas fa-sign-in-alt")
           text " Log in"
 
+const appName = "/karax"
+type Params = Table[string, string]
+type
+  Route = object
+    n: string
+    p: proc (params: Params): VNode
+
+proc r(n: string, p: proc (params: Params): VNode): Route = Route(n: n, p: p)
+proc route(routes: openarray[Route]): VNode =
+  for route in routes:
+    let pattern = (appName & route.n).parsePattern()
+    let (matched, params) = pattern.match($state.url.pathname)
+    if matched:
+      return route.p(params)
+
 proc render(): VNode =
   result = buildHtml(tdiv()):
     genHeader()
-    if "/t/" in state.url.pathname:
-      renderPostList(3806, false)
-    else:
-      renderThreadList()
+    route([
+      r("/t/@id?",
+        (params: Params) =>
+          (kout(params["id"].cstring);
+          renderPostList(params["id"].parseInt(), false))
+      ),
+      r("/", (params: Params) => renderThreadList())
+    ])
 
 window.onPopState = onPopState
 setRenderer render
