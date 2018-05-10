@@ -1042,7 +1042,7 @@ proc selectThread(threadRow: seq[string]): Thread =
     topic: threadRow[1],
     category: Category(id: "", color: "#ff0000"), # TODO
     users: @[],
-    replies: posts[0].parseInt,
+    replies: posts[0].parseInt-1,
     views: threadRow[2].parseInt,
     activity: threadRow[3].parseInt,
     creation: posts[1].parseInt,

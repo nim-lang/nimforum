@@ -28,7 +28,7 @@ proc genHeader(): VNode =
   result = buildHtml(header(id="main-navbar")):
     tdiv(class="navbar container grid-xl"):
       section(class="navbar-section"):
-        a(href="/"):
+        a(href=makeUri("/")):
           img(src="images/crown.png", id="img-logo") # TODO: Customisation.
       section(class="navbar-section"):
         tdiv(class="input-group input-inline"):

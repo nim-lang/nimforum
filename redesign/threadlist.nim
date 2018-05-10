@@ -96,7 +96,7 @@ when defined(js):
   proc genThread(thread: Thread, isNew: bool, noBorder: bool): VNode =
     result = buildHtml():
       tr(class=class({"no-border": noBorder})):
-        td():
+        td(class="thread-title"):
           if thread.isLocked:
             italic(class="fas fa-lock fa-xs")
           a(href=makeUri("/t/" & $thread.id), onClick=anchorCB): text thread.topic

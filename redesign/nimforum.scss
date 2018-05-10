@@ -94,6 +94,17 @@ $logo-height: $navbar-height - 20px;
 }
 
 // - Thread table
+.thread-title {
+  a, a:visited, a:hover {
+    color: $body-font-color;
+    text-decoration: none;
+  }
+
+  a.visited {
+    color: lighten($body-font-color, 40%);
+  }
+}
+
 $super-popular-color: #f86713;
 $popular-color: darken($super-popular-color, 25%);
 $views-color: #545d70;
@@ -212,7 +223,12 @@ $views-color: #545d70;
 
 .post-title {
   margin-bottom: $control-padding-y*2;
-  color: lighten($body-font-color, 20%);
+
+  &, a, a:visited, a:hover {
+    color: lighten($body-font-color, 20%);
+    text-decoration: none;
+  }
+
   .post-username {
     font-weight: bold;
     display: inline-block;
@@ -253,7 +269,7 @@ $views-color: #545d70;
     box-shadow: inset 0 0 .4rem .01rem darken($secondary-btn-color, 80%);
   }
 
-  .like-button i {
+  .like-button i:hover, .like-button i.fas {
     color: #f783ac;
   }
 }
