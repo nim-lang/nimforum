@@ -60,12 +60,14 @@ $logo-height: $navbar-height - 20px;
   }
 
   // Unfortunately we must colour the controls in the navbar manually.
-  .form-input {
+  .search-input {
+    @extend .form-input;
     border-color: $navbar-border-color-dark;
   }
 
-  .form-input:focus {
+  .search-input:focus {
     box-shadow: none;
+    border-color: $navbar-border-color-dark;
   }
 
   .btn-primary {

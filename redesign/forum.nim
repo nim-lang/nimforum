@@ -25,20 +25,50 @@ proc onPopState(event: dom.Event) =
   redraw()
 
 proc genHeader(): VNode =
-  result = buildHtml(header(id="main-navbar")):
-    tdiv(class="navbar container grid-xl"):
-      section(class="navbar-section"):
-        a(href=makeUri("/")):
-          img(src="images/crown.png", id="img-logo") # TODO: Customisation.
-      section(class="navbar-section"):
-        tdiv(class="input-group input-inline"):
-          input(class="form-input input-sm", `type`="text", placeholder="search")
-        button(class="btn btn-primary btn-sm"):
-          italic(class="fas fa-user-plus")
-          text " Sign up"
-        button(class="btn btn-primary btn-sm"):
-          italic(class="fas fa-sign-in-alt")
-          text " Log in"
+  result = buildHtml(tdiv()):
+    header(id="main-navbar"):
+      tdiv(class="navbar container grid-xl"):
+        section(class="navbar-section"):
+          a(href=makeUri("/")):
+            img(src="images/crown.png", id="img-logo") # TODO: Customisation.
+        section(class="navbar-section"):
+          tdiv(class="input-group input-inline"):
+            input(class="search-input input-sm", `type`="text", placeholder="search")
+          button(class="btn btn-primary btn-sm"):
+            italic(class="fas fa-user-plus")
+            text " Sign up"
+          a(href="#login-modal"):
+            button(class="btn btn-primary btn-sm"):
+              italic(class="fas fa-sign-in-alt")
+              text " Log in"
+
+    # Modals
+    tdiv(class="modal modal-sm", id="login-modal"):
+      a(href="#", class="modal-overlay", "aria-label"="close")
+      tdiv(class="modal-container"):
+        tdiv(class="modal-header"):
+          a(href="#", class="btn btn-clear float-right", "aria-label"="close")
+          tdiv(class="modal-title h5"):
+            text "Log in"
+        tdiv(class="modal-body"):
+          tdiv(class="content"):
+            form():
+              tdiv(class="form-group"):
+                label(class="form-label", `for`="username"):
+                  text "Username"
+                input(class="form-input", `type`="text", id="username")
+              tdiv(class="form-group"):
+                label(class="form-label", `for`="password"):
+                  text "Password"
+                input(class="form-input", `type`="password", id="password")
+            button(class="btn btn-link"):
+              text "Reset your password"
+        tdiv(class="modal-footer"):
+          button(class="btn btn-primary"):
+            text "Log in"
+          button(class="btn"):
+            text "Create account"
+
 
 const appName = "/karax"
 type Params = Table[string, string]
