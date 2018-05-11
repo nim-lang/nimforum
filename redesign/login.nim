@@ -11,11 +11,13 @@ when defined(js):
   type
     LoginModal* = ref object
       shown: bool
+      loading: bool
       onLogIn: proc ()
       onSignUp: proc ()
       error: Option[PostError]
 
   proc onLogInPost(httpStatus: int, response: kstring, state: LoginModal) =
+    state.loading = false
     let status = httpStatus.HttpCode
     if status == Http200:
       state.shown = false
@@ -35,6 +37,7 @@ when defined(js):
         ))
 
   proc onLogInClick(ev: Event, n: VNode, state: LoginModal) =
+    state.loading = true
     state.error = none[PostError]()
 
     let uri = makeUri("login")
@@ -91,7 +94,10 @@ when defined(js):
               a(href="#reset-password-modal"):
                 text "Reset your password"
           tdiv(class="modal-footer"):
-            button(class="btn btn-primary",
+            button(class=class(
+                    {"loading": state.loading},
+                    "btn btn-primary"
+                   ),
                    onClick=(ev: Event, n: VNode) => onLogInClick(ev, n, state)):
               text "Log in"
             button(class="btn",
