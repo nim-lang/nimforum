@@ -1,5 +1,5 @@
 import asyncdispatch, smtp, strutils, json, os, rst, rstgen, xmltree, strtabs,
-  htmlparser, streams, parseutils
+  htmlparser, streams, parseutils, options
 from times import getTime, getGMTime, format
 
 proc parseInt*(s: string, value: var int, validRange: Slice[int]) {.
@@ -19,6 +19,11 @@ proc getInt*(s: string, default = 0): int =
   ## Safely parses an int and returns it.
   result = default
   parseInt(s, result, 0..1_000_000_000)
+
+proc `%`*[T](opt: Option[T]): JsonNode =
+  ## Generic constructor for JSON data. Creates a new ``JNull JsonNode``
+  ## if ``opt`` is empty, otherwise it delegates to the underlying value.
+  if opt.isSome: %opt.get else: newJNull()
 
 type
   Config* = object

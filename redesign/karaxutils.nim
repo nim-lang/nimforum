@@ -49,3 +49,11 @@ proc anchorCB*(e: kdom.Event, n: VNode) = # TODO: Why does this need disamb?
 
   # Fire the popState event.
   dom.window.dispatchEvent(newEvent("popstate"))
+
+
+type
+  FormData* = ref object
+proc newFormData*(form: dom.Element): FormData
+  {.importcpp: "new FormData(@)", constructor.}
+proc get*(form: FormData, key: cstring): cstring
+  {.importcpp: "#.get(@)".}

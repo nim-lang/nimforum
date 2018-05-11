@@ -7,12 +7,14 @@
 #
 
 import
-  os, strutils, times, md5, strtabs, cgi, math, db_sqlite,
+  os, strutils, times, md5, strtabs, math, db_sqlite,
   scgi, jester, asyncdispatch, asyncnet, cache, sequtils,
   parseutils, utils, random, rst, ranks, recaptcha, json, re
+import cgi except setCookie
+import options
 
 import redesign/threadlist except User
-import redesign/[category, postlist]
+import redesign/[category, postlist, error, header]
 
 when not defined(windows):
   import bcrypt # TODO
@@ -1152,6 +1154,34 @@ routes:
       ))
 
     resp $(%list), "application/json"
+
+  post "/karax/login":
+    createTFD()
+    let formData = request.formData
+    if login(c, formData["username"].body, formData["password"].body):
+      setCookie("sid", c.userpass)
+      resp Http200, "{}", "application/json"
+    else:
+      let err = PostError(
+        errorFields: @["username", "password"],
+        message: "Invalid username or password"
+      )
+      resp $(%err), "application/json"
+
+  get "/karax/status.json":
+    createTFD()
+    let user =
+      if c.loggedIn():
+        some(threadlist.User(
+          name: c.username,
+          avatarUrl: c.email.getGravatarUrl(),
+          isOnline: true
+        ))
+      else:
+        none[threadlist.User]()
+
+    let status = UserStatus(user: user)
+    resp $(%status), "application/json"
 
   get re"/karax/(.+)?":
     resp readFile("redesign/karax.html")
