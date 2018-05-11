@@ -58,6 +58,11 @@ when defined(js):
   proc show*(state: LoginModal) =
     state.shown = true
 
+  proc onKeyDown(e: Event, n: VNode, state: LoginModal) =
+    let event = cast[KeyboardEvent](e)
+    if event.key == "Enter":
+      onLogInClick(e, n, state)
+
   proc render*(state: LoginModal): VNode =
     result = buildHtml():
       tdiv(class=class({"active": state.shown}, "modal modal-sm"),
@@ -73,7 +78,8 @@ when defined(js):
               text "Log in"
           tdiv(class="modal-body"):
             tdiv(class="content"):
-              form(id="login-form"):
+              form(id="login-form",
+                   onKeyDown=(ev: Event, n: VNode) => onKeyDown(ev, n, state)):
                 genFormField(state.error, "username", "Username", "text", false)
                 genFormField(
                   state.error,
