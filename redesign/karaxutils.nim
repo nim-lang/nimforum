@@ -12,7 +12,7 @@ proc class*(classes: varargs[tuple[name: string, present: bool]],
   for class in classes:
     if class.present: result.add(class.name & " ")
 
-proc makeUri*(relative: string, appName=appName): string =
+proc makeUri*(relative: string, appName=appName, includeHash=false): string =
   ## Concatenates ``relative`` to the current URL in a way that is sane.
   var relative = relative
   assert appName in $window.location.pathname
@@ -23,10 +23,10 @@ proc makeUri*(relative: string, appName=appName): string =
           appName &
           relative &
           $window.location.search &
-          $window.location.hash
+          (if includeHash: $window.location.hash else: "")
 
 proc makeUri*(relative: string, params: varargs[(string, string)],
-              appName=appName): string =
+              appName=appName, includeHash=false): string =
   var query = ""
   for i in 0 ..< params.len:
     let param = params[i]
@@ -38,18 +38,20 @@ proc makeUri*(relative: string, params: varargs[(string, string)],
   else:
     makeUri(relative, appName)
 
+proc navigateTo*(uri: cstring) =
+  # TODO: This was annoying. Karax also shouldn't have its own `window`.
+  dom.pushState(dom.window.history, 0, cstring"", uri)
+
+  # Fire the popState event.
+  dom.window.dispatchEvent(newEvent("popstate"))
+
 proc anchorCB*(e: kdom.Event, n: VNode) = # TODO: Why does this need disamb?
   e.preventDefault()
 
   # TODO: Why does Karax have it's own Node type? That's just silly.
   let url = cast[dom.Node](n.dom).getAttribute(cstring"href")
 
-  # TODO: This was annoying. Karax also shouldn't have its own `window`.
-  dom.pushState(dom.window.history, 5, cstring"Thread", url)
-
-  # Fire the popState event.
-  dom.window.dispatchEvent(newEvent("popstate"))
-
+  navigateTo(url)
 
 type
   FormData* = ref object

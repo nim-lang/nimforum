@@ -1166,7 +1166,7 @@ routes:
         errorFields: @["username", "password"],
         message: "Invalid username or password"
       )
-      resp $(%err), "application/json"
+      resp Http403, $(%err), "application/json"
 
   get "/karax/status.json":
     createTFD()
