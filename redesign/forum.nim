@@ -46,8 +46,7 @@ proc render(): VNode =
     route([
       r("/t/@id?",
         (params: Params) =>
-          (kout(params["id"].cstring);
-          renderPostList(params["id"].parseInt(), false))
+          (renderPostList(params["id"].parseInt(), isLoggedIn()))
       ),
       r("/", (params: Params) => renderThreadList())
     ])

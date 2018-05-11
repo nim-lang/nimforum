@@ -67,6 +67,10 @@ when defined(js):
     let uri = makeUri("status.json", [("logout", $logout)])
     ajaxGet(uri, @[], onStatus)
 
+  proc isLoggedIn*(): bool =
+    let user = state.data.map(x => x.user).flatten
+    not user.isNone
+
   proc renderHeader*(): VNode =
     if state.data.isNone:
       getStatus() # TODO: Call this every render?
