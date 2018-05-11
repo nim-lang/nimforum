@@ -34,7 +34,7 @@ when defined(js):
       tdiv(class=class({"has-error": hasError}, "form-group")):
         label(class="form-label", `for`=name):
           text label
-        input(class="form-input", `type`="text", name=name)
+        input(class="form-input", `type`=typ, name=name)
 
         if not error.isNone:
           let e = error.get()
