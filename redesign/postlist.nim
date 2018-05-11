@@ -1,5 +1,5 @@
 
-import options, json, times, httpcore, strformat, sugar
+import options, json, times, httpcore, strformat, sugar, math
 
 import threadlist, category
 type
@@ -38,6 +38,7 @@ when defined(js):
       list: Option[PostList]
       loading: bool
       status: HttpCode
+      replyBoxShown: bool
 
   proc newState(): State =
     State(
@@ -127,6 +128,33 @@ when defined(js):
               span(class="more-post-count"):
                 text "(" & $state.list.get().moreCount & ")"
 
+  proc genTimePassed(prevPost: Post, post: Option[Post]): VNode =
+    var latestTime =
+      if post.isSome: post.get().info.creation.fromUnix()
+      else: getTime()
+
+    # TODO: Use `between` once it's merged into stdlib.
+    var diffStr = "Some time later"
+    let diff = latestTime - prevPost.info.creation.fromUnix()
+    if diff.weeks > 48:
+      let years = diff.weeks div 48
+      diffStr = $years & " years later"
+    elif diff.weeks > 4:
+      let months = diff.weeks div 4
+      diffStr = $months & " months later"
+    else:
+      return buildHtml(tdiv())
+
+    # PROTIP: Good thread ID to test this with is: 1267.
+    result = buildHtml():
+      tdiv(class="information time-passed"):
+        tdiv(class="information-icon"):
+          italic(class="fas fa-clock")
+        tdiv(class="information-main"):
+          tdiv(class="information-title"):
+            text diffStr
+
+
   proc renderPostList*(threadId: int, isLoggedIn: bool): VNode =
     if state.status != Http200:
       return renderError("Couldn't retrieve posts.")
@@ -144,8 +172,15 @@ when defined(js):
           p(): text list.thread.topic
           render(list.thread.category)
         tdiv(class="posts"):
+          var prevPost: Option[Post] = none[Post]()
           for post in list.posts:
+            if prevPost.isSome:
+              genTimePassed(prevPost.get(), some(post))
             genPost(post, list.thread, isLoggedIn)
+            prevPost = some(post)
+
+          if state.replyBoxShown and prevPost.isSome:
+            genTimePassed(prevPost.get(), none[Post]())
 
           if list.moreCount > 0:
             genLoadMore(list.posts.len)
