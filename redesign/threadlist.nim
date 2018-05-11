@@ -1,4 +1,4 @@
-import strformat, times, options, json, httpcore
+import strformat, times, options, json, httpcore, sugar
 
 import category
 

@@ -9,7 +9,7 @@ when defined(js):
   include karax/prelude
   import karax / [kajax]
 
-  import login, signup
+  import login, signup, usermenu
   import karaxutils
 
   from dom import setTimeout, window, document, getElementById, focus
@@ -22,12 +22,13 @@ when defined(js):
       lastUpdate: Time
       loginModal: LoginModal
       signupModal: SignupModal
+      userMenu: UserMenu
 
   proc newState(): State
   var
     state = newState()
 
-  proc getStatus
+  proc getStatus(logout: bool=false)
   proc newState(): State =
     State(
       data: none[UserStatus](),
@@ -40,6 +41,9 @@ when defined(js):
       signupModal: newSignupModal(
         () => (state.lastUpdate = fromUnix(0); getStatus()),
         () => state.loginModal.show()
+      ),
+      userMenu: newUserMenu(
+        () => (state.lastUpdate = fromUnix(0); getStatus(logout=true))
       )
     )
 
@@ -53,19 +57,19 @@ when defined(js):
 
     state.lastUpdate = getTime()
 
-  proc getStatus =
+  proc getStatus(logout: bool=false) =
     if state.loading: return
     let diff = getTime() - state.lastUpdate
     if diff.minutes < 5:
       return
 
     state.loading = true
-    let uri = makeUri("status.json")
+    let uri = makeUri("status.json", [("logout", $logout)])
     ajaxGet(uri, @[], onStatus)
 
   proc renderHeader*(): VNode =
     if state.data.isNone:
-      getStatus()
+      getStatus() # TODO: Call this every render?
 
     let user = state.data.map(x => x.user).flatten
     result = buildHtml(tdiv()): # TODO: Why do some buildHtml's need this?
@@ -91,7 +95,7 @@ when defined(js):
                 italic(class="fas fa-sign-in-alt")
                 text " Log in"
             else:
-              render(user.get(), "avatar")
+              render(state.userMenu, user.get())
 
       # Modals
       render(state.loginModal)

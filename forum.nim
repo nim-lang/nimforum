@@ -1170,8 +1170,11 @@ routes:
 
   get "/karax/status.json":
     createTFD()
+
     let user =
-      if c.loggedIn():
+      if @"logout" == "true":
+        logout(c); none[threadlist.User]()
+      elif c.loggedIn():
         some(threadlist.User(
           name: c.username,
           avatarUrl: c.email.getGravatarUrl(),

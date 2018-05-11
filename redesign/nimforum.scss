@@ -81,6 +81,13 @@ $logo-height: $navbar-height - 20px;
   height: $logo-height;
 }
 
+.menu-right {
+  // To make sure the user menu doesn't move off the screen.
+  left: auto;
+  right: 0;
+  position: absolute;
+}
+
 // - Main buttons
 #main-buttons {
   margin-top: $control-padding-y*2;
