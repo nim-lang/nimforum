@@ -31,7 +31,7 @@ when defined(js):
   include karax/prelude
   import karax / [vstyles, kajax, kdom]
 
-  import karaxutils, error
+  import karaxutils, error, replybox
 
   type
     State = ref object
@@ -39,12 +39,15 @@ when defined(js):
       loading: bool
       status: HttpCode
       replyBoxShown: bool
+      replyBox: ReplyBox
 
   proc newState(): State =
     State(
       list: none[PostList](),
       loading: false,
-      status: Http200
+      status: Http200,
+      replyBoxShown: true,
+      replyBox: newReplyBox()
     )
 
   var
@@ -156,7 +159,6 @@ when defined(js):
           tdiv(class="information-title"):
             text diffStr
 
-
   proc renderPostList*(threadId: int, isLoggedIn: bool): VNode =
     if state.status != Http200:
       return renderError("Couldn't retrieve posts.")
@@ -186,3 +188,6 @@ when defined(js):
 
           if list.moreCount > 0:
             genLoadMore(list.posts.len)
+
+          if state.replyBoxShown:
+            render(state.replyBox, list.thread)
