@@ -23,7 +23,7 @@ when defined(js):
     result = buildHtml():
       tdiv():
         figure(class="avatar c-hand",
-               onClick=(e: Event, n: VNode) => (state.shown = true)):
+               onClick=(e: Event, n: VNode) => (state.shown = not state.shown)):
           img(src=user.avatarUrl, title=user.name)
           if user.isOnline:
             italic(class="avatar-presense online")
