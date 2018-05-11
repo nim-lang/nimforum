@@ -22,7 +22,7 @@ when defined(js):
           tdiv(class="information-title"):
             # text fmt("Replying to \"{thread.topic}\"")
           # tdiv(class="information-content"):
-            tdiv(class="panel"):
+            tdiv(class="panel", id="reply-box"):
               tdiv(class="panel-nav"):
                 ul(class="tab tab-block"):
                   li(class=class({"active": not state.preview}, "tab-item")):
