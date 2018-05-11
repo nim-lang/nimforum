@@ -1,4 +1,4 @@
-import strutils
+import strutils, options
 import dom except window
 
 include karax/prelude

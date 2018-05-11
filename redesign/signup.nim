@@ -9,17 +9,16 @@ when defined(js):
   import karaxutils
 
   type
-    LoginModal* = ref object
+    SignupModal* = ref object
       shown: bool
-      onLogIn: proc ()
-      onSignUp: proc ()
+      onSignUp, onLogIn: proc ()
       error: Option[PostError]
 
-  proc onLogInPost(httpStatus: int, response: kstring, state: LoginModal) =
+  proc onSignUpPost(httpStatus: int, response: kstring, state: SignupModal) =
     let status = httpStatus.HttpCode
     if status == Http200:
       state.shown = false
-      state.onLogIn()
+      state.onSignUp()
     else:
       # TODO: Karax should pass the content-type...
       try:
@@ -34,34 +33,34 @@ when defined(js):
           message: "Unknown error occurred."
         ))
 
-  proc onLogInClick(ev: Event, n: VNode, state: LoginModal) =
+  proc onSignUpClick(ev: Event, n: VNode, state: SignupModal) =
     state.error = none[PostError]()
 
-    let uri = makeUri("login")
-    let form = dom.document.getElementById("login-form")
+    let uri = makeUri("signup")
+    let form = dom.document.getElementById("signup-form")
     # TODO: This is a hack, karax should support this.
     let formData = newFormData(form)
     ajaxPost(uri, @[], cast[cstring](formData),
-             (s: int, r: kstring) => onLogInPost(s, r, state))
+             (s: int, r: kstring) => onSignUpPost(s, r, state))
 
-  proc onClose(ev: Event, n: VNode, state: LoginModal) =
+  proc onClose(ev: Event, n: VNode, state: SignupModal) =
     state.shown = false
     ev.preventDefault()
 
-  proc newLoginModal*(onLogIn, onSignUp: proc ()): LoginModal =
-    LoginModal(
+  proc newSignupModal*(onSignUp, onLogIn: proc ()): SignupModal =
+    SignupModal(
       shown: false,
       onLogIn: onLogIn,
       onSignUp: onSignUp
     )
 
-  proc show*(state: LoginModal) =
+  proc show*(state: SignupModal) =
     state.shown = true
 
-  proc render*(state: LoginModal): VNode =
+  proc render*(state: SignupModal): VNode =
     result = buildHtml():
       tdiv(class=class({"active": state.shown}, "modal modal-sm"),
-           id="login-modal"):
+           id="signup-modal"):
         a(href="", class="modal-overlay", "aria-label"="close",
           onClick=(ev: Event, n: VNode) => onClose(ev, n, state))
         tdiv(class="modal-container"):
@@ -70,10 +69,11 @@ when defined(js):
               "aria-label"="close",
               onClick=(ev: Event, n: VNode) => onClose(ev, n, state))
             tdiv(class="modal-title h5"):
-              text "Log in"
+              text "Create a new account"
           tdiv(class="modal-body"):
             tdiv(class="content"):
-              form(id="login-form"):
+              form(id="signup-form"):
+                genFormField(state.error, "email", "Email", "email", false)
                 genFormField(state.error, "username", "Username", "text", false)
                 genFormField(
                   state.error,
@@ -82,13 +82,11 @@ when defined(js):
                   "password",
                   true
                 )
-              a(href="#reset-password-modal"):
-                text "Reset your password"
           tdiv(class="modal-footer"):
             button(class="btn btn-primary",
-                   onClick=(ev: Event, n: VNode) => onLogInClick(ev, n, state)):
-              text "Log in"
+                  onClick=(ev: Event, n: VNode) => onSignUpClick(ev, n, state)):
+              text "Create account"
             button(class="btn",
                    onClick=(ev: Event, n: VNode) =>
-                    (state.onSignUp(); state.shown = false)):
-              text "Create account"
+                    (state.onLogIn(); state.shown = false)):
+              text "Log in"
