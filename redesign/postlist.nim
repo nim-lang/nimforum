@@ -138,10 +138,12 @@ when defined(js):
     let diff = latestTime - prevPost.info.creation.fromUnix()
     if diff.weeks > 48:
       let years = diff.weeks div 48
-      diffStr = $years & " years later"
+      diffStr = $years
+      diffStr.add(if years == 1: " year later" else: " years later")
     elif diff.weeks > 4:
       let months = diff.weeks div 4
-      diffStr = $months & " months later"
+      diffStr = $months
+      diffStr.add(if months == 1: " month later" else: " months later")
     else:
       return buildHtml(tdiv())
 
