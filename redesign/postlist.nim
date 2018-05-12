@@ -174,9 +174,10 @@ when defined(js):
             genPost(post, list.thread, isLoggedIn)
             prevPost = some(post)
 
-          if list.moreCount > 0:
+          let hasMore = list.moreCount > 0
+          if hasMore:
             genLoadMore(list.posts.len)
           elif prevPost.isSome:
             genTimePassed(prevPost.get(), none[Post]())
 
-          render(state.replyBox, list.thread, state.replyingTo)
+          render(state.replyBox, list.thread, state.replyingTo, hasMore)

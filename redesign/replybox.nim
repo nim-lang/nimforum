@@ -31,12 +31,13 @@ when defined(js):
 
     state.shown = true
 
-  proc render*(state: ReplyBox, thread: Thread, post: Option[Post]): VNode =
+  proc render*(state: ReplyBox, thread: Thread, post: Option[Post],
+               hasMore: bool): VNode =
     if not state.shown:
       return buildHtml(tdiv(id="reply-box"))
 
     result = buildHtml():
-      tdiv(class="information no-border", id="reply-box"):
+      tdiv(class=class({"no-border": hasMore}, "information"), id="reply-box"):
         tdiv(class="information-icon"):
           italic(class="fas fa-reply")
         tdiv(class="information-main", style=style(StyleAttr.width, "100%")):
