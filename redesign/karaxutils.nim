@@ -56,7 +56,11 @@ proc anchorCB*(e: kdom.Event, n: VNode) = # TODO: Why does this need disamb?
 
 type
   FormData* = ref object
+proc newFormData*(): FormData
+  {.importcpp: "new FormData()", constructor.}
 proc newFormData*(form: dom.Element): FormData
   {.importcpp: "new FormData(@)", constructor.}
 proc get*(form: FormData, key: cstring): cstring
   {.importcpp: "#.get(@)".}
+proc append*(form: FormData, key, val: cstring)
+  {.importcpp: "#.append(@)".}

@@ -1,7 +1,7 @@
 import strformat
 
 import threadlist
-import karaxutils
+
 
 type
   PostInfo* = object
@@ -20,5 +20,8 @@ type
                             ## older versions of the post.
     info*: PostInfo
 
-proc renderPostUrl*(post: Post, thread: Thread): string =
-  makeUri(fmt"/t/{thread.id}#{post.id}")
+
+when defined(js):
+  import karaxutils
+  proc renderPostUrl*(post: Post, thread: Thread): string =
+    makeUri(fmt"/t/{thread.id}#{post.id}")

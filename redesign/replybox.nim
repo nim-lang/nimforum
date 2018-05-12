@@ -1,20 +1,26 @@
 when defined(js):
-  import strformat, options
+  import strformat, options, httpcore, json, sugar
 
   from dom import getElementById, scrollIntoView, setTimeout
 
   include karax/prelude
   import karax / [vstyles, kajax, kdom]
 
-  import karaxutils, threadlist, post
+  import karaxutils, threadlist, post, error
 
   type
     ReplyBox* = ref object
       shown: bool
+      text: kstring
       preview: bool
+      loading: bool
+      error: Option[PostError]
+      rendering: Option[kstring]
 
   proc newReplyBox*(): ReplyBox =
-    ReplyBox()
+    ReplyBox(
+      text: ""
+    )
 
   proc performScroll() =
     let replyBox = dom.document.getElementById("reply-box")
@@ -30,6 +36,39 @@ when defined(js):
       performScroll()
 
     state.shown = true
+
+  proc onPreviewPost(httpStatus: int, response: kstring, state: ReplyBox) =
+    let status = httpStatus.HttpCode
+    if status == Http200:
+      kout(response)
+      state.rendering = some[kstring](response)
+    else:
+      # TODO: login has similar code, abstract this.
+      try:
+        let parsed = parseJson($response)
+        let error = to(parsed, PostError)
+
+        state.error = some(error)
+      except:
+        kout(getCurrentExceptionMsg().cstring)
+        state.error = some(PostError(
+          errorFields: @[],
+          message: "Unknown error occurred."
+        ))
+
+  proc onPreviewClick(e: Event, n: VNode, state: ReplyBox) =
+    state.preview = true
+
+    let formData = newFormData()
+    formData.append("msg", state.text)
+    let uri = makeUri("/preview")
+    ajaxPost(uri, @[], cast[cstring](formData),
+             (s: int, r: kstring) => onPreviewPost(s, r, state))
+
+  proc onChange(e: Event, n: VNode, state: ReplyBox) =
+    # TODO: There should be a karax-way to do this. I guess I can just call
+    # `value` on the node? We need to document this better :)
+    state.text = cast[dom.TextAreaElement](n.dom).value
 
   proc render*(state: ReplyBox, thread: Thread, post: Option[Post],
                hasMore: bool): VNode =
@@ -56,14 +95,26 @@ when defined(js):
             tdiv(class="panel"):
               tdiv(class="panel-nav"):
                 ul(class="tab tab-block"):
-                  li(class=class({"active": not state.preview}, "tab-item")):
-                    a(href="#"):
+                  li(class=class({"active": not state.preview}, "tab-item"),
+                     onClick=(e: Event, n: VNode) => (state.preview = false)):
+                    a(class="c-hand"):
                       text "Message"
-                  li(class=class({"active": state.preview}, "tab-item")):
-                    a(href="#"):
+                  li(class=class({"active": state.preview}, "tab-item"),
+                     onClick=(e: Event, n: VNode) =>
+                        onPreviewClick(e, n, state)):
+                    a(class="c-hand"):
                       text "Preview"
               tdiv(class="panel-body"):
-                textarea(class="form-input", rows="5")
+                if state.preview:
+                  if state.loading:
+                    tdiv(class="loading")
+                  elif state.rendering.isSome():
+                    verbatim(state.rendering.get())
+                else:
+                  textarea(class="form-input", rows="5",
+                           onChange=(e: Event, n: VNode) =>
+                              onChange(e, n, state),
+                           value=state.text)
               tdiv(class="panel-footer"):
                 button(class="btn btn-primary float-right"):
                   text "Reply"

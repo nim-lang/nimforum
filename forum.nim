@@ -14,7 +14,7 @@ import cgi except setCookie
 import options
 
 import redesign/threadlist except User
-import redesign/[category, postlist, error, header]
+import redesign/[category, postlist, error, header, post]
 
 when not defined(windows):
   import bcrypt # TODO
@@ -1185,6 +1185,29 @@ routes:
 
     let status = UserStatus(user: user)
     resp $(%status), "application/json"
+
+  post "/karax/preview":
+    createTFD()
+    if not c.loggedIn():
+      let err = PostError(
+        errorFields: @[],
+        message: "Not logged in."
+      )
+      resp Http401, $(%err), "application/json"
+
+    let formData = request.formData
+    cond "msg" in formData
+
+    let msg = formData["msg"].body
+    try:
+      let rendered = msg.rstToHtml()
+      resp Http200, rendered
+    except EParseError:
+      let err = PostError(
+        errorFields: @[],
+        message: getCurrentExceptionMsg()
+      )
+      resp Http400, $(%err), "application/json"
 
   get re"/karax/(.+)?":
     resp readFile("redesign/karax.html")
