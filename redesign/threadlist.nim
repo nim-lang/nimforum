@@ -86,7 +86,7 @@ when defined(js):
     let currentTime = getTime()
     let activityTime = fromUnix(activity)
     let duration = currentTime - activityTime
-    if duration.days > 300:
+    if currentTime.local().year != activityTime.local().year:
       return activityTime.local().format("MMM yyyy")
     elif duration.days > 30 and duration.days < 300:
       return activityTime.local().format("MMM dd")
