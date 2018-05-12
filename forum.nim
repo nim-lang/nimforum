@@ -1149,7 +1149,7 @@ routes:
         history: @[], # TODO:
         info: PostInfo(
           creation: post[2].parseInt,
-          content: post[1]
+          content: post[1].rstToHtml()
         )
       ))
 

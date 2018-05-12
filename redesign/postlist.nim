@@ -76,7 +76,7 @@ when defined(js):
               a(href=renderPostUrl(post, thread), title=title):
                 text renderActivity(post.info.creation)
           tdiv(class="post-content"):
-            p(text post.info.content) # TODO: RSTGEN
+            verbatim(post.info.content)
           tdiv(class="post-buttons"):
             tdiv(class="like-button"):
               button(class="btn"):
