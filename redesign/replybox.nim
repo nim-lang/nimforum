@@ -47,6 +47,11 @@ when defined(js):
             else:
               text "Replying to "
               renderUserMention(post.get().author)
+              tdiv(class="post-buttons",
+                   style=style(StyleAttr.marginTop, "-0.3rem")):
+                a(href=renderPostUrl(post.get(), thread)):
+                  button(class="btn"):
+                    italic(class="fas fa-arrow-up")
           tdiv(class="information-content"):
             tdiv(class="panel"):
               tdiv(class="panel-nav"):

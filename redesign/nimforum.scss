@@ -213,6 +213,19 @@ $views-color: #545d70;
   @extend .tile;
   border-top: 1px solid $border-color;
   padding-top: $control-padding-y-lg;
+
+  &:target .post-main {
+    animation: highlight 2000ms ease-out;
+  }
+}
+
+@keyframes highlight {
+  0% {
+    background-color: lighten($primary-color, 20%);
+  }
+  100% {
+    background-color: inherit;
+  }
 }
 
 .post-icon {

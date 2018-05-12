@@ -56,9 +56,6 @@ when defined(js):
     else:
       state.list = some(list)
 
-  proc renderPostUrl(post: Post, thread: Thread): string =
-    makeUri(fmt"/t/{thread.id}/p/{post.id}")
-
   proc onReplyClick(e: Event, n: VNode, p: Option[Post]) =
     state.replyingTo = p
     state.replyBox.show()
@@ -66,7 +63,7 @@ when defined(js):
   proc genPost(post: Post, thread: Thread, isLoggedIn: bool): VNode =
     let postCopy = post # TODO: Another workaround here, closure capture :(
     result = buildHtml():
-      tdiv(class="post"):
+      tdiv(class="post", id = $post.id):
         tdiv(class="post-icon"):
           render(post.author, "post-avatar")
         tdiv(class="post-main"):

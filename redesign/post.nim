@@ -1,4 +1,7 @@
+import strformat
+
 import threadlist
+import karaxutils
 
 type
   PostInfo* = object
@@ -16,3 +19,6 @@ type
     history*: seq[PostInfo] ## If the post was edited this will contain the
                             ## older versions of the post.
     info*: PostInfo
+
+proc renderPostUrl*(post: Post, thread: Thread): string =
+  makeUri(fmt"/t/{thread.id}#{post.id}")
