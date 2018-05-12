@@ -70,6 +70,12 @@ when defined(js):
         if user.isOnline:
           italic(class="avatar-presense online")
 
+  proc renderUserMention*(user: User): VNode =
+    result = buildHtml():
+      # TODO: Add URL to profile.
+      span(class="user-mention"):
+           text "@" & user.name
+
   proc genUserAvatars(users: seq[User]): VNode =
     result = buildHtml(td):
       for user in users:

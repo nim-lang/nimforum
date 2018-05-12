@@ -1,28 +1,53 @@
 when defined(js):
-  import strformat
+  import strformat, options
+
+  from dom import getElementById, scrollIntoView, setTimeout
 
   include karax/prelude
   import karax / [vstyles, kajax, kdom]
 
-  import karaxutils, threadlist
+  import karaxutils, threadlist, post
 
   type
     ReplyBox* = ref object
+      shown: bool
       preview: bool
 
   proc newReplyBox*(): ReplyBox =
     ReplyBox()
 
-  proc render*(state: ReplyBox, thread: Thread): VNode =
+  proc performScroll() =
+    let replyBox = dom.document.getElementById("reply-box")
+    replyBox.scrollIntoView(false)
+
+  proc show*(state: ReplyBox) =
+    # Scroll to the reply box.
+    if not state.shown:
+      # TODO: It would be nice for Karax to give us an event when it renders
+      # things. That way we can remove this crappy hack.
+      discard dom.window.setTimeout(performScroll, 50)
+    else:
+      performScroll()
+
+    state.shown = true
+
+  proc render*(state: ReplyBox, thread: Thread, post: Option[Post]): VNode =
+    if not state.shown:
+      return buildHtml(tdiv(id="reply-box"))
+
     result = buildHtml():
-      tdiv(class="information no-border"):
+      tdiv(class="information no-border", id="reply-box"):
         tdiv(class="information-icon"):
           italic(class="fas fa-reply")
         tdiv(class="information-main", style=style(StyleAttr.width, "100%")):
           tdiv(class="information-title"):
-            # text fmt("Replying to \"{thread.topic}\"")
-          # tdiv(class="information-content"):
-            tdiv(class="panel", id="reply-box"):
+            if post.isNone:
+              text fmt("Replying to \"{thread.topic}\"")
+            else:
+              text "Replying to "
+              renderUserMention(post.get().author)
+          tdiv(class="information-content"):
+            tdiv(class="panel"):
               tdiv(class="panel-nav"):
                 ul(class="tab tab-block"):
                   li(class=class({"active": not state.preview}, "tab-item")):

@@ -13,7 +13,8 @@ proc class*(classes: varargs[tuple[name: string, present: bool]],
     if class.present: result.add(class.name & " ")
 
 proc makeUri*(relative: string, appName=appName, includeHash=false): string =
-  ## Concatenates ``relative`` to the current URL in a way that is sane.
+  ## Concatenates ``relative`` to the current URL in a way that is
+  ## (possibly) sane.
   var relative = relative
   assert appName in $window.location.pathname
   if relative[0] == '/': relative = relative[1..^1]

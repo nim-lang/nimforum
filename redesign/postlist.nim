@@ -1,23 +1,8 @@
 
 import options, json, times, httpcore, strformat, sugar, math
 
-import threadlist, category
+import threadlist, category, post
 type
-  PostInfo* = object
-    creation*: int64
-    content*: string
-
-  Post* = object
-    id*: int
-    author*: User
-    likes*: seq[User] ## Users that liked this post.
-    seen*: bool ## Determines whether the current user saw this post.
-                ## I considered using a simple timestamp for each thread,
-                ## but that wouldn't work when a user navigates to the last
-                ## post in a thread for example.
-    history*: seq[PostInfo] ## If the post was edited this will contain the
-                            ## older versions of the post.
-    info*: PostInfo
 
   PostList* = ref object
     thread*: Thread
@@ -38,7 +23,7 @@ when defined(js):
       list: Option[PostList]
       loading: bool
       status: HttpCode
-      replyBoxShown: bool
+      replyingTo: Option[Post]
       replyBox: ReplyBox
 
   proc newState(): State =
@@ -46,7 +31,7 @@ when defined(js):
       list: none[PostList](),
       loading: false,
       status: Http200,
-      replyBoxShown: true,
+      replyingTo: none[Post](),
       replyBox: newReplyBox()
     )
 
@@ -74,7 +59,12 @@ when defined(js):
   proc renderPostUrl(post: Post, thread: Thread): string =
     makeUri(fmt"/t/{thread.id}/p/{post.id}")
 
+  proc onReplyClick(e: Event, n: VNode, p: Option[Post]) =
+    state.replyingTo = p
+    state.replyBox.show()
+
   proc genPost(post: Post, thread: Thread, isLoggedIn: bool): VNode =
+    let postCopy = post # TODO: Another workaround here, closure capture :(
     result = buildHtml():
       tdiv(class="post"):
         tdiv(class="post-icon"):
@@ -102,7 +92,8 @@ when defined(js):
                 button(class="btn"):
                   italic(class="far fa-flag")
               tdiv(class="reply-button"):
-                button(class="btn"):
+                button(class="btn", onClick=(e: Event, n: VNode) =>
+                       onReplyClick(e, n, some(postCopy))):
                   italic(class="fas fa-reply")
                   text " Reply"
 
@@ -183,11 +174,9 @@ when defined(js):
             genPost(post, list.thread, isLoggedIn)
             prevPost = some(post)
 
-          if state.replyBoxShown and prevPost.isSome:
-            genTimePassed(prevPost.get(), none[Post]())
-
           if list.moreCount > 0:
             genLoadMore(list.posts.len)
+          elif prevPost.isSome:
+            genTimePassed(prevPost.get(), none[Post]())
 
-          if state.replyBoxShown:
-            render(state.replyBox, list.thread)
+          render(state.replyBox, list.thread, state.replyingTo)
