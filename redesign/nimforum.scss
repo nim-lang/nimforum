@@ -241,6 +241,9 @@ $views-color: #545d70;
   @extend .tile-content;
 
   margin-bottom: $control-padding-y-lg*2;
+  // https://stackoverflow.com/a/41675912/492186
+  flex: 1;
+  min-width: 0;
 }
 
 .post-title {
