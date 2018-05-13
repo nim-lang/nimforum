@@ -10,7 +10,6 @@ type
                           ## older versions of the thread (title/category
                           ## changes).
     posts*: seq[Post]
-    moreCount*: int
 
 when defined(js):
   include karax/prelude
@@ -38,7 +37,7 @@ when defined(js):
   var
     state = newState()
 
-  proc onPostList(httpStatus: int, response: kstring, start: int) =
+  proc onPostList(httpStatus: int, response: kstring) =
     state.loading = false
     state.status = httpStatus.HttpCode
     if state.status != Http200: return
@@ -46,19 +45,61 @@ when defined(js):
     let parsed = parseJson($response)
     let list = to(parsed, PostList)
 
-    if state.list.isSome and state.list.get().thread.id == list.thread.id:
-      var old = state.list.get()
-      for i in 0..<list.posts.len:
-        old.posts.insert(list.posts[i], i+start)
+    state.list = some(list)
 
-      state.list = some(list)
-      state.list.get().posts = old.posts
-    else:
-      state.list = some(list)
+  proc onMorePosts(httpStatus: int, response: kstring, start: int, post: Post) =
+    state.loading = false
+    state.status = httpStatus.HttpCode
+    if state.status != Http200: return
+
+    let parsed = parseJson($response)
+    var list = to(parsed, seq[Post])
+
+    var idsLoaded: seq[int] = @[]
+    for i in 0..<list.len:
+      state.list.get().posts.insert(list[i], i+start)
+      idsLoaded.add(list[i].id)
+
+    # Save a list of the IDs which have not yet been loaded into the top-most
+    # post.
+    for id in post.moreBefore:
+      if id notin idsLoaded:
+        state.list.get().posts[start].moreBefore.add(id)
+    post.moreBefore = @[]
 
   proc onReplyClick(e: Event, n: VNode, p: Option[Post]) =
     state.replyingTo = p
     state.replyBox.show()
+
+  proc onLoadMore(ev: Event, n: VNode, start: int, post: Post) =
+    if state.loading: return
+
+    state.loading = true
+    let ids = post.moreBefore # TODO: Don't load all!
+    let uri = makeUri(
+      "specific_posts.json",
+      [("ids", $(%ids))]
+    )
+    ajaxGet(
+      uri,
+      @[],
+      (s: int, r: kstring) => onMorePosts(s, r, start, post)
+    )
+
+  proc genLoadMore(post: Post, start: int): VNode =
+    result = buildHtml():
+      tdiv(class="information load-more-posts",
+           onClick=(e: Event, n: VNode) => onLoadMore(e, n, start, post)):
+        tdiv(class="information-icon"):
+          italic(class="fas fa-comment-dots")
+        tdiv(class="information-main"):
+          if state.loading:
+            tdiv(class="loading loading-lg")
+          else:
+            tdiv(class="information-title"):
+              text "Load more posts "
+              span(class="more-post-count"):
+                text "(" & $post.moreBefore.len & ")"
 
   proc genPost(post: Post, thread: Thread, isLoggedIn: bool): VNode =
     let postCopy = post # TODO: Another workaround here, closure capture :(
@@ -94,31 +135,6 @@ when defined(js):
                   italic(class="fas fa-reply")
                   text " Reply"
 
-  proc onLoadMore(ev: Event, n: VNode) =
-    if state.loading: return
-
-    state.loading = true
-    let start = n.getAttr("data-start").parseInt()
-    let threadId = state.list.get().thread.id
-    let uri = makeUri("posts.json", [("start", $start), ("id", $threadId)])
-    ajaxGet(uri, @[], (s: int, r: kstring) => onPostList(s, r, start))
-
-  proc genLoadMore(start: int): VNode =
-    result = buildHtml():
-      tdiv(class="information load-more-posts",
-           onClick=onLoadMore,
-           "data-start" = $start):
-        tdiv(class="information-icon"):
-          italic(class="fas fa-comment-dots")
-        tdiv(class="information-main"):
-          if state.loading:
-            tdiv(class="loading loading-lg")
-          else:
-            tdiv(class="information-title"):
-              text "Load more posts "
-              span(class="more-post-count"):
-                text "(" & $state.list.get().moreCount & ")"
-
   proc genTimePassed(prevPost: Post, post: Option[Post]): VNode =
     var latestTime =
       if post.isSome: post.get().info.creation.fromUnix()
@@ -153,7 +169,7 @@ when defined(js):
 
     if state.list.isNone or state.list.get().thread.id != threadId:
       let uri = makeUri("posts.json", ("id", $threadId))
-      ajaxGet(uri, @[], (s: int, r: kstring) => onPostList(s, r, 0))
+      ajaxGet(uri, @[], (s: int, r: kstring) => onPostList(s, r))
 
       return buildHtml(tdiv(class="loading loading-lg"))
 
@@ -165,16 +181,15 @@ when defined(js):
           render(list.thread.category)
         tdiv(class="posts"):
           var prevPost: Option[Post] = none[Post]()
-          for post in list.posts:
+          for i, post in list.posts:
             if prevPost.isSome:
               genTimePassed(prevPost.get(), some(post))
+            if post.moreBefore.len > 0:
+              genLoadMore(post, i)
             genPost(post, list.thread, isLoggedIn)
             prevPost = some(post)
 
-          let hasMore = list.moreCount > 0
-          if hasMore:
-            genLoadMore(list.posts.len)
-          elif prevPost.isSome:
+          if prevPost.isSome:
             genTimePassed(prevPost.get(), none[Post]())
 
-          render(state.replyBox, list.thread, state.replyingTo, hasMore)
+          render(state.replyBox, list.thread, state.replyingTo, false)

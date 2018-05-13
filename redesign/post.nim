@@ -8,7 +8,7 @@ type
     creation*: int64
     content*: string
 
-  Post* = object
+  Post* = ref object
     id*: int
     author*: User
     likes*: seq[User] ## Users that liked this post.
@@ -19,7 +19,7 @@ type
     history*: seq[PostInfo] ## If the post was edited this will contain the
                             ## older versions of the post.
     info*: PostInfo
-
+    moreBefore*: seq[int]
 
 when defined(js):
   import karaxutils

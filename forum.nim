@@ -9,7 +9,7 @@
 import
   os, strutils, times, md5, strtabs, math, db_sqlite,
   scgi, jester, asyncdispatch, asyncnet, cache, sequtils,
-  parseutils, utils, random, rst, ranks, recaptcha, json, re
+  parseutils, utils, random, rst, ranks, recaptcha, json, re, sugar
 import cgi except setCookie
 import options
 
@@ -1026,6 +1026,20 @@ proc selectUser(userRow: seq[string]): threadlist.User =
     isOnline: isOnline
   )
 
+proc selectPost(postRow: seq[string], skippedPosts: seq[int]): Post =
+  return Post(
+    id: postRow[0].parseInt,
+    author: selectUser(@[postRow[4], postRow[5], postRow[6]]),
+    likes: @[], # TODO:
+    seen: false, # TODO:
+    history: @[], # TODO:
+    info: PostInfo(
+      creation: postRow[2].parseInt,
+      content: postRow[1].rstToHtml()
+    ),
+    moreBefore: skippedPosts
+  )
+
 proc selectThread(threadRow: seq[string]): Thread =
   const postsQuery =
     sql"""select count(*), strftime('%s', creation) from post
@@ -1101,9 +1115,10 @@ routes:
     createTFD()
     var
       id = getInt(@"id", -1)
-      start = getInt(@"start", 0)
-      count = getInt(@"count", 5)
+      anchor = getInt(@"anchor", -1)
     cond id != -1
+    const
+      count = 10
 
     const threadsQuery =
       sql"""select id, name, views, strftime('%s', modified) from thread
@@ -1124,34 +1139,50 @@ routes:
            from post p, person u
            where u.id = p.author and p.thread = ? and $#
                   and (u.status <> 'Spammer' or p.author = ?)
-           order by p.id limit ?, ?""" % modClause
+           order by p.id""" % modClause
       )
-
-    let pstCount = getValue(
-      db,
-      sql"select count(*) from post where thread = ?;",
-      id
-    ).parseInt()
-    let moreCount = max(0, pstCount - (start + count))
 
     var list = PostList(
       posts: @[],
       history: @[],
-      thread: thread,
-      moreCount: moreCount)
-    for post in getAllRows(db, postsQuery, id, c.userId, c.userId,
-                           start, count):
-      list.posts.add(Post(
-        id: post[0].parseInt,
-        author: selectUser(@[post[4], post[5], post[6]]),
-        likes: @[], # TODO:
-        seen: false, # TODO:
-        history: @[], # TODO:
-        info: PostInfo(
-          creation: post[2].parseInt,
-          content: post[1].rstToHtml()
-        )
-      ))
+      thread: thread
+    )
+    let rows = getAllRows(db, postsQuery, id, c.userId, c.userId)
+
+    var skippedPosts: seq[int] = @[]
+    for i in 0 ..< rows.len:
+      let id = rows[i][0].parseInt
+
+      let addDetail = i < count or rows.len-i < count or id == anchor
+
+      if addDetail:
+        let post = selectPost(rows[i], skippedPosts)
+        list.posts.add(post)
+        skippedPosts = @[]
+      else:
+        skippedPosts.add(id)
+
+    resp $(%list), "application/json"
+
+  get "/karax/specific_posts.json":
+    createTFD()
+    var
+      ids = parseJson(@"ids")
+
+    cond ids.kind == JArray
+    let intIDs = ids.elems.map(x => x.getInt())
+    let postsQuery = sql("""
+      select p.id, p.content, strftime('%s', p.creation), p.author,
+             u.name, u.email, strftime('%s', u.lastOnline)
+      from post p, person u
+      where u.id = p.author and p.id in ($#)
+      order by p.id;
+    """ % intIDs.join(",")) # TODO: It's horrible that I have to do this.
+
+    var list: seq[Post] = @[]
+
+    for row in db.getAllRows(postsQuery):
+      list.add(selectPost(row, @[]))
 
     resp $(%list), "application/json"
 
