@@ -38,6 +38,7 @@ when defined(js):
     state.shown = true
 
   proc onPreviewPost(httpStatus: int, response: kstring, state: ReplyBox) =
+    state.loading = false
     let status = httpStatus.HttpCode
     if status == Http200:
       kout(response)
@@ -58,6 +59,8 @@ when defined(js):
 
   proc onPreviewClick(e: Event, n: VNode, state: ReplyBox) =
     state.preview = true
+    state.loading = true
+    state.error = none[PostError]()
 
     let formData = newFormData()
     formData.append("msg", state.text)
@@ -108,6 +111,10 @@ when defined(js):
                 if state.preview:
                   if state.loading:
                     tdiv(class="loading")
+                  elif state.error.isSome():
+                    tdiv(class="toast toast-error",
+                         style=style(StyleAttr.marginTop, "0.4rem")):
+                      text state.error.get().message
                   elif state.rendering.isSome():
                     verbatim(state.rendering.get())
                 else:
