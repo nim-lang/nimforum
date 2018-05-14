@@ -83,8 +83,10 @@ $logo-height: $navbar-height - 20px;
 
 .menu-right {
   // To make sure the user menu doesn't move off the screen.
-  left: auto;
-  right: 0;
+  @media (max-width: 1600px) {
+    left: auto;
+    right: 0;
+  }
   position: absolute;
 }
 
