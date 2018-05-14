@@ -428,3 +428,12 @@ code {
 tt {
   @extend code;
 }
+
+hr {
+  background: $border-color;
+  height: $border-width;
+  margin: $unit-2 0;
+  border: 0;
+}
+
+@import "syntax.scss";

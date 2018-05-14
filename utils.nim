@@ -38,8 +38,8 @@ type
 var docConfig: StringTableRef
 
 docConfig = rstgen.defaultConfig()
-docConfig["doc.listing_start"] = "<pre class=\"listing $2\">"
-docConfig["doc.smiley_format"] = "/images/smilieys/$1.png"
+docConfig["doc.listing_start"] = "<pre class='code' data-lang='$2'><code>"
+docConfig["doc.listing_end"] = "</code><div class='code-buttons'><button class='btn btn-primary btn-sm'>Run</button></div></pre>"
 
 proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
   result = Config(smtpAddress: "", smtpPort: 25, smtpUser: "",
@@ -81,7 +81,7 @@ proc blockquoteFinish(currentBlockquote, newNode: var XmlNode, n: XmlNode) =
   newNode.add(n)
 
 proc rstToHtml*(content: string): string =
-  result = rstgen.rstToHtml(content, {roSupportSmilies, roSupportMarkdown},
+  result = rstgen.rstToHtml(content, {roSupportMarkdown},
                             docConfig)
   # Bolt on quotes.
   # TODO: Yes, this is ugly. I wrote it quickly. PRs welcome ;)
@@ -116,7 +116,8 @@ proc rstToHtml*(content: string): string =
             blockquoteFinish(currentBlockquote, newNode, n)
         else:
           blockquoteFinish(currentBlockquote, newNode, n)
-      result = $newNode
+      result = ""
+      add(result, newNode, indWidth=0, addNewLines=false)
   except:
     echo("[WARNING] Could not parse rst html.")
 
