@@ -105,7 +105,7 @@ proc processQuotes(node: XmlNode): XmlNode =
               newBq = newElement("blockquote")
               bq.add(newBq)
             bq = newBq
-          bq.insert(contentNode, if bq.len == 0: 0 else: bq.len)
+          bq.add(contentNode)
         else:
           blockquoteFinish(currentBlockquote, result, n)
       else:
@@ -172,7 +172,6 @@ proc rstToHtml*(content: string): string =
     var node = parseHtml(newStringStream(result))
     if node.kind == xnElement:
       node = processQuotes(node)
-
     node = processMentions(node)
     result = ""
     add(result, node, indWidth=0, addNewLines=false)
