@@ -9,12 +9,12 @@
 import
   os, strutils, times, md5, strtabs, math, db_sqlite,
   scgi, jester, asyncdispatch, asyncnet, cache, sequtils,
-  parseutils, utils, random, rst, ranks, recaptcha, json, re, sugar
+  parseutils, utils, random, rst, recaptcha, json, re, sugar
 import cgi except setCookie
 import options
 
 import redesign/threadlist except User
-import redesign/[category, postlist, error, header, post]
+import redesign/[category, postlist, error, header, post, profile]
 
 when not defined(windows):
   import bcrypt # TODO
@@ -1016,17 +1016,17 @@ template createTFD() =
 #[ DB functions. TODO: Move to another module? ]#
 
 proc selectUser(userRow: seq[string]): threadlist.User =
-  let isOnline = getTime().toUnix() - userRow[2].parseInt > (60*5)
   return threadlist.User(
     name: userRow[0],
     avatarUrl: userRow[1].getGravatarUrl(),
-    isOnline: isOnline
+    lastOnline: userRow[2].parseInt,
+    rank: parseEnum[Rank](userRow[3])
   )
 
 proc selectPost(postRow: seq[string], skippedPosts: seq[int]): Post =
   return Post(
     id: postRow[0].parseInt,
-    author: selectUser(@[postRow[4], postRow[5], postRow[6]]),
+    author: selectUser(@[postRow[4], postRow[5], postRow[6], postRow[7]]),
     likes: @[], # TODO:
     seen: false, # TODO:
     history: @[], # TODO:
@@ -1043,7 +1043,7 @@ proc selectThread(threadRow: seq[string]): Thread =
           where thread = ?
           order by creation asc limit 1;"""
   const usersListQuery =
-    sql"""select distinct name, email, strftime('%s', lastOnline)
+    sql"""select distinct name, email, strftime('%s', lastOnline), status
           from person where id in
             (select author from post where thread = ?)
           limit 5;""" # TODO: Order by most posts.
@@ -1158,7 +1158,7 @@ routes:
     let postsQuery =
       sql(
         """select p.id, p.content, strftime('%s', p.creation), p.author,
-                  u.name, u.email, strftime('%s', u.lastOnline)
+                  u.name, u.email, strftime('%s', u.lastOnline), u.status
            from post p, person u
            where u.id = p.author and p.thread = ? and $#
                   and (u.status <> 'Spammer' or p.author = ?)
@@ -1196,7 +1196,7 @@ routes:
     let intIDs = ids.elems.map(x => x.getInt())
     let postsQuery = sql("""
       select p.id, p.content, strftime('%s', p.creation), p.author,
-             u.name, u.email, strftime('%s', u.lastOnline)
+             u.name, u.email, strftime('%s', u.lastOnline), u.status
       from post p, person u
       where u.id = p.author and p.id in ($#)
       order by p.id;
@@ -1208,6 +1208,51 @@ routes:
       list.add(selectPost(row, @[]))
 
     resp $(%list), "application/json"
+
+  get "/karax/profile.json":
+    createTFD()
+    var
+      username = @"username"
+
+    let postsQuery = sql("""
+      select p.id, p.content, strftime('%s', p.creation), p.author,
+             u.name, u.email, strftime('%s', u.lastOnline), u.status
+      from post p, person u
+      where u.id = p.author and u.name = ?
+      order by p.id desc;
+    """)
+
+    var profile = Profile(
+      threads: @[],
+      posts: @[]
+    )
+
+    let rows = db.getAllRows(postsQuery, username)
+    profile.user = selectUser(@[
+      rows[0][4], rows[0][5], rows[0][6], rows[0][7]
+    ])
+
+    if c.rank >= Admin:
+      profile.email = some(rows[0][5])
+
+    for row in rows:
+      let firstPostForThread = getRow(db,
+        sql"""select t.id, t.name, t.views, t.modified, p.id
+              from thread t, post p
+              where p.thread = t.id
+              order by p.id limit 1""", row[0])
+
+      # Check if the thread that contains this post was created by the user.
+      if firstPostForThread[4] == row[0]:
+        profile.threads.add(
+          selectThread(firstPostForThread)
+        )
+
+      profile.posts.add(
+        selectPost(row, @[])
+      )
+
+    resp $(%profile), "application/json"
 
   post "/karax/login":
     createTFD()
@@ -1232,7 +1277,8 @@ routes:
         some(threadlist.User(
           name: c.username,
           avatarUrl: c.email.getGravatarUrl(),
-          isOnline: true
+          lastOnline: getTime().toUnix(),
+          rank: c.rank
         ))
       else:
         none[threadlist.User]()

@@ -3,10 +3,21 @@ import strformat, times, options, json, httpcore, sugar
 import category
 
 type
+  Rank* {.pure.} = enum ## serialized as 'status'
+    Spammer          ## spammer: every post is invisible
+    Troll            ## troll: cannot write new posts
+    EmailUnconfirmed ## member with unconfirmed email address
+    Moderated        ## new member: posts manually reviewed before everybody
+                     ## can see them
+    User             ## Ordinary user
+    Moderator        ## Moderator: can ban/moderate users
+    Admin            ## Admin: can do everything
+
   User* = object
     name*: string
     avatarUrl*: string
-    isOnline*: bool
+    lastOnline*: int64
+    rank*: Rank
 
   Thread* = object
     id*: int
@@ -24,6 +35,9 @@ type
     threads*: seq[Thread]
     lastVisit*: int64 ## Unix timestamp
     moreCount*: int ## How many more threads are left
+
+proc isOnline*(user: User): bool =
+  return getTime().toUnix() - user.lastOnline > (60*5)
 
 when defined(js):
   include karax/prelude
