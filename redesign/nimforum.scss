@@ -356,6 +356,17 @@ blockquote {
   @extend .toast-success;
 }
 
+.code {
+  // Don't show the "none".
+  &[data-lang="none"]::before {
+    content: "";
+  }
+
+  &:not([data-lang="Nim"]) > .code-buttons {
+    display: none;
+  }
+}
+
 .information {
   @extend .tile;
   border-top: 1px solid $border-color;
