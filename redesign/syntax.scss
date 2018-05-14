@@ -1,0 +1,13 @@
+pre .Comment { color:#618f0b; font-style:italic; }
+pre .Keyword { color:rgb(39, 141, 182); font-weight:bold; }
+pre .Type { color:#128B7D; font-weight:bold; }
+pre .Operator { font-weight: bold; }
+pre .atr { color:#128B7D; font-weight:bold; font-style:italic; }
+pre .def { color:#CAD6E4; font-weight:bold; font-style:italic; }
+pre .StringLit { color:rgb(190, 15, 15); font-weight:bold; }
+pre .DecNumber, pre .FloatNumber { color:#8AB647; }
+pre .tab { border-left:1px dotted rgba(67,168,207,0.4); }
+pre .EscapeSequence
+{
+  color: #C08D12;
+}
