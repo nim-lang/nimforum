@@ -25,13 +25,14 @@ when defined(js):
       replyingTo: Option[Post]
       replyBox: ReplyBox
 
+  proc onReplyPosted(id: int)
   proc newState(): State =
     State(
       list: none[PostList](),
       loading: false,
       status: Http200,
       replyingTo: none[Post](),
-      replyBox: newReplyBox()
+      replyBox: newReplyBox(onReplyPosted)
     )
 
   var
@@ -47,7 +48,7 @@ when defined(js):
 
     state.list = some(list)
 
-  proc onMorePosts(httpStatus: int, response: kstring, start: int, post: Post) =
+  proc onMorePosts(httpStatus: int, response: kstring, start: int) =
     state.loading = false
     state.status = httpStatus.HttpCode
     if state.status != Http200: return
@@ -62,20 +63,21 @@ when defined(js):
 
     # Save a list of the IDs which have not yet been loaded into the top-most
     # post.
-    for id in post.moreBefore:
-      if id notin idsLoaded:
-        state.list.get().posts[start].moreBefore.add(id)
-    post.moreBefore = @[]
+    let postIndex = start+list.len
+    # The following check is necessary because we reuse this proc to load
+    # a newly created post.
+    if postIndex < state.list.get().posts.len:
+      let post = state.list.get().posts[postIndex]
+      var newPostIds: seq[int] = @[]
+      for id in post.moreBefore:
+        if id notin idsLoaded:
+          newPostIds.add(id)
+      post.moreBefore = newPostIds
 
-  proc onReplyClick(e: Event, n: VNode, p: Option[Post]) =
-    state.replyingTo = p
-    state.replyBox.show()
-
-  proc onLoadMore(ev: Event, n: VNode, start: int, post: Post) =
+  proc loadMore(start: int, ids: seq[int]) =
     if state.loading: return
 
     state.loading = true
-    let ids = post.moreBefore # TODO: Don't load all!
     let uri = makeUri(
       "specific_posts.json",
       [("ids", $(%ids))]
@@ -83,8 +85,19 @@ when defined(js):
     ajaxGet(
       uri,
       @[],
-      (s: int, r: kstring) => onMorePosts(s, r, start, post)
+      (s: int, r: kstring) => onMorePosts(s, r, start)
     )
+
+  proc onReplyPosted(id: int) =
+    ## Executed when a reply has been successfully posted.
+    loadMore(state.list.get().posts.len, @[id])
+
+  proc onReplyClick(e: Event, n: VNode, p: Option[Post]) =
+    state.replyingTo = p
+    state.replyBox.show()
+
+  proc onLoadMore(ev: Event, n: VNode, start: int, post: Post) =
+    loadMore(start, post.moreBefore) # TODO: Don't load all!
 
   proc genLoadMore(post: Post, start: int): VNode =
     result = buildHtml():

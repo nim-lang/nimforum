@@ -1069,6 +1069,32 @@ proc selectThread(threadRow: seq[string]): Thread =
 
   return thread
 
+proc executeReply(c: TForumData, threadId: int, content: string,
+                  replyingTo: int): int64 =
+  # TODO: Refactor TForumData.
+  assert c.loggedIn()
+
+  let subject = "" # TODO: Remove this redundant field.
+  if rateLimitCheck(c):
+    raise newException(ForumError, "You're posting too fast!")
+
+  # TODO: Replying to.
+  let retID = insertID(
+    db,
+    crud(crCreate, "post", "author", "ip", "header", "content", "thread"),
+    c.userId, c.req.ip, subject, content, $threadId, ""
+  )
+  discard tryExec(
+    db,
+    crud(crCreate, "post_fts", "id", "header", "content"),
+    retID.int, subject, content
+  )
+
+  exec(db, sql"update thread set modified = DATETIME('now') where id = ?",
+       $c.threadId)
+
+  return retID
+
 initialise()
 
 routes:
@@ -1231,6 +1257,39 @@ routes:
       let rendered = msg.rstToHtml()
       resp Http200, rendered
     except EParseError:
+      let err = PostError(
+        errorFields: @[],
+        message: getCurrentExceptionMsg()
+      )
+      resp Http400, $(%err), "application/json"
+
+  post "/karax/createPost":
+    createTFD()
+    if not c.loggedIn():
+      let err = PostError(
+        errorFields: @[],
+        message: "Not logged in."
+      )
+      resp Http401, $(%err), "application/json"
+
+    let formData = request.formData
+    cond "msg" in formData
+    cond "threadId" in formData
+
+    let msg = formData["msg"].body
+    let threadId = getInt(formData["threadId"].body, -1)
+    cond threadId != -1
+
+    let replyingTo =
+      if "replyingTo" in formData:
+        getInt(formData["replyingTo"].body, -1)
+      else:
+        -1
+
+    try:
+      let id = executeReply(c, threadId, msg, replyingTo)
+      resp Http200, $(%id), "application/json"
+    except ForumError:
       let err = PostError(
         errorFields: @[],
         message: getCurrentExceptionMsg()

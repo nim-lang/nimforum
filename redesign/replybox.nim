@@ -16,10 +16,12 @@ when defined(js):
       loading: bool
       error: Option[PostError]
       rendering: Option[kstring]
+      onPost: proc (id: int)
 
-  proc newReplyBox*(): ReplyBox =
+  proc newReplyBox*(onPost: proc (id: int)): ReplyBox =
     ReplyBox(
-      text: ""
+      text: "",
+      onPost: onPost
     )
 
   proc performScroll() =
@@ -68,6 +70,45 @@ when defined(js):
     ajaxPost(uri, @[], cast[cstring](formData),
              (s: int, r: kstring) => onPreviewPost(s, r, state))
 
+  proc onReplyPost(httpStatus: int, response: kstring, state: ReplyBox) =
+    state.loading = false
+    let status = httpStatus.HttpCode
+    if status == Http200:
+      state.text = ""
+      state.shown = false
+      state.onPost(parseJson($response).getInt())
+    else:
+      # TODO: login has similar code, abstract this.
+      try:
+        let parsed = parseJson($response)
+        let error = to(parsed, PostError)
+
+        state.error = some(error)
+      except:
+        kout(getCurrentExceptionMsg().cstring)
+        state.error = some(PostError(
+          errorFields: @[],
+          message: "Unknown error occurred."
+        ))
+
+  proc onReplyClick(e: Event, n: VNode, state: ReplyBox,
+                    thread: Thread, replyingTo: Option[Post]) =
+    state.loading = true
+    state.error = none[PostError]()
+
+    let formData = newFormData()
+    formData.append("msg", state.text)
+    formData.append("threadId", $thread.id)
+    if replyingTo.isSome:
+      formData.append("replyingTo", $replyingTo.get().id)
+    let uri = makeUri("/createPost")
+    ajaxPost(uri, @[], cast[cstring](formData),
+             (s: int, r: kstring) => onReplyPost(s, r, state))
+
+  proc onCancelClick(e: Event, n: VNode, state: ReplyBox) =
+    # TODO: Double check reply box contents and ask user whether to discard.
+    state.shown = false
+
   proc onChange(e: Event, n: VNode, state: ReplyBox) =
     # TODO: There should be a karax-way to do this. I guess I can just call
     # `value` on the node? We need to document this better :)
@@ -111,10 +152,6 @@ when defined(js):
                 if state.preview:
                   if state.loading:
                     tdiv(class="loading")
-                  elif state.error.isSome():
-                    tdiv(class="toast toast-error",
-                         style=style(StyleAttr.marginTop, "0.4rem")):
-                      text state.error.get().message
                   elif state.rendering.isSome():
                     verbatim(state.rendering.get())
                 else:
@@ -122,8 +159,21 @@ when defined(js):
                            onChange=(e: Event, n: VNode) =>
                               onChange(e, n, state),
                            value=state.text)
+
+                if state.error.isSome():
+                  tdiv(class="toast toast-error",
+                       style=style(StyleAttr.marginTop, "0.4rem")):
+                    text state.error.get().message
+
               tdiv(class="panel-footer"):
-                button(class="btn btn-primary float-right"):
+                button(class=class(
+                         {"loading": state.loading},
+                         "btn btn-primary float-right"
+                       ),
+                       onClick=(e: Event, n: VNode) =>
+                          onReplyClick(e, n, state, thread, post)):
                   text "Reply"
-                button(class="btn btn-link float-right"):
+                button(class="btn btn-link float-right",
+                       onClick=(e: Event, n: VNode) =>
+                          onCancelClick(e, n, state)):
                   text "Cancel"
