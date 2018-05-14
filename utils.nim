@@ -2,6 +2,12 @@ import asyncdispatch, smtp, strutils, json, os, rst, rstgen, xmltree, strtabs,
   htmlparser, streams, parseutils, options
 from times import getTime, getGMTime, format
 
+# Used to be:
+# {'A'..'Z', 'a'..'z', '0'..'9', '_', '\128'..'\255'}
+let
+  UsernameIdent* = IdentChars # TODO: Double check that everyone follows this.
+
+
 proc parseInt*(s: string, value: var int, validRange: Slice[int]) {.
   noSideEffect.} =
   ## parses `s` into an integer in the range `validRange`. If successful,
@@ -80,46 +86,97 @@ proc blockquoteFinish(currentBlockquote, newNode: var XmlNode, n: XmlNode) =
     currentBlockquote = newElement("blockquote")
   newNode.add(n)
 
+proc processQuotes(node: XmlNode): XmlNode =
+  # Bolt on quotes.
+  # TODO: Yes, this is ugly. I wrote it quickly. PRs welcome ;)
+  result = newElement("div")
+  var currentBlockquote = newElement("blockquote")
+  for n in items(node):
+    case n.kind
+    of xnElement:
+      case n.tag
+      of "p":
+        let (nesting, contentNode, _) = processGT(n, "p")
+        if nesting > 0:
+          var bq = currentBlockquote
+          for i in 1 ..< nesting:
+            var newBq = bq.child("blockquote")
+            if newBq.isNil:
+              newBq = newElement("blockquote")
+              bq.add(newBq)
+            bq = newBq
+          bq.insert(contentNode, if bq.len == 0: 0 else: bq.len)
+        else:
+          blockquoteFinish(currentBlockquote, result, n)
+      else:
+        blockquoteFinish(currentBlockquote, result, n)
+    of xnText:
+      if n.text[0] == '\10':
+        result.add(n)
+      else:
+        blockquoteFinish(currentBlockquote, result, n)
+    else:
+      blockquoteFinish(currentBlockquote, result, n)
+
+proc replaceMentions(node: XmlNode): seq[XmlNode] =
+  assert node.kind == xnText
+  result = @[]
+
+  var current = ""
+  var i = 0
+  while i < len(node.text):
+    i += parseUntil(node.text, current, {'@'}, i)
+    if i >= len(node.text): break
+    if node.text[i] == '@':
+      i.inc # Skip @
+      var username = ""
+      i += parseWhile(node.text, username, UsernameIdent, i)
+
+      let el = <>span(
+        class="user-mention",
+        data-username=username,
+        newText("@" & username)
+      )
+
+      result.add(newText(current))
+      current = ""
+      result.add(el)
+
+  result.add(newText(current))
+
+proc processMentions(node: XmlNode): XmlNode =
+  case node.kind
+  of xnText:
+    result = newElement("span")
+    for child in replaceMentions(node):
+      result.add(child)
+  of xnElement:
+    case node.tag
+    of "pre", "code", "tt":
+      return node
+    else:
+      result = newElement(node.tag)
+      for n in items(node):
+        result.add(processMentions(n))
+  else:
+    return node
+
+
+
 proc rstToHtml*(content: string): string =
   result = rstgen.rstToHtml(content, {roSupportMarkdown},
                             docConfig)
-  # Bolt on quotes.
-  # TODO: Yes, this is ugly. I wrote it quickly. PRs welcome ;)
   try:
     var node = parseHtml(newStringStream(result))
-    var newNode = newElement("div")
     if node.kind == xnElement:
-      var currentBlockquote = newElement("blockquote")
-      for n in items(node):
-        case n.kind
-        of xnElement:
-          case n.tag
-          of "p":
-            let (nesting, contentNode, tag) = processGT(n, "p")
-            if nesting > 0:
-              var bq = currentBlockquote
-              for i in 1 .. <nesting:
-                var newBq = bq.child("blockquote")
-                if newBq.isNil:
-                  newBq = newElement("blockquote")
-                  bq.add(newBq)
-                bq = newBq
-              bq.insert(contentNode, if bq.len == 0: 0 else: bq.len)
-            else:
-              blockquoteFinish(currentBlockquote, newNode, n)
-          else:
-            blockquoteFinish(currentBlockquote, newNode, n)
-        of xnText:
-          if n.text[0] == '\10':
-            newNode.add(n)
-          else:
-            blockquoteFinish(currentBlockquote, newNode, n)
-        else:
-          blockquoteFinish(currentBlockquote, newNode, n)
+      let quotedNode = processQuotes(node)
+      let mentionedNode = processMentions(quotedNode)
+
       result = ""
-      add(result, newNode, indWidth=0, addNewLines=false)
+      add(result, mentionedNode, indWidth=0, addNewLines=false)
   except:
-    echo("[WARNING] Could not parse rst html.")
+    raise
+    # echo("[WARNING] Could not parse rst html.")
 
 proc sendMail(config: Config, subject, message, recipient: string, from_addr = "forum@nim-lang.org", otherHeaders:seq[(string, string)] = @[]) {.async.} =
   if config.smtpAddress.len == 0:

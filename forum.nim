@@ -281,9 +281,6 @@ proc validThreadId(c: TForumData): bool =
   result = getValue(db, sql"select id from thread where id = ?",
                     $c.threadId).len > 0
 
-const
-  SecureChars = {'A'..'Z', 'a'..'z', '0'..'9', '_', '\128'..'\255'}
-
 proc setError(c: TForumData, field, msg: string): bool {.inline.} =
   c.invalidField = field
   c.errorMsg = "Error: " & msg
@@ -292,7 +289,7 @@ proc setError(c: TForumData, field, msg: string): bool {.inline.} =
 proc register(c: TForumData, name, pass, antibot, userIp,
               email: string): Future[bool] {.async.} =
   # Username validation:
-  if name.len == 0 or not allCharsInSet(name, SecureChars):
+  if name.len == 0 or not allCharsInSet(name, UsernameIdent):
     return setError(c, "name", "Invalid username!")
   if getValue(db, sql"select name from person where name = ?", name).len > 0:
     return setError(c, "name", "Username already exists!")
