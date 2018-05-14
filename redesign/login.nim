@@ -17,24 +17,9 @@ when defined(js):
       error: Option[PostError]
 
   proc onLogInPost(httpStatus: int, response: kstring, state: LoginModal) =
-    state.loading = false
-    let status = httpStatus.HttpCode
-    if status == Http200:
+    postFinished:
       state.shown = false
       state.onLogIn()
-    else:
-      # TODO: Karax should pass the content-type...
-      try:
-        let parsed = parseJson($response)
-        let error = to(parsed, PostError)
-
-        state.error = some(error)
-      except:
-        kout(getCurrentExceptionMsg().cstring)
-        state.error = some(PostError(
-          errorFields: @[],
-          message: "Unknown error occurred."
-        ))
 
   proc onLogInClick(ev: Event, n: VNode, state: LoginModal) =
     state.loading = true

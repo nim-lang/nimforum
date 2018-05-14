@@ -40,24 +40,9 @@ when defined(js):
     state.shown = true
 
   proc onPreviewPost(httpStatus: int, response: kstring, state: ReplyBox) =
-    state.loading = false
-    let status = httpStatus.HttpCode
-    if status == Http200:
+    postFinished:
       kout(response)
       state.rendering = some[kstring](response)
-    else:
-      # TODO: login has similar code, abstract this.
-      try:
-        let parsed = parseJson($response)
-        let error = to(parsed, PostError)
-
-        state.error = some(error)
-      except:
-        kout(getCurrentExceptionMsg().cstring)
-        state.error = some(PostError(
-          errorFields: @[],
-          message: "Unknown error occurred."
-        ))
 
   proc onPreviewClick(e: Event, n: VNode, state: ReplyBox) =
     state.preview = true
@@ -71,25 +56,10 @@ when defined(js):
              (s: int, r: kstring) => onPreviewPost(s, r, state))
 
   proc onReplyPost(httpStatus: int, response: kstring, state: ReplyBox) =
-    state.loading = false
-    let status = httpStatus.HttpCode
-    if status == Http200:
+    postFinished:
       state.text = ""
       state.shown = false
       state.onPost(parseJson($response).getInt())
-    else:
-      # TODO: login has similar code, abstract this.
-      try:
-        let parsed = parseJson($response)
-        let error = to(parsed, PostError)
-
-        state.error = some(error)
-      except:
-        kout(getCurrentExceptionMsg().cstring)
-        state.error = some(PostError(
-          errorFields: @[],
-          message: "Unknown error occurred."
-        ))
 
   proc onReplyClick(e: Event, n: VNode, state: ReplyBox,
                     thread: Thread, replyingTo: Option[Post]) =

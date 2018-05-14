@@ -41,3 +41,22 @@ when defined(js):
           if (e.errorFields.len == 1 and e.errorFields[0] == name) or isLast:
             p(class="form-input-hint"):
               text e.message
+
+  template postFinished*(onSuccess: untyped): untyped =
+    state.loading = false
+    let status = httpStatus.HttpCode
+    if status == Http200:
+      onSuccess
+    else:
+      # TODO: Karax should pass the content-type...
+      try:
+        let parsed = parseJson($response)
+        let error = to(parsed, PostError)
+
+        state.error = some(error)
+      except:
+        kout(getCurrentExceptionMsg().cstring)
+        state.error = some(PostError(
+          errorFields: @[],
+          message: "Unknown error occurred."
+        ))
