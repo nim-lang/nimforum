@@ -3,7 +3,7 @@
 // Define variables to override default ones
 $primary-color: #f99c19;
 $body-font-color: #292929;
-$dark-color: #525252;
+$dark-color: #505050;
 $label-color: #7cd2ff;
 $secondary-btn-color: #f1f1f1;
 
@@ -418,4 +418,13 @@ blockquote {
   .panel {
     margin-top: $control-padding-y*2;
   }
+}
+
+code {
+  color: $body-font-color;
+  background-color: $bg-color;
+}
+
+tt {
+  @extend code;
 }
