@@ -132,15 +132,18 @@ proc replaceMentions(node: XmlNode): seq[XmlNode] =
       var username = ""
       i += parseWhile(node.text, username, UsernameIdent, i)
 
-      let el = <>span(
-        class="user-mention",
-        data-username=username,
-        newText("@" & username)
-      )
+      if username.len == 0:
+        result.add(newText(current & "@"))
+      else:
+        let el = <>span(
+          class="user-mention",
+          data-username=username,
+          newText("@" & username)
+        )
 
-      result.add(newText(current))
-      current = ""
-      result.add(el)
+        result.add(newText(current))
+        current = ""
+        result.add(el)
 
   result.add(newText(current))
 
@@ -156,12 +159,11 @@ proc processMentions(node: XmlNode): XmlNode =
       return node
     else:
       result = newElement(node.tag)
+      result.attrs = node.attrs
       for n in items(node):
         result.add(processMentions(n))
   else:
     return node
-
-
 
 proc rstToHtml*(content: string): string =
   result = rstgen.rstToHtml(content, {roSupportMarkdown},
@@ -169,14 +171,13 @@ proc rstToHtml*(content: string): string =
   try:
     var node = parseHtml(newStringStream(result))
     if node.kind == xnElement:
-      let quotedNode = processQuotes(node)
-      let mentionedNode = processMentions(quotedNode)
+      node = processQuotes(node)
 
-      result = ""
-      add(result, mentionedNode, indWidth=0, addNewLines=false)
+    node = processMentions(node)
+    result = ""
+    add(result, node, indWidth=0, addNewLines=false)
   except:
-    raise
-    # echo("[WARNING] Could not parse rst html.")
+    echo("[WARNING] Could not parse rst html.")
 
 proc sendMail(config: Config, subject, message, recipient: string, from_addr = "forum@nim-lang.org", otherHeaders:seq[(string, string)] = @[]) {.async.} =
   if config.smtpAddress.len == 0:
