@@ -58,7 +58,14 @@ proc render(): VNode =
       ),
       r("/t/@id",
         (params: Params) =>
-          (renderPostList(params["id"].parseInt(), isLoggedIn()))
+          (
+            let postId = getInt(($state.url.hash).substr(1), 0);
+            renderPostList(
+              params["id"].parseInt(),
+              if postId == 0: none[int]() else: some[int](postId),
+              isLoggedIn()
+            )
+          )
       ),
       r("/", (params: Params) => renderThreadList())
     ])

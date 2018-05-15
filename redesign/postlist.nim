@@ -12,6 +12,8 @@ type
     posts*: seq[Post]
 
 when defined(js):
+  from dom import nil
+
   include karax/prelude
   import karax / [vstyles, kajax, kdom]
 
@@ -38,7 +40,7 @@ when defined(js):
   var
     state = newState()
 
-  proc onPostList(httpStatus: int, response: kstring) =
+  proc onPostList(httpStatus: int, response: kstring, postId: Option[int]) =
     state.loading = false
     state.status = httpStatus.HttpCode
     if state.status != Http200: return
@@ -47,6 +49,18 @@ when defined(js):
     let list = to(parsed, PostList)
 
     state.list = some(list)
+
+    # The anchor should be jumped to once all the posts have been loaded.
+    if postId.isSome():
+      discard setTimeout(
+        () => (
+          # Would have used scrollIntoView but then the `:target` selector
+          # isn't activated.
+          window.location.hash = "";
+          window.location.hash = "#" & $postId.get()
+        ),
+        100
+      )
 
   proc onMorePosts(httpStatus: int, response: kstring, start: int) =
     state.loading = false
@@ -190,13 +204,17 @@ when defined(js):
           tdiv(class="information-title"):
             text diffStr
 
-  proc renderPostList*(threadId: int, isLoggedIn: bool): VNode =
+  proc renderPostList*(threadId: int, postId: Option[int],
+                       isLoggedIn: bool): VNode =
     if state.status != Http200:
       return renderError("Couldn't retrieve posts.")
 
     if state.list.isNone or state.list.get().thread.id != threadId:
-      let uri = makeUri("posts.json", ("id", $threadId))
-      ajaxGet(uri, @[], (s: int, r: kstring) => onPostList(s, r))
+      var params = @[("id", $threadId)]
+      if postId.isSome():
+        params.add(("anchor", $postId.get()))
+      let uri = makeUri("posts.json", params)
+      ajaxGet(uri, @[], (s: int, r: kstring) => onPostList(s, r, postId))
 
       return buildHtml(tdiv(class="loading loading-lg"))
 

@@ -7,24 +7,8 @@ from times import getTime, getGMTime, format
 let
   UsernameIdent* = IdentChars # TODO: Double check that everyone follows this.
 
-
-proc parseInt*(s: string, value: var int, validRange: Slice[int]) {.
-  noSideEffect.} =
-  ## parses `s` into an integer in the range `validRange`. If successful,
-  ## `value` is modified to contain the result. Otherwise no exception is
-  ## raised and `value` is not touched; this way a reasonable default value
-  ## won't be overwritten.
-  var x = value
-  try:
-    discard parseutils.parseInt(s, x, 0)
-  except OverflowError:
-    discard
-  if x in validRange: value = x
-
-proc getInt*(s: string, default = 0): int =
-  ## Safely parses an int and returns it.
-  result = default
-  parseInt(s, result, 0..1_000_000_000)
+import redesign/karaxutils
+export parseInt
 
 proc `%`*[T](opt: Option[T]): JsonNode =
   ## Generic constructor for JSON data. Creates a new ``JNull JsonNode``
