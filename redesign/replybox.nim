@@ -39,6 +39,8 @@ when defined(js):
 
     state.shown = true
 
+  proc getText*(state: ReplyBox): kstring = state.text
+
   proc onPreviewPost(httpStatus: int, response: kstring, state: ReplyBox) =
     postFinished:
       kout(response)

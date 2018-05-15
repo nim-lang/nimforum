@@ -13,27 +13,34 @@ when defined(js):
       loading: bool
       error: Option[PostError]
       replyBox: ReplyBox
+      subject: kstring
+
+  proc newNewThread*(): NewThread =
+    NewThread(
+      replyBox: newReplyBox(nil),
+      subject: ""
+    )
+
+  proc onSubjectChange(e: Event, n: VNode, state: NewThread) =
+    state.subject = n.value
 
   proc onCreatePost(httpStatus: int, response: kstring, state: NewThread) =
     postFinished:
-      # TODO
-      discard
+      let j = parseJson($response)
+      let response = to(j, array[2, int])
+      navigateTo(renderPostUrl(response[0], response[1]))
 
   proc onCreateClick(ev: Event, n: VNode, state: NewThread) =
     state.loading = true
     state.error = none[PostError]()
 
-    let uri = makeUri("login")
+    let uri = makeUri("newthread")
     # TODO: This is a hack, karax should support this.
     let formData = newFormData()
-    #formData.append("" TODO
+    formData.append("subject", state.subject)
+    formData.append("msg", state.replyBox.getText())
     ajaxPost(uri, @[], cast[cstring](formData),
              (s: int, r: kstring) => onCreatePost(s, r, state))
-
-  proc newNewThread*(): NewThread =
-    NewThread(
-      replyBox: newReplyBox(nil)
-    )
 
   proc render*(state: NewThread): VNode =
     result = buildHtml():
@@ -43,7 +50,8 @@ when defined(js):
             p(): text "New Thread"
           tdiv(class="content"):
             input(class="form-input", `type`="text", name="username",
-                  placeholder="Type the title here")
+                  placeholder="Type the title here",
+                  onChange=(e: Event, n: VNode) => onSubjectChange(e, n, state))
             renderContent(state.replyBox, none[Thread](), none[Post]())
           tdiv(class="footer"):
             button(class=class(

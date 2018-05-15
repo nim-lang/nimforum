@@ -77,6 +77,7 @@ type
     lastIp: string
 
   ForumError = object of Exception
+    data: PostError
 
 var
   db: DbConn
@@ -84,6 +85,16 @@ var
   config: Config
   useCaptcha: bool
   captcha: ReCaptcha
+
+proc newForumError(message: string,
+                   fields: seq[string] = @[]): ref ForumError =
+  new(result)
+  result.msg = message
+  result.data =
+    PostError(
+      errorFields: fields,
+      message: message
+    )
 
 proc init(c: TForumData) =
   c.userPass = ""
@@ -1076,9 +1087,10 @@ proc executeReply(c: TForumData, threadId: int, content: string,
 
   let subject = "" # TODO: Remove this redundant field.
   if rateLimitCheck(c):
-    raise newException(ForumError, "You're posting too fast!")
+    raise newForumError("You're posting too fast!")
 
   # TODO: Replying to.
+  # Verify that content can be parsed as RST.
   let retID = insertID(
     db,
     crud(crCreate, "post", "author", "ip", "header", "content", "thread"),
@@ -1094,6 +1106,35 @@ proc executeReply(c: TForumData, threadId: int, content: string,
        $c.threadId)
 
   return retID
+
+proc executeNewThread(c: TForumData, subject, msg: string): (int64, int64) =
+  const
+    query = sql"""
+      insert into thread(name, views, modified) values (?, 0, DATETIME('now'))
+    """
+
+  assert c.loggedIn()
+
+  if subject.len <= 2:
+    raise newForumError("Subject is too short", @["subject"])
+  if subject.len > 100:
+    raise newForumError("Subject is too long", @["subject"])
+
+  if not validateRst(c, msg):
+    raise newForumError("Message needs to be valid RST", @["msg"])
+
+  if rateLimitCheck(c):
+    raise newForumError("You're posting too fast!")
+
+  result[0] = tryInsertID(db, query, subject).int
+  if result[0] < 0:
+    raise newForumError("Subject already exists", @["subject"])
+
+  discard tryExec(db, crud(crCreate, "thread_fts", "id", "name"),
+                      c.threadID, subject)
+  result[1] = executeReply(c, result[0].int, msg, -1)
+  discard tryExec(db, sql"insert into post_fts(post_fts) values('optimize')")
+  discard tryExec(db, sql"insert into post_fts(thread_fts) values('optimize')")
 
 initialise()
 
@@ -1370,12 +1411,31 @@ routes:
     try:
       let id = executeReply(c, threadId, msg, replyingTo)
       resp Http200, $(%id), "application/json"
-    except ForumError:
+    except ForumError as exc:
+      resp Http400, $(%exc.data), "application/json"
+
+  post "/karax/newthread":
+    createTFD()
+    if not c.loggedIn():
       let err = PostError(
         errorFields: @[],
-        message: getCurrentExceptionMsg()
+        message: "Not logged in."
       )
-      resp Http400, $(%err), "application/json"
+      resp Http401, $(%err), "application/json"
+
+    let formData = request.formData
+    cond "msg" in formData
+    cond "subject" in formData
+
+    let msg = formData["msg"].body
+    let subject = formData["subject"].body
+    # TODO: category
+
+    try:
+      let res = executeNewThread(c, subject, msg)
+      resp Http200, $(%[res[0], res[1]]), "application/json"
+    except ForumError as exc:
+      resp Http400, $(%exc.data), "application/json"
 
   get re"/karax/(.+)?":
     resp readFile("redesign/karax.html")
