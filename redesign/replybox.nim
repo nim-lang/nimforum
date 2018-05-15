@@ -6,7 +6,7 @@ when defined(js):
   include karax/prelude
   import karax / [vstyles, kajax, kdom]
 
-  import karaxutils, threadlist, post, error
+  import karaxutils, threadlist, post, error, user
 
   type
     ReplyBox* = ref object

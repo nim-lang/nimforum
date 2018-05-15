@@ -1,6 +1,7 @@
 import options, httpcore, json, sugar, times
 
-import threadlist, post, category, error
+import threadlist, post, category, error, user
+
 type
   Profile* = object
     user*: User

@@ -1,7 +1,7 @@
 
 import options, json, times, httpcore, strformat, sugar, math
 
-import threadlist, category, post
+import threadlist, category, post, user
 type
 
   PostList* = ref object

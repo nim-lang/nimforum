@@ -1,4 +1,4 @@
-import strutils, options
+import strutils, options, strformat
 import dom except window
 
 include karax/prelude
@@ -64,3 +64,9 @@ proc get*(form: FormData, key: cstring): cstring
   {.importcpp: "#.get(@)".}
 proc append*(form: FormData, key, val: cstring)
   {.importcpp: "#.append(@)".}
+
+proc renderProfileUrl*(username: string): string =
+  makeUri(fmt"/profile/{username}")
+
+proc renderPostUrl*(threadId, postId: int): string =
+  makeUri(fmt"/t/{threadId}#{postId}")

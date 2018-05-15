@@ -14,7 +14,7 @@ import cgi except setCookie
 import options
 
 import redesign/threadlist except User
-import redesign/[category, postlist, error, header, post, profile]
+import redesign/[category, postlist, error, header, post, profile, user]
 
 when not defined(windows):
   import bcrypt # TODO
@@ -394,7 +394,7 @@ proc getBanErrorMsg(banValue: string; rank: Rank): string =
   of Troll: return "You have been banned."
   of EmailUnconfirmed:
     return "You need to confirm your email first."
-  of Moderated, User, Moderator, Admin:
+  of Moderated, Rank.User, Moderator, Admin:
     return ""
 
 proc checkLoggedIn(c: TForumData) =
@@ -638,7 +638,7 @@ proc reply(c: TForumData): bool =
 
     exec(db, sql"update thread set modified = DATETIME('now') where id = ?",
          $c.threadId)
-    if c.rank >= User:
+    if c.rank >= Rank.User:
       asyncCheck sendMailToMailingList(c.config, c.username, c.email,
           subject, content, threadId=c.threadId, postId=c.postID, is_reply=true,
           threadUrl=c.makeThreadURL())
@@ -661,7 +661,7 @@ proc newThread(c: TForumData): bool =
     writeToDb(c, crCreate, false)
     discard tryExec(db, sql"insert into post_fts(post_fts) values('optimize')")
     discard tryExec(db, sql"insert into post_fts(thread_fts) values('optimize')")
-    if c.rank >= User:
+    if c.rank >= Rank.User:
       asyncCheck sendMailToMailingList(c.config, c.username, c.email,
           subject, content, threadId=c.threadID, postId=c.postID, is_reply=false,
           threadUrl=c.makeThreadURL())
@@ -1015,8 +1015,8 @@ template createTFD() =
 
 #[ DB functions. TODO: Move to another module? ]#
 
-proc selectUser(userRow: seq[string], avatarSize: int=80): threadlist.User =
-  return threadlist.User(
+proc selectUser(userRow: seq[string], avatarSize: int=80): User =
+  return User(
     name: userRow[0],
     avatarUrl: userRow[1].getGravatarUrl(avatarSize),
     lastOnline: userRow[2].parseInt,
@@ -1252,7 +1252,7 @@ routes:
     profile.user = selectUser(@[
       rows[0][2], rows[0][3], rows[0][4], rows[0][5]
     ], avatarSize=200)
-    profile.joinTime = rows[0][7].parseInt()
+    profile.joinTime = rows[0][6].parseInt()
     profile.postCount =
       getValue(db, sql("select count(*) " & postsFrom), username).parseInt()
     profile.threadCount =
@@ -1307,16 +1307,16 @@ routes:
 
     let user =
       if @"logout" == "true":
-        logout(c); none[threadlist.User]()
+        logout(c); none[User]()
       elif c.loggedIn():
-        some(threadlist.User(
+        some(User(
           name: c.username,
           avatarUrl: c.email.getGravatarUrl(),
           lastOnline: getTime().toUnix(),
           rank: c.rank
         ))
       else:
-        none[threadlist.User]()
+        none[User]()
 
     let status = UserStatus(user: user)
     resp $(%status), "application/json"

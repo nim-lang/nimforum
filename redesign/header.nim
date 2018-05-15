@@ -1,6 +1,6 @@
 import options, times, httpcore, json, sugar
 
-import threadlist
+import threadlist, user
 type
   UserStatus* = object
     user*: Option[User]

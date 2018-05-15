@@ -1,24 +1,8 @@
 import strformat, times, options, json, httpcore, sugar
 
-import category
+import category, user
 
 type
-  Rank* {.pure.} = enum ## serialized as 'status'
-    Spammer          ## spammer: every post is invisible
-    Troll            ## troll: cannot write new posts
-    EmailUnconfirmed ## member with unconfirmed email address
-    Moderated        ## new member: posts manually reviewed before everybody
-                     ## can see them
-    User             ## Ordinary user
-    Moderator        ## Moderator: can ban/moderate users
-    Admin            ## Admin: can do everything
-
-  User* = object
-    name*: string
-    avatarUrl*: string
-    lastOnline*: int64
-    rank*: Rank
-
   Thread* = object
     id*: int
     topic*: string
@@ -35,9 +19,6 @@ type
     threads*: seq[Thread]
     lastVisit*: int64 ## Unix timestamp
     moreCount*: int ## How many more threads are left
-
-proc isOnline*(user: User): bool =
-  return getTime().toUnix() - user.lastOnline > (60*5)
 
 when defined(js):
   include karax/prelude
@@ -76,19 +57,6 @@ when defined(js):
           button(class="btn btn-link"): text "Most Active"
           button(class="btn btn-link"): text "Categories"
         section(class="navbar-section")
-
-  proc render*(user: User, class: string): VNode =
-    result = buildHtml():
-      figure(class=class):
-        img(src=user.avatarUrl, title=user.name)
-        if user.isOnline:
-          italic(class="avatar-presense online")
-
-  proc renderUserMention*(user: User): VNode =
-    result = buildHtml():
-      # TODO: Add URL to profile.
-      span(class="user-mention"):
-           text "@" & user.name
 
   proc genUserAvatars(users: seq[User]): VNode =
     result = buildHtml(td):

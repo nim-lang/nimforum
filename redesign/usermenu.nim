@@ -6,7 +6,7 @@ when defined(js):
   import karax/[vstyles]
   import karaxutils
 
-  import threadlist
+  import user
   type
     UserMenu* = ref object
       shown: bool

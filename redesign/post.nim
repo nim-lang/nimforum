@@ -1,7 +1,6 @@
 import strformat
 
-import threadlist
-
+import user, threadlist
 
 type
   PostInfo* = object
@@ -29,8 +28,6 @@ type
 
 when defined(js):
   import karaxutils
-  proc renderPostUrl*(threadId, postId: int): string =
-    makeUri(fmt"/t/{threadId}#{postId}")
 
   proc renderPostUrl*(post: Post, thread: Thread): string =
     renderPostUrl(thread.id, post.id)
