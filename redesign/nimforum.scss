@@ -500,3 +500,15 @@ hr {
     margin-right: $control-padding-x-lg;
   }
 }
+
+.profile-post {
+  @extend .post;
+
+  .profile-post-main {
+    flex: 1;
+  }
+
+  .profile-post-time {
+    float: right;
+  }
+}

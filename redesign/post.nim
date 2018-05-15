@@ -21,7 +21,19 @@ type
     info*: PostInfo
     moreBefore*: seq[int]
 
+  PostLink* = object ## Used by profile
+    creation*: int64
+    topic*: string
+    threadId*: int
+    postId*: int
+
 when defined(js):
   import karaxutils
+  proc renderPostUrl*(threadId, postId: int): string =
+    makeUri(fmt"/t/{threadId}#{postId}")
+
   proc renderPostUrl*(post: Post, thread: Thread): string =
-    makeUri(fmt"/t/{thread.id}#{post.id}")
+    renderPostUrl(thread.id, post.id)
+
+  proc renderPostUrl*(link: PostLink): string =
+    renderPostUrl(link.threadId, link.postId)

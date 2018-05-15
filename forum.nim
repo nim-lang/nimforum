@@ -1214,14 +1214,33 @@ routes:
     var
       username = @"username"
 
+    # Have to do this because SQLITE doesn't support `in` queries with
+    # multiple columns :/
+    # TODO: Figure out a better way. This is horrible.
+    let creatorSubquery = """
+        (select $1 from post p
+         where p.thread = t.id
+         order by p.id asc limit 1)
+    """
+
+    let threadsFrom = """
+      from thread t, post p
+      where ? in $1 and p.id in $2
+    """ % [creatorSubquery % "author", creatorSubquery % "id"]
+
+    let postsFrom = """
+      from post p, person u, thread t
+      where u.id = p.author and p.thread = t.id and u.name = ?
+    """
+
     let postsQuery = sql("""
-      select p.id, p.content, strftime('%s', p.creation), p.author,
+      select p.id, strftime('%s', p.creation),
              u.name, u.email, strftime('%s', u.lastOnline), u.status,
-             strftime('%s', u.creation)
-      from post p, person u
-      where u.id = p.author and u.name = ?
-      order by p.id desc;
-    """)
+             strftime('%s', u.creation), u.id,
+             t.name, t.id
+      $1
+      order by p.id desc limit 10;
+    """ % postsFrom)
 
     var profile = Profile(
       threads: @[],
@@ -1229,29 +1248,43 @@ routes:
     )
 
     let rows = db.getAllRows(postsQuery, username)
+    let userID = rows[0][7]
     profile.user = selectUser(@[
-      rows[0][4], rows[0][5], rows[0][6], rows[0][7]
+      rows[0][2], rows[0][3], rows[0][4], rows[0][5]
     ], avatarSize=200)
-    profile.joinTime = rows[0][8].parseInt()
+    profile.joinTime = rows[0][7].parseInt()
+    profile.postCount =
+      getValue(db, sql("select count(*) " & postsFrom), username).parseInt()
+    profile.threadCount =
+      getValue(db, sql("select count(*) " & threadsFrom), userID).parseInt()
 
     if c.rank >= Admin:
-      profile.email = some(rows[0][5])
+      profile.email = some(rows[0][3])
 
     for row in rows:
-      let firstPostForThread = getRow(db,
-        sql"""select t.id, t.name, t.views, t.modified, p.id
-              from thread t, post p
-              where p.thread = t.id
-              order by p.id limit 1""", row[0])
-
-      # Check if the thread that contains this post was created by the user.
-      if firstPostForThread[4] == row[0]:
-        profile.threads.add(
-          selectThread(firstPostForThread)
-        )
-
       profile.posts.add(
-        selectPost(row, @[])
+        PostLink(
+          creation: row[1].parseInt(),
+          topic: row[8],
+          threadId: row[9].parseInt(),
+          postId: row[0].parseInt()
+        )
+      )
+
+    let threadsQuery = sql("""
+      select t.id, t.name, strftime('%s', p.creation), p.id
+      $1
+      order by t.id desc
+      limit 10;
+    """ % threadsFrom)
+    for row in db.getAllRows(threadsQuery, userID):
+      profile.threads.add(
+        PostLink(
+          creation: row[2].parseInt(),
+          topic: row[1],
+          threadId: row[0].parseInt(),
+          postId: row[3].parseInt()
+        )
       )
 
     resp $(%profile), "application/json"
