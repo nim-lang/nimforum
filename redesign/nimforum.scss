@@ -450,3 +450,53 @@ hr {
 }
 
 @import "syntax.scss";
+
+// - Profile view
+
+.profile {
+  @extend .tile;
+  margin-top: $control-padding-y*5;
+}
+
+.profile-icon {
+  @extend .tile-icon;
+}
+
+.profile-avatar {
+  @extend .avatar;
+  @extend .avatar-xl;
+
+  height: 8.2rem;
+  width: 8.2rem;
+}
+
+.profile-content {
+  @extend .tile-content;
+  padding: $control-padding-x $control-padding-y;
+}
+
+.profile-title {
+  @extend .tile-title;
+}
+
+.profile-stats {
+  dl {
+    border-top: 1px solid $border-color;
+    border-bottom: 1px solid $border-color;
+  }
+
+  dt {
+    font-weight: normal;
+    color: lighten($dark-color, 15%);
+  }
+
+  dt, dd {
+    display: inline-block;
+    margin: 0;
+    margin-right: $control-padding-x;
+  }
+
+  dd {
+    margin-right: $control-padding-x-lg;
+  }
+}

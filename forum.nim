@@ -1015,10 +1015,10 @@ template createTFD() =
 
 #[ DB functions. TODO: Move to another module? ]#
 
-proc selectUser(userRow: seq[string]): threadlist.User =
+proc selectUser(userRow: seq[string], avatarSize: int=80): threadlist.User =
   return threadlist.User(
     name: userRow[0],
-    avatarUrl: userRow[1].getGravatarUrl(),
+    avatarUrl: userRow[1].getGravatarUrl(avatarSize),
     lastOnline: userRow[2].parseInt,
     rank: parseEnum[Rank](userRow[3])
   )
@@ -1216,7 +1216,8 @@ routes:
 
     let postsQuery = sql("""
       select p.id, p.content, strftime('%s', p.creation), p.author,
-             u.name, u.email, strftime('%s', u.lastOnline), u.status
+             u.name, u.email, strftime('%s', u.lastOnline), u.status,
+             strftime('%s', u.creation)
       from post p, person u
       where u.id = p.author and u.name = ?
       order by p.id desc;
@@ -1230,7 +1231,8 @@ routes:
     let rows = db.getAllRows(postsQuery, username)
     profile.user = selectUser(@[
       rows[0][4], rows[0][5], rows[0][6], rows[0][7]
-    ])
+    ], avatarSize=200)
+    profile.joinTime = rows[0][8].parseInt()
 
     if c.rank >= Admin:
       profile.email = some(rows[0][5])
