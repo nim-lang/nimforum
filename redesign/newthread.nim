@@ -52,8 +52,12 @@ when defined(js):
             input(class="form-input", `type`="text", name="username",
                   placeholder="Type the title here",
                   onChange=(e: Event, n: VNode) => onSubjectChange(e, n, state))
+            if state.error.isSome():
+              p(class="text-error"):
+                text state.error.get().message
             renderContent(state.replyBox, none[Thread](), none[Post]())
           tdiv(class="footer"):
+
             button(class=class(
                     {"loading": state.loading},
                     "btn btn-primary"

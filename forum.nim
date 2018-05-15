@@ -1120,6 +1120,9 @@ proc executeNewThread(c: TForumData, subject, msg: string): (int64, int64) =
   if subject.len > 100:
     raise newForumError("Subject is too long", @["subject"])
 
+  if msg.len == 0:
+    raise newForumError("Message is empty", @["msg"])
+
   if not validateRst(c, msg):
     raise newForumError("Message needs to be valid RST", @["msg"])
 
