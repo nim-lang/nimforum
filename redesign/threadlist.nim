@@ -24,23 +24,29 @@ when defined(js):
   include karax/prelude
   import karax / [vstyles, kajax, kdom]
 
-  import karaxutils, error
+  import karaxutils, error, newthread
 
   type
     State = ref object
       list: Option[ThreadList]
       loading: bool
       status: HttpCode
+      newThread: NewThreadModal
 
+  proc onNewThread(threadId, postId: int)
   proc newState(): State =
     State(
       list: none[ThreadList](),
       loading: false,
-      status: Http200
+      status: Http200,
+      newThread: newNewThreadModal(onNewThread)
     )
 
   var
     state = newState()
+
+  proc onNewThread(threadId, postId: int) =
+    discard
 
   proc genTopButtons(): VNode =
     result = buildHtml():
@@ -57,7 +63,8 @@ when defined(js):
           button(class="btn btn-link"): text "Most Active"
           button(class="btn btn-link"): text "Categories"
         section(class="navbar-section"):
-          button(class="btn btn-secondary"):
+          button(class="btn btn-secondary",
+                 onClick=(e: Event, n: VNode) => state.newThread.show()):
             italic(class="fas fa-plus")
             text " New Thread"
 
@@ -175,3 +182,4 @@ when defined(js):
     result = buildHtml(tdiv):
       genTopButtons()
       genThreadList()
+      render(state.newThread)

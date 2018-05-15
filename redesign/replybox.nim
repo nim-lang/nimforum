@@ -48,12 +48,17 @@ when defined(js):
     state.preview = true
     state.loading = true
     state.error = none[PostError]()
+    state.rendering = none[kstring]()
 
     let formData = newFormData()
     formData.append("msg", state.text)
     let uri = makeUri("/preview")
     ajaxPost(uri, @[], cast[cstring](formData),
              (s: int, r: kstring) => onPreviewPost(s, r, state))
+
+  proc onMessageClick(e: Event, n: VNode, state: ReplyBox) =
+    state.preview = false
+    state.error = none[PostError]()
 
   proc onReplyPost(httpStatus: int, response: kstring, state: ReplyBox) =
     postFinished:
@@ -84,6 +89,53 @@ when defined(js):
     # `value` on the node? We need to document this better :)
     state.text = cast[dom.TextAreaElement](n.dom).value
 
+  proc renderContent*(state: ReplyBox, thread: Option[Thread],
+                      post: Option[Post]): VNode =
+    result = buildHtml():
+      tdiv(class="panel"):
+        tdiv(class="panel-nav"):
+          ul(class="tab tab-block"):
+            li(class=class({"active": not state.preview}, "tab-item"),
+               onClick=(e: Event, n: VNode) =>
+                  onMessageClick(e, n, state)):
+              a(class="c-hand"):
+                text "Message"
+            li(class=class({"active": state.preview}, "tab-item"),
+               onClick=(e: Event, n: VNode) =>
+                  onPreviewClick(e, n, state)):
+              a(class="c-hand"):
+                text "Preview"
+        tdiv(class="panel-body"):
+          if state.preview:
+            if state.loading:
+              tdiv(class="loading")
+            elif state.rendering.isSome():
+              verbatim(state.rendering.get())
+          else:
+            textarea(class="form-input", rows="5",
+                     onChange=(e: Event, n: VNode) =>
+                        onChange(e, n, state),
+                     value=state.text)
+
+          if state.error.isSome():
+            p(class="text-error",
+                 style=style(StyleAttr.marginTop, "0.4rem")):
+              text state.error.get().message
+
+        if thread.isSome:
+          tdiv(class="panel-footer"):
+            button(class=class(
+                     {"loading": state.loading},
+                     "btn btn-primary float-right"
+                   ),
+                   onClick=(e: Event, n: VNode) =>
+                      onReplyClick(e, n, state, thread.get(), post)):
+              text "Reply"
+            button(class="btn btn-link float-right",
+                   onClick=(e: Event, n: VNode) =>
+                      onCancelClick(e, n, state)):
+              text "Cancel"
+
   proc render*(state: ReplyBox, thread: Thread, post: Option[Post],
                hasMore: bool): VNode =
     if not state.shown:
@@ -106,44 +158,4 @@ when defined(js):
                   button(class="btn"):
                     italic(class="fas fa-arrow-up")
           tdiv(class="information-content"):
-            tdiv(class="panel"):
-              tdiv(class="panel-nav"):
-                ul(class="tab tab-block"):
-                  li(class=class({"active": not state.preview}, "tab-item"),
-                     onClick=(e: Event, n: VNode) => (state.preview = false)):
-                    a(class="c-hand"):
-                      text "Message"
-                  li(class=class({"active": state.preview}, "tab-item"),
-                     onClick=(e: Event, n: VNode) =>
-                        onPreviewClick(e, n, state)):
-                    a(class="c-hand"):
-                      text "Preview"
-              tdiv(class="panel-body"):
-                if state.preview:
-                  if state.loading:
-                    tdiv(class="loading")
-                  elif state.rendering.isSome():
-                    verbatim(state.rendering.get())
-                else:
-                  textarea(class="form-input", rows="5",
-                           onChange=(e: Event, n: VNode) =>
-                              onChange(e, n, state),
-                           value=state.text)
-
-                if state.error.isSome():
-                  tdiv(class="toast toast-error",
-                       style=style(StyleAttr.marginTop, "0.4rem")):
-                    text state.error.get().message
-
-              tdiv(class="panel-footer"):
-                button(class=class(
-                         {"loading": state.loading},
-                         "btn btn-primary float-right"
-                       ),
-                       onClick=(e: Event, n: VNode) =>
-                          onReplyClick(e, n, state, thread, post)):
-                  text "Reply"
-                button(class="btn btn-link float-right",
-                       onClick=(e: Event, n: VNode) =>
-                          onCancelClick(e, n, state)):
-                  text "Cancel"
+            renderContent(state, some(thread), post)
