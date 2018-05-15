@@ -56,7 +56,10 @@ when defined(js):
           button(class="btn btn-primary"): text "Latest"
           button(class="btn btn-link"): text "Most Active"
           button(class="btn btn-link"): text "Categories"
-        section(class="navbar-section")
+        section(class="navbar-section"):
+          button(class="btn btn-secondary"):
+            italic(class="fas fa-plus")
+            text " New Thread"
 
   proc genUserAvatars(users: seq[User]): VNode =
     result = buildHtml(td):
