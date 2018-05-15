@@ -1,5 +1,5 @@
 
-import options, json, times, httpcore, strformat, sugar, math
+import options, json, times, httpcore, strformat, sugar, math, strutils
 
 import threadlist, category, post, user
 type
@@ -148,22 +148,36 @@ when defined(js):
                   italic(class="fas fa-reply")
                   text " Reply"
 
-  proc genTimePassed(prevPost: Post, post: Option[Post]): VNode =
+  proc genTimePassed(prevPost: Post, post: Option[Post], last: bool): VNode =
     var latestTime =
       if post.isSome: post.get().info.creation.fromUnix()
       else: getTime()
 
     # TODO: Use `between` once it's merged into stdlib.
-    var diffStr = "Some time later"
+    let
+      tmpl =
+        if last: [
+            "A long time since last reply",
+            "$1 year since last reply",
+            "$1 years since last reply",
+            "$1 month since last reply",
+            "$1 months since last reply",
+          ]
+        else: [
+          "Some time later",
+          "$1 year later", "$1 years later",
+          "$1 month later", "$1 months later"
+        ]
+    var diffStr = tmpl[0]
     let diff = latestTime - prevPost.info.creation.fromUnix()
     if diff.weeks > 48:
       let years = diff.weeks div 48
-      diffStr = $years
-      diffStr.add(if years == 1: " year later" else: " years later")
+      diffStr =
+        (if years == 1: tmpl[1] else: tmpl[2]) % $years
     elif diff.weeks > 4:
       let months = diff.weeks div 4
-      diffStr = $months
-      diffStr.add(if months == 1: " month later" else: " months later")
+      diffStr =
+        (if months == 1: tmpl[3] else: tmpl[4]) % $months
     else:
       return buildHtml(tdiv())
 
@@ -196,13 +210,13 @@ when defined(js):
           var prevPost: Option[Post] = none[Post]()
           for i, post in list.posts:
             if prevPost.isSome:
-              genTimePassed(prevPost.get(), some(post))
+              genTimePassed(prevPost.get(), some(post), false)
             if post.moreBefore.len > 0:
               genLoadMore(post, i)
             genPost(post, list.thread, isLoggedIn)
             prevPost = some(post)
 
           if prevPost.isSome:
-            genTimePassed(prevPost.get(), none[Post]())
+            genTimePassed(prevPost.get(), none[Post](), true)
 
           render(state.replyBox, list.thread, state.replyingTo, false)
