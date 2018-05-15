@@ -7,6 +7,7 @@ type
     id*: int
     topic*: string
     category*: Category
+    author*: User
     users*: seq[User]
     replies*: int
     views*: int
@@ -14,11 +15,16 @@ type
     creation*: int64 ## Unix timestamp
     isLocked*: bool
     isSolved*: bool
+    isDeleted*: bool
 
   ThreadList* = ref object
     threads*: seq[Thread]
     lastVisit*: int64 ## Unix timestamp
     moreCount*: int ## How many more threads are left
+
+proc isInvisible*(thread: Thread): bool =
+  ## Determines whether the specified thread is under moderation.
+  thread.author.rank <= Moderated
 
 when defined(js):
   include karax/prelude
@@ -95,6 +101,10 @@ when defined(js):
         td(class="thread-title"):
           if thread.isLocked:
             italic(class="fas fa-lock fa-xs")
+          if thread.isInvisible:
+            italic(class="fas fa-eye-slash fa-xs")
+          if thread.isSolved:
+            italic(class="fas fa-check-square fa-xs")
           a(href=makeUri("/t/" & $thread.id), onClick=anchorCB): text thread.topic
         td():
           render(thread.category)

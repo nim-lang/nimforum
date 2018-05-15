@@ -1054,10 +1054,21 @@ proc selectThread(threadRow: seq[string]): Thread =
           where thread = ?
           order by creation asc limit 1;"""
   const usersListQuery =
-    sql"""select distinct name, email, strftime('%s', lastOnline), status
-          from person where id in
-            (select author from post where thread = ?)
-          limit 5;""" # TODO: Order by most posts.
+    sql"""
+      select name, email, strftime('%s', lastOnline), status, count(*)
+      from person u, post p where p.author = u.id and p.thread = ?
+      group by name order by count(*) desc limit 5;
+    """
+  const authorQuery =
+    sql"""
+      select name, email, strftime('%s', lastOnline), status
+      from person where id in (
+        select author from post
+        where thread = ?
+        order by id
+        limit 1
+      )
+    """
 
   let posts = getRow(db, postsQuery, threadRow[0])
 
@@ -1071,12 +1082,16 @@ proc selectThread(threadRow: seq[string]): Thread =
     activity: threadRow[3].parseInt,
     creation: posts[1].parseInt,
     isLocked: false, # TODO:
-    isSolved: false # TODO: Add a field to `post` to identify the solution.
+    isSolved: false, # TODO: Add a field to `post` to identify the solution.
+    isDeleted: false # TODO:
   )
 
   # Gather the users list.
   for user in getAllRows(db, usersListQuery, thread.id):
     thread.users.add(selectUser(user))
+
+  # Grab the author.
+  thread.author = selectUser(getRow(db, authorQuery, thread.id))
 
   return thread
 
