@@ -113,7 +113,7 @@ $logo-height: $navbar-height - 20px;
   }
 }
 
-#new-thread-modal {
+#new-thread {
   .modal-container .modal-body {
     max-height: none;
   }
@@ -124,9 +124,13 @@ $logo-height: $navbar-height - 20px;
 
   textarea.form-input, .panel-body > div {
     margin-top: $control-padding-y*2;
-    resize: none;
+    resize: vertical;
     min-height: 40vh;
-    max-height: 45vh;
+  }
+
+  .footer {
+    float: right;
+    margin-top: $control-padding-y*2;
   }
 }
 

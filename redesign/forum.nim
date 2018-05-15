@@ -4,18 +4,20 @@ from dom import window, Location
 include karax/prelude
 import jester/patterns
 
-import threadlist, postlist, header, profile
+import threadlist, postlist, header, profile, newthread
 import karaxutils
 
 type
   State = ref object
     url: Location
     profile: ProfileState
+    newThread: NewThread
 
 proc newState(): State =
   State(
     url: window.location,
-    profile: newProfileState()
+    profile: newProfileState(),
+    newThread: newNewThread()
   )
 
 var state = newState()
@@ -46,6 +48,10 @@ proc render(): VNode =
   result = buildHtml(tdiv()):
     renderHeader()
     route([
+      r("/newthread",
+        (params: Params) =>
+          (render(state.newThread))
+      ),
       r("/profile/@username",
         (params: Params) =>
           (render(state.profile, params["username"]))
