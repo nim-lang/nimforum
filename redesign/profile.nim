@@ -59,7 +59,7 @@ when defined(js):
     if state.status != Http200:
       return renderError("Couldn't retrieve profile.")
 
-    if state.profile.isNone:
+    if state.profile.isNone or state.profile.get().user.name != username:
       let uri = makeUri("profile.json", ("username", username))
       ajaxGet(uri, @[], (s: int, r: kstring) => onProfile(s, r, state))
 
