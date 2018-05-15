@@ -512,3 +512,15 @@ hr {
     float: right;
   }
 }
+
+.spoiler {
+  text-shadow: gray 0px 0px 15px;
+  color: transparent;
+  -moz-user-select: none;
+  user-select: none;
+  cursor: normal;
+
+  &:hover, &:focus {
+    text-shadow: $body-font-color 0px 0px 0px;
+  }
+}
