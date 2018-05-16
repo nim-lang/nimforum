@@ -67,7 +67,7 @@ proc render(): VNode =
             )
           )
       ),
-      r("/", (params: Params) => renderThreadList())
+      r("/", (params: Params) => renderThreadList(getLoggedInUser()))
     ])
 
 window.onPopState = onPopState

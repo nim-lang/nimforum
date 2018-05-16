@@ -223,6 +223,18 @@ when defined(js):
       section(class="container grid-xl"):
         tdiv(class="title"):
           p(): text list.thread.topic
+          if list.thread.isLocked:
+            italic(class="fas fa-lock fa-xs",
+                   title="Thread cannot be replied to")
+            text "Locked"
+          if list.thread.isModerated:
+            italic(class="fas fa-eye-slash fa-xs",
+                   title="Thread is moderated")
+            text "Moderated"
+          if list.thread.isSolved:
+            italic(class="fas fa-check-square fa-xs",
+                   title="Thread has a solution")
+            text "Solved"
           render(list.thread.category)
         tdiv(class="posts"):
           var prevPost: Option[Post] = none[Post]()

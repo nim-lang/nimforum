@@ -22,7 +22,7 @@ type
     lastVisit*: int64 ## Unix timestamp
     moreCount*: int ## How many more threads are left
 
-proc isInvisible*(thread: Thread): bool =
+proc isModerated*(thread: Thread): bool =
   ## Determines whether the specified thread is under moderation.
   thread.author.rank <= Moderated
 
@@ -30,7 +30,7 @@ when defined(js):
   include karax/prelude
   import karax / [vstyles, kajax, kdom]
 
-  import karaxutils, error
+  import karaxutils, error, user
 
   type
     State = ref object
@@ -38,7 +38,6 @@ when defined(js):
       loading: bool
       status: HttpCode
 
-  proc onNewThread(threadId, postId: int)
   proc newState(): State =
     State(
       list: none[ThreadList](),
@@ -49,10 +48,20 @@ when defined(js):
   var
     state = newState()
 
-  proc onNewThread(threadId, postId: int) =
-    discard
+  proc visibleTo(thread: Thread, user: Option[User]): bool =
+    ## Determines whether the specified thread should be shown to the user.
+    ##
+    ## The rules for this are determined by the rank of the user, their
+    ## settings (TODO), and whether the thread's creator is moderated or not.
+    if user.isNone(): return not thread.isModerated
 
-  proc genTopButtons(): VNode =
+    let rank = user.get().rank
+    if rank < Moderator and thread.isModerated:
+      return thread.author == user.get()
+
+    return true
+
+  proc genTopButtons(currentUser: Option[User]): VNode =
     result = buildHtml():
       section(class="navbar container grid-xl", id="main-buttons"):
         section(class="navbar-section"):
@@ -67,10 +76,11 @@ when defined(js):
           button(class="btn btn-link"): text "Most Active"
           button(class="btn btn-link"): text "Categories"
         section(class="navbar-section"):
-          a(href=makeUri("/newthread"), onClick=anchorCB):
-            button(class="btn btn-secondary"):
-              italic(class="fas fa-plus")
-              text " New Thread"
+          if currentUser.isSome():
+            a(href=makeUri("/newthread"), onClick=anchorCB):
+              button(class="btn btn-secondary"):
+                italic(class="fas fa-plus")
+                text " New Thread"
 
   proc genUserAvatars(users: seq[User]): VNode =
     result = buildHtml(td):
@@ -102,7 +112,7 @@ when defined(js):
           if thread.isLocked:
             italic(class="fas fa-lock fa-xs",
                    title="Thread cannot be replied to")
-          if thread.isInvisible:
+          if thread.isModerated:
             italic(class="fas fa-eye-slash fa-xs",
                    title="Thread is moderated")
           if thread.isSolved:
@@ -147,7 +157,7 @@ when defined(js):
     let start = state.list.get().threads.len
     ajaxGet(makeUri("threads.json?start=" & $start), @[], onThreadList)
 
-  proc genThreadList(): VNode =
+  proc genThreadList(currentUser: Option[User]): VNode =
     if state.status != Http200:
       return renderError("Couldn't retrieve threads.")
 
@@ -171,6 +181,8 @@ when defined(js):
           tbody():
             for i in 0 ..< list.threads.len:
               let thread = list.threads[i]
+              if not visibleTo(thread, currentUser): continue
+
               let isLastVisit =
                 i+1 < list.threads.len and
                 list.threads[i].activity < list.lastVisit
@@ -191,7 +203,7 @@ when defined(js):
                   td(colspan="6", onClick=onLoadMore):
                     span(text "load more threads")
 
-  proc renderThreadList*(): VNode =
+  proc renderThreadList*(currentUser: Option[User]): VNode =
     result = buildHtml(tdiv):
-      genTopButtons()
-      genThreadList()
+      genTopButtons(currentUser)
+      genThreadList(currentUser)

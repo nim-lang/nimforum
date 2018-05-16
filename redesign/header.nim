@@ -68,9 +68,11 @@ when defined(js):
     let uri = makeUri("status.json", [("logout", $logout)])
     ajaxGet(uri, @[], onStatus)
 
+  proc getLoggedInUser*(): Option[User] =
+    state.data.map(x => x.user).flatten
+
   proc isLoggedIn*(): bool =
-    let user = state.data.map(x => x.user).flatten
-    not user.isNone
+    not getLoggedInUser().isNone
 
   proc renderHeader*(): VNode =
     if state.data.isNone:

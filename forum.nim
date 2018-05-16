@@ -1205,19 +1205,13 @@ routes:
     let threadRow = getRow(db, threadsQuery, id)
     let thread = selectThread(threadRow)
 
-    let modClause =
-      if c.rank >= Moderator:
-        "(1 or u.id = ?)"
-      else:
-        "(u.status <> 'Moderated' or p.author = ?)"
     let postsQuery =
       sql(
         """select p.id, p.content, strftime('%s', p.creation), p.author,
                   u.name, u.email, strftime('%s', u.lastOnline), u.status
            from post p, person u
-           where u.id = p.author and p.thread = ? and $#
-                  and (u.status <> 'Spammer' or p.author = ?)
-           order by p.id""" % modClause
+           where u.id = p.author and p.thread = ?
+           order by p.id"""
       )
 
     var list = PostList(
