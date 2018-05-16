@@ -151,13 +151,16 @@ when defined(js):
     let loggedIn = currentUser.isSome()
     let authoredByUser =
       loggedIn and currentUser.get().name == post.author.name
+    let currentAdmin =
+      currentUser.isSome() and currentUser.get().rank == Admin
 
+    # Don't show buttons if the post is being edited.
     if state.editing.isSome() and state.editing.get() == post:
       return buildHtml(tdiv())
 
     result = buildHtml():
       tdiv(class="post-buttons"):
-        if authoredByUser:
+        if authoredByUser or currentAdmin:
           tdiv(class="edit-button", onClick=(e: Event, n: VNode) =>
                onEditClick(e, n, post)):
             button(class="btn"):
