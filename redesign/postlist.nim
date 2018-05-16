@@ -168,7 +168,8 @@ when defined(js):
           tdiv(class="delete-button"):
             button(class="btn"):
               italic(class="far fa-trash-alt")
-        else:
+
+        if not authoredByUser:
           tdiv(class="like-button"):
             button(class="btn"):
               span(class="like-count"):
