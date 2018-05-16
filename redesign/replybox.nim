@@ -115,7 +115,7 @@ when defined(js):
             elif state.rendering.isSome():
               verbatim(state.rendering.get())
           else:
-            textarea(class="form-input", rows="5",
+            textarea(class="form-input post-text-area", rows="5",
                      onChange=(e: Event, n: VNode) =>
                         onChange(e, n, state),
                      value=state.text)
