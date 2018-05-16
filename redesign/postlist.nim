@@ -129,6 +129,9 @@ when defined(js):
   proc onEditClick(e: Event, n: VNode, p: Post) =
     state.editing = some(p)
 
+    # TODO: Ensure the edit box is as big as its content. Auto resize the
+    # text area.
+
   proc onLoadMore(ev: Event, n: VNode, start: int, post: Post) =
     loadMore(start, post.moreBefore) # TODO: Don't load all!
 
