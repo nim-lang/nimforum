@@ -54,7 +54,7 @@ proc render(): VNode =
       ),
       r("/profile/@username",
         (params: Params) =>
-          (render(state.profile, params["username"]))
+          (render(state.profile, params["username"], getLoggedInUser()))
       ),
       r("/t/@id",
         (params: Params) =>

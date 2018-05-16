@@ -19,15 +19,20 @@ when defined(js):
   import karaxutils
 
   type
+    ProfileTab* = enum
+      Overview, Settings
+
     ProfileState* = ref object
       profile: Option[Profile]
+      currentTab: ProfileTab
       loading: bool
       status: HttpCode
 
   proc newProfileState*(): ProfileState =
     ProfileState(
       loading: false,
-      status: Http200
+      status: Http200,
+      currentTab: Overview
     )
 
   proc onProfile(httpStatus: int, response: kstring, state: ProfileState) =
@@ -55,7 +60,11 @@ when defined(js):
               p(title=title):
                 text renderActivity(link.creation)
 
-  proc render*(state: ProfileState, username: string): VNode =
+  proc render*(
+    state: ProfileState,
+    username: string,
+    currentUser: Option[User]
+  ): VNode =
     if state.status != Http200:
       return renderError("Couldn't retrieve profile.")
 
@@ -66,6 +75,19 @@ when defined(js):
       return buildHtml(tdiv(class="loading loading-lg"))
 
     let profile = state.profile.get()
+    let isAdmin = currentUser.isSome() and currentUser.get().rank == Admin
+
+    # TODO: Surely there is a better way to handle this.
+    let rankSelect = buildHtml():
+      if isAdmin:
+        select(class="form-select", value = $profile.user.rank):
+          for r in Rank:
+            option(text $r)
+      else:
+        select(class="form-select", value = $profile.user.rank, disabled=""):
+          for r in Rank:
+            option(text $r)
+
     result = buildHtml():
       section(class="container grid-xl"):
         tdiv(class="profile"):
@@ -103,17 +125,65 @@ when defined(js):
               dd(class="spoiler"):
                 text profile.email.get()
 
-        if profile.posts.len > 0 or profile.threads.len > 0:
+        if currentUser.isSome():
+          let user = currentUser.get()
+          if user.name == profile.user.name or user.rank == Admin:
+            ul(class="tab"):
+              li(class=class(
+                  {"active": state.currentTab == Overview},
+                  "tab-item"
+                 ),
+                 onClick=(e: Event, n: VNode) => (state.currentTab = Overview)
+                ):
+                a():
+                  text "Overview"
+              li(class=class(
+                  {"active": state.currentTab == Settings},
+                  "tab-item"
+                 ),
+                 onClick=(e: Event, n: VNode) => (state.currentTab = Settings)
+                ):
+                a():
+                  text "Settings"
+
+        case state.currentTab
+        of Overview:
+          if profile.posts.len > 0 or profile.threads.len > 0:
+            tdiv(class="columns"):
+              tdiv(class="column col-6"):
+                h4(text "Latest Posts")
+                tdiv(class="posts"):
+                  for post in profile.posts:
+                    genPostLink(post)
+              tdiv(class="column col-6"):
+                h4(text "Latest Threads")
+                tdiv(class="posts"):
+                  for thread in profile.threads:
+                    genPostLink(thread)
+        of Settings:
           tdiv(class="columns"):
             tdiv(class="column col-6"):
-              h4(text "Latest Posts")
-              tdiv(class="posts"):
-                for post in profile.posts:
-                  genPostLink(post)
-            tdiv(class="column col-6"):
-              h4(text "Latest Threads")
-              tdiv(class="posts"):
-                for thread in profile.threads:
-                  genPostLink(thread)
-
+              form(class="form-horizontal"):
+                tdiv(class="form-group"):
+                  tdiv(class="col-3 col-sm-12"):
+                    label(class="form-label"):
+                      text "Username"
+                  tdiv(class="col-9 col-sm-12"):
+                    input(class="form-input",
+                          `type`="text",
+                          value=profile.user.name,
+                          disabled="")
+                tdiv(class="form-group"):
+                  tdiv(class="col-3 col-sm-12"):
+                    label(class="form-label"):
+                      text "Email"
+                  tdiv(class="col-9 col-sm-12"):
+                    input(class="form-input",
+                          `type`="text", value=profile.email.get())
+                tdiv(class="form-group"):
+                  tdiv(class="col-3 col-sm-12"):
+                    label(class="form-label"):
+                      text "Rank"
+                  tdiv(class="col-9 col-sm-12"):
+                    rankSelect
 
