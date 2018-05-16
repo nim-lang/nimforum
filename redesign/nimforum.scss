@@ -502,18 +502,23 @@ hr {
 }
 
 .edit-box {
-  margin-bottom: $control-padding-y;
+  .edit-buttons {
+    margin-top: $control-padding-y*2;
+
+    float: right;
+
+    > div {
+      display: inline-block;
+    }
+  }
+
+  .text-error {
+    margin-top: $control-padding-y*3;
+    display: inline-block;
+  }
 
   .form-input.post-text-area {
     margin-bottom: $control-padding-y*2;
-  }
-}
-
-.edit-buttons {
-  float: right;
-
-  > div {
-    display: inline-block;
   }
 }
 

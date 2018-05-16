@@ -8,7 +8,7 @@ type
     Moderated        ## new member: posts manually reviewed before everybody
                      ## can see them
     User             ## Ordinary user
-    Moderator        ## Moderator: can ban/moderate users
+    Moderator        ## Moderator: can change a user's rank
     Admin            ## Admin: can do everything
 
   User* = object

@@ -30,6 +30,8 @@ when defined(js):
       editBox: EditBox
 
   proc onReplyPosted(id: int)
+  proc onEditPosted(id: int, content: string, subject: Option[string])
+  proc onEditCancelled()
   proc newState(): State =
     State(
       list: none[PostList](),
@@ -37,7 +39,7 @@ when defined(js):
       status: Http200,
       replyingTo: none[Post](),
       replyBox: newReplyBox(onReplyPosted),
-      editBox: newEditBox()
+      editBox: newEditBox(onEditPosted, onEditCancelled)
     )
 
   var
@@ -109,16 +111,16 @@ when defined(js):
     ## Executed when a reply has been successfully posted.
     loadMore(state.list.get().posts.len, @[id])
 
-  proc onEditPosted(id: int, content: string) =
+  proc onEditCancelled() = state.editing = none[Post]()
+
+  proc onEditPosted(id: int, content: string, subject: Option[string]) =
     ## Executed when an edit has been successfully posted.
+    state.editing = none[Post]()
     let list = state.list.get()
     for i in 0 ..< list.posts.len:
       if list.posts[i].id == id:
         list.posts[i].info.content = content
         break
-
-  proc onEditConfirm(e: Event, n: VNode, p: Post) =
-    discard
 
   proc onReplyClick(e: Event, n: VNode, p: Option[Post]) =
     state.replyingTo = p
@@ -151,48 +153,37 @@ when defined(js):
       loggedIn and currentUser.get().name == post.author.name
 
     if state.editing.isSome() and state.editing.get() == post:
-      result = buildHtml():
-        tdiv(class="edit-buttons"):
-          tdiv(class="reply-button"):
-            button(class="btn btn-link",
-                   onClick=(e: Event, n: VNode) =>
-                      (state.editing = none[Post]())):
-              text " Cancel"
-          tdiv(class="save-button"):
-            button(class="btn btn-primary", onClick=(e: Event, n: VNode) =>
-                   onEditConfirm(e, n, post)):
-              italic(class="fas fa-check")
-              text " Save"
-    else:
-      result = buildHtml():
-        tdiv(class="post-buttons"):
-          if authoredByUser:
-            tdiv(class="edit-button", onClick=(e: Event, n: VNode) =>
-                 onEditClick(e, n, post)):
-              button(class="btn"):
-                italic(class="far fa-edit")
-            tdiv(class="delete-button"):
-              button(class="btn"):
-                italic(class="far fa-trash-alt")
-          else:
-            tdiv(class="like-button"):
-              button(class="btn"):
-                span(class="like-count"):
-                  if post.likes.len > 0:
-                    text $post.likes.len
-                  italic(class="far fa-heart")
+      return buildHtml(tdiv())
 
-            if loggedIn:
-              tdiv(class="flag-button"):
-                button(class="btn"):
-                  italic(class="far fa-flag")
+    result = buildHtml():
+      tdiv(class="post-buttons"):
+        if authoredByUser:
+          tdiv(class="edit-button", onClick=(e: Event, n: VNode) =>
+               onEditClick(e, n, post)):
+            button(class="btn"):
+              italic(class="far fa-edit")
+          tdiv(class="delete-button"):
+            button(class="btn"):
+              italic(class="far fa-trash-alt")
+        else:
+          tdiv(class="like-button"):
+            button(class="btn"):
+              span(class="like-count"):
+                if post.likes.len > 0:
+                  text $post.likes.len
+                italic(class="far fa-heart")
 
           if loggedIn:
-            tdiv(class="reply-button"):
-              button(class="btn", onClick=(e: Event, n: VNode) =>
-                     onReplyClick(e, n, some(post))):
-                italic(class="fas fa-reply")
-                text " Reply"
+            tdiv(class="flag-button"):
+              button(class="btn"):
+                italic(class="far fa-flag")
+
+        if loggedIn:
+          tdiv(class="reply-button"):
+            button(class="btn", onClick=(e: Event, n: VNode) =>
+                   onReplyClick(e, n, some(post))):
+              italic(class="fas fa-reply")
+              text " Reply"
 
   proc genPost(post: Post, thread: Thread, currentUser: Option[User]): VNode =
     let postCopy = post # TODO: Another workaround here, closure capture :(

@@ -1021,6 +1021,9 @@ proc executeReply(c: TForumData, threadId: int, content: string,
   if rateLimitCheck(c):
     raise newForumError("You're posting too fast!")
 
+  if not validateRst(c, content):
+    raise newForumError("Message needs to be valid RST", @["msg"])
+
   # TODO: Replying to.
   # Verify that content can be parsed as RST.
   let retID = insertID(
@@ -1038,6 +1041,42 @@ proc executeReply(c: TForumData, threadId: int, content: string,
        $c.threadId)
 
   return retID
+
+proc updatePost(c: TForumData, postId: int, content: string,
+                subject: Option[string]) =
+  ## Updates an existing post.
+  assert c.loggedIn()
+
+  let postQuery = sql"""
+    select author, strftime('%s', creation), thread
+    from post where id = ?
+  """
+
+  let postRow = getRow(db, postQuery, postId)
+
+  # Verify that the current user has permissions to edit the specified post.
+  let creation = fromUnix(postRow[1].parseInt)
+  let isArchived = (getTime() - creation).weeks > 8
+  let canEdit = c.rank == Admin or c.username == postRow[0]
+  if isArchived:
+    raise newForumError("This post is archived and can no longer be edited")
+  if not canEdit:
+    raise newForumError("You cannot edit this post")
+
+  if not validateRst(c, content):
+    raise newForumError("Message needs to be valid RST", @["msg"])
+
+  # Update post.
+  exec(db, crud(crUpdate, "post", "content"), content, $postId)
+  exec(db, crud(crUpdate, "post_fts", "content"), content, $postId)
+  # Check if post is the first post of the thread.
+  if subject.isSome():
+    let threadId = postRow[2]
+    let row = db.getRow(sql("""
+        select id from post where thread = ? order by id asc
+      """), threadId)
+    if row[0] == $postId:
+      exec(db, crud(crUpdate, "thread", "name"), subject.get(), threadId)
 
 proc executeNewThread(c: TForumData, subject, msg: string): (int64, int64) =
   const
@@ -1469,6 +1508,34 @@ routes:
     try:
       let id = executeReply(c, threadId, msg, replyingTo)
       resp Http200, $(%id), "application/json"
+    except ForumError as exc:
+      resp Http400, $(%exc.data), "application/json"
+
+  post "/karax/updatePost":
+    createTFD()
+    if not c.loggedIn():
+      let err = PostError(
+        errorFields: @[],
+        message: "Not logged in."
+      )
+      resp Http401, $(%err), "application/json"
+
+    let formData = request.formData
+    cond "msg" in formData
+    cond "postId" in formData
+
+    let msg = formData["msg"].body
+    let postId = getInt(formData["postId"].body, -1)
+    cond postId != -1
+    let subject =
+      if "subject" in formData:
+        some(formData["subject"].body)
+      else:
+        none[string]()
+
+    try:
+      updatePost(c, postId, msg, subject)
+      resp Http200, msg.rstToHtml(), "text/html"
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
 
