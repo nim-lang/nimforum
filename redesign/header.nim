@@ -4,6 +4,7 @@ import threadlist, user
 type
   UserStatus* = object
     user*: Option[User]
+    recaptchaSiteKey*: Option[string]
 
 when defined(js):
   include karax/prelude
@@ -104,4 +105,5 @@ when defined(js):
       # Modals
       render(state.loginModal)
 
-      render(state.signupModal)
+      if state.data.isSome():
+        render(state.signupModal, state.data.get().recaptchaSiteKey)

@@ -1,5 +1,4 @@
 import strutils, options, strformat, parseutils
-import dom except window
 
 proc parseInt*(s: string, value: var int, validRange: Slice[int]) {.
   noSideEffect.} =
@@ -22,6 +21,8 @@ proc getInt*(s: string, default = 0): int =
 when defined(js):
   include karax/prelude
   import karax / [kdom]
+
+  import dom except window
 
   const appName = "/karax/"
 

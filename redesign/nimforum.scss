@@ -554,3 +554,11 @@ hr {
     text-shadow: $body-font-color 0px 0px 0px;
   }
 }
+
+// - Sign up modal
+
+#signup-modal {
+  .modal-container .modal-body {
+    max-height: 60vh;
+  }
+}

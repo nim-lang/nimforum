@@ -38,7 +38,8 @@ when defined(js):
 
         if not error.isNone:
           let e = error.get()
-          if (e.errorFields.len == 1 and e.errorFields[0] == name) or isLast:
+          if (e.errorFields.len == 1 and e.errorFields[0] == name) or
+             (isLast and e.errorFields.len == 0):
             p(class="form-input-hint"):
               text e.message
 

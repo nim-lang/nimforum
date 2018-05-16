@@ -14,7 +14,9 @@ import cgi except setCookie
 import options
 
 import redesign/threadlist except User
-import redesign/[category, postlist, error, header, post, profile, user]
+import redesign/[
+  category, postlist, error, header, post, profile, user, karaxutils
+]
 
 when not defined(windows):
   import bcrypt # TODO
@@ -296,63 +298,6 @@ proc setError(c: TForumData, field, msg: string): bool {.inline.} =
   c.invalidField = field
   c.errorMsg = "Error: " & msg
   return false
-
-proc register(c: TForumData, name, pass, antibot, userIp,
-              email: string): Future[bool] {.async.} =
-  # Username validation:
-  if name.len == 0 or not allCharsInSet(name, UsernameIdent):
-    return setError(c, "name", "Invalid username!")
-  if getValue(db, sql"select name from person where name = ?", name).len > 0:
-    return setError(c, "name", "Username already exists!")
-
-  # Password validation:
-  if pass.len < 4:
-    return setError(c, "new_password", "Invalid password!")
-
-  # captcha validation:
-  if useCaptcha:
-    var captchaValid: bool = false
-    try:
-      captchaValid = await captcha.verify(antibot, userIp)
-    except:
-      echo("[ERROR] Error checking captcha: " & getCurrentExceptionMsg())
-      captchaValid = false
-
-    if not captchaValid:
-      return setError(c, "g-recaptcha-response", "Answer to captcha incorrect!")
-
-  # email validation
-  if not ('@' in email and '.' in email):
-    return setError(c, "email", "Invalid email address")
-
-  # perform registration:
-  var salt = makeSalt()
-  let password = makePassword(pass, salt)
-
-  # Send activation email.
-  let epoch = $int(epochTime())
-  let activateUrl = c.req.makeUri("/activateEmail?nick=$1&epoch=$2&ident=$3" %
-      [encodeUrl(name), encodeUrl(epoch),
-       encodeUrl(makeIdentHash(name, password, epoch, salt))])
-
-  let emailSentFut = sendEmailActivation(c.config, email, name, activateUrl)
-  # Block until we send the email.
-  # TODO: This is a workaround for 'var T' not being usable in async procs.
-  while not emailSentFut.finished:
-    poll()
-  when not defined(dev):
-    if emailSentFut.failed:
-      echo("[WARNING] Couldn't send activation email: ", emailSentFut.error.msg)
-      return setError(c, "email", "Couldn't send activation email")
-
-  # add account to person table
-  exec(db,
-    sql("INSERT INTO person(name, password, email, salt, status, lastOnline) " &
-        "VALUES (?, ?, ?, ?, ?, DATETIME('now'))"), name,
-              password, email, salt,
-              when defined(dev): $Moderated else: $EmailUnconfirmed)
-
-  return true
 
 proc resetPassword(c: TForumData, nick, antibot, userIp: string): Future[bool] {.async.} =
   # captcha validation:
@@ -677,34 +622,6 @@ proc newThread(c: TForumData): bool =
           subject, content, threadId=c.threadID, postId=c.postID, is_reply=false,
           threadUrl=c.makeThreadURL())
     result = true
-
-proc login(c: TForumData, name, pass: string): bool =
-  # get form data:
-  const query =
-    sql"select id, name, password, email, salt, status, ban from person where name = ?"
-  if name.len == 0:
-    return c.setError("name", "Username cannot be nil.")
-  var success = false
-  for row in fastRows(db, query, name):
-    if row[2] == makePassword(pass, row[4], row[2]):
-      c.rank = parseEnum[Rank](row[5])
-      let ban = getBanErrorMsg(row[6], c.rank)
-      if ban.len > 0:
-        return c.setError("name", ban)
-      c.userid = row[0]
-      c.username = row[1]
-      c.userpass = row[2]
-      c.email = row[3]
-      success = true
-      break
-  if success:
-    # create session:
-    exec(db,
-      sql"insert into session (ip, password, userid) values (?, ?, ?)",
-      c.req.ip, c.userpass, c.userid)
-    return true
-  else:
-    return c.setError("password", "Login failed!")
 
 proc verifyIdentHash(c: TForumData, name, epoch, ident: string): bool =
   const query =
@@ -1154,6 +1071,81 @@ proc executeNewThread(c: TForumData, subject, msg: string): (int64, int64) =
   discard tryExec(db, sql"insert into post_fts(post_fts) values('optimize')")
   discard tryExec(db, sql"insert into post_fts(thread_fts) values('optimize')")
 
+proc executeLogin(c: TForumData, username, password: string): string =
+  ## Performs a login with the specified details.
+  ##
+  ## Optionally, `username` may contain the email of the user instead.
+  const query =
+    sql"""
+      select id, name, password, email, salt
+      from person where name = ? or email = ?
+    """
+  if username.len == 0:
+    raise newForumError("Username cannot be empty", @["username"])
+
+  for row in fastRows(db, query, username, username):
+    if row[2] == makePassword(password, row[4], row[2]):
+      exec(
+        db,
+        sql"insert into session (ip, password, userid) values (?, ?, ?)",
+        c.req.ip, row[2], row[0]
+      )
+      return row[2]
+
+  raise newForumError("Invalid username or password")
+
+proc executeRegister(c: TForumData, name, pass, antibot, userIp,
+                     email: string): Future[string] {.async.} =
+  ## Registers a new user and returns a new session key for that user's
+  ## session if registration was successful. Exceptions are raised otherwise.
+
+  # Username validation:
+  if name.len == 0 or not allCharsInSet(name, UsernameIdent):
+    raise newForumError("Invalid username", @["username"])
+  if getValue(db, sql"select name from person where name = ?", name).len > 0:
+    raise newForumError("Username already exists", @["username"])
+
+  # Password validation:
+  if pass.len < 4:
+    raise newForumError("Please choose a longer password", @["password"])
+
+  # captcha validation:
+  if useCaptcha:
+    var verifyFut = captcha.verify(antibot, userIp)
+    yield verifyFut
+    if verifyFut.failed:
+      raise newForumError(
+        "Invalid recaptcha answer", @[]
+      )
+
+  # email validation
+  if not ('@' in email and '.' in email):
+    raise newForumError("Invalid email", @["email"])
+
+  # perform registration:
+  var salt = makeSalt()
+  let password = makePassword(pass, salt)
+
+  # Send activation email.
+  let epoch = $int(epochTime())
+  let activateUrl = c.req.makeUri("/activateEmail?nick=$1&epoch=$2&ident=$3" %
+      [encodeUrl(name), encodeUrl(epoch),
+       encodeUrl(makeIdentHash(name, password, epoch, salt))])
+
+  let emailSentFut = sendEmailActivation(c.config, email, name, activateUrl)
+  yield emailSentFut
+  if emailSentFut.failed:
+    echo("[WARNING] Couldn't send activation email: ", emailSentFut.error.msg)
+    raise newForumError("Couldn't send activation email", @["email"])
+
+  # Add account to person table
+  exec(db,
+    sql("INSERT INTO person(name, password, email, salt, status, lastOnline) " &
+        "VALUES (?, ?, ?, ?, ?, DATETIME('now'))"), name,
+              password, email, salt, $Moderated)
+
+  return password
+
 initialise()
 
 routes:
@@ -1351,15 +1343,39 @@ routes:
   post "/karax/login":
     createTFD()
     let formData = request.formData
-    if login(c, formData["username"].body, formData["password"].body):
-      setCookie("sid", c.userpass)
-      resp Http200, "{}", "application/json"
-    else:
-      let err = PostError(
-        errorFields: @["username", "password"],
-        message: "Invalid username or password"
+    cond "username" in formData
+    cond "password" in formData
+    try:
+      let session = executeLogin(
+        c,
+        formData["username"].body,
+        formData["password"].body
       )
-      resp Http403, $(%err), "application/json"
+      setCookie("sid", session)
+      resp Http200, "{}", "application/json"
+    except ForumError as exc:
+      resp Http400, $(%exc.data), "application/json"
+
+  post "/karax/signup":
+    createTFD()
+    let formData = request.formData
+    let username = formData["username"].body
+    let password = formData["password"].body
+    try:
+      discard await executeRegister(
+        c,
+        username,
+        password,
+        formData["g-recaptcha-response"].body,
+        request.host,
+        formData["email"].body
+      )
+      let session = executeLogin(c, username, password)
+      setCookie("sid", session)
+      resp Http200, "{}", "application/json"
+    except ForumError:
+      let exc = (ref ForumError)(getCurrentException())
+      resp Http400, $(%exc.data), "application/json"
 
   get "/karax/status.json":
     createTFD()
@@ -1377,7 +1393,14 @@ routes:
       else:
         none[User]()
 
-    let status = UserStatus(user: user)
+    let status = UserStatus(
+      user: user,
+      recaptchaSiteKey:
+        if useCaptcha:
+          some(config.recaptchaSiteKey)
+        else:
+          none[string]()
+    )
     resp $(%status), "application/json"
 
   post "/karax/preview":
@@ -1565,27 +1588,6 @@ routes:
     body().add genFormPost(c, action, topText, reuseText, reuseText, isEdit)
     resp genMain(c, body(), "Nim Forum - " &
                             (if c.isPreview: "Preview" else: "Error"))
-
-  post "/dologin":
-    createTFD()
-    if login(c, @"name", @"password"):
-      finishLogin()
-    else:
-      c.isThreadsList = true
-      var count = 0
-      let threadList = genThreadsList(c, count)
-      let data = genMain(c, threadList,
-          additionalHeaders = genRSSHeaders(c), showRssLinks = true)
-      resp data
-
-  post "/doregister":
-    createTFD()
-    if await c.register(@"name", @"new_password", @"g-recaptcha-response", request.host, @"email"):
-      resp genMain(c, "You are now registered. You must now confirm your" &
-          " email address by clicking the link sent to " & @"email",
-          "Registration successful - Nim Forum")
-    else:
-      resp c.genMain(genFormRegister(c))
 
   post "/donewthread":
     createTFD()

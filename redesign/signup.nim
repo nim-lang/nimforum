@@ -11,29 +11,17 @@ when defined(js):
   type
     SignupModal* = ref object
       shown: bool
+      loading: bool
       onSignUp, onLogIn: proc ()
       error: Option[PostError]
 
   proc onSignUpPost(httpStatus: int, response: kstring, state: SignupModal) =
-    let status = httpStatus.HttpCode
-    if status == Http200:
+    postFinished:
       state.shown = false
       state.onSignUp()
-    else:
-      # TODO: Karax should pass the content-type...
-      try:
-        let parsed = parseJson($response)
-        let error = to(parsed, PostError)
-
-        state.error = some(error)
-      except:
-        kout(getCurrentExceptionMsg().cstring)
-        state.error = some(PostError(
-          errorFields: @[],
-          message: "Unknown error occurred."
-        ))
 
   proc onSignUpClick(ev: Event, n: VNode, state: SignupModal) =
+    state.loading = true
     state.error = none[PostError]()
 
     let uri = makeUri("signup")
@@ -57,9 +45,11 @@ when defined(js):
   proc show*(state: SignupModal) =
     state.shown = true
 
-  proc render*(state: SignupModal): VNode =
+  proc render*(state: SignupModal, recaptchaSiteKey: Option[string]): VNode =
+    setForeignNodeId("recaptcha")
+
     result = buildHtml():
-      tdiv(class=class({"active": state.shown}, "modal modal-sm"),
+      tdiv(class=class({"active": state.shown}, "modal"),
            id="signup-modal"):
         a(href="", class="modal-overlay", "aria-label"="close",
           onClick=(ev: Event, n: VNode) => onClose(ev, n, state))
@@ -82,8 +72,13 @@ when defined(js):
                   "password",
                   true
                 )
+                if recaptchaSiteKey.isSome:
+                  tdiv(id="recaptcha"):
+                    tdiv(class="g-recaptcha",
+                         "data-sitekey"=recaptchaSiteKey.get())
+                    script(src="https://www.google.com/recaptcha/api.js")
           tdiv(class="modal-footer"):
-            button(class="btn btn-primary",
+            button(class=class({"loading": state.loading}, "btn btn-primary"),
                   onClick=(ev: Event, n: VNode) => onSignUpClick(ev, n, state)):
               text "Create account"
             button(class="btn",
