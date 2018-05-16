@@ -75,7 +75,7 @@ when defined(js):
   proc genUserAvatars(users: seq[User]): VNode =
     result = buildHtml(td):
       for user in users:
-        render(user, "avatar avatar-sm")
+        render(user, "avatar avatar-sm", showStatus=true)
         text " "
 
   proc renderActivity*(activity: int64): string =

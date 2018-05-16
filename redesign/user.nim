@@ -18,19 +18,19 @@ type
     rank*: Rank
 
 proc isOnline*(user: User): bool =
-  return getTime().toUnix() - user.lastOnline > (60*5)
+  return getTime().toUnix() - user.lastOnline < (60*5)
 
 when defined(js):
   include karax/prelude
   import karaxutils
 
-  proc render*(user: User, class: string): VNode =
+  proc render*(user: User, class: string, showStatus=false): VNode =
     result = buildHtml():
       a(href=renderProfileUrl(user.name), onClick=anchorCB):
         figure(class=class):
           img(src=user.avatarUrl, title=user.name)
-          if user.isOnline:
-            italic(class="avatar-presense online")
+          if user.isOnline and showStatus:
+            italic(class="avatar-presence online")
 
   proc renderUserMention*(user: User): VNode =
     result = buildHtml():
