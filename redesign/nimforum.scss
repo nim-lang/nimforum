@@ -91,25 +91,29 @@ $logo-height: $navbar-height - 20px;
 }
 
 // - Main buttons
+.btn-secondary {
+  background: $secondary-btn-color;
+  border-color: darken($secondary-btn-color, 5%);
+  color: invert($secondary-btn-color);
+
+  margin-right: $control-padding-x*2;
+
+  &:hover, &:focus {
+    background: darken($secondary-btn-color, 5%);
+    border-color: darken($secondary-btn-color, 10%);
+  }
+
+  &:focus {
+    @include control-shadow(darken($secondary-btn-color, 40%));
+  }
+}
+
 #main-buttons {
   margin-top: $control-padding-y*2;
   margin-bottom: $control-padding-y*2;
 
-  .dropdown > .btn, .btn-secondary {
-    background: $secondary-btn-color;
-    border-color: darken($secondary-btn-color, 5%);
-    color: invert($secondary-btn-color);
-
-    margin-right: $control-padding-x*2;
-
-    &:hover, &:focus {
-      background: darken($secondary-btn-color, 5%);
-      border-color: darken($secondary-btn-color, 10%);
-    }
-
-    &:focus {
-      @include control-shadow(darken($secondary-btn-color, 40%));
-    }
+  .dropdown > .btn {
+    @extend .btn-secondary;
   }
 }
 
@@ -244,6 +248,8 @@ $views-color: #545d70;
   @extend .container;
   margin: 0;
   padding: 0;
+
+  margin-bottom: 10rem; // Just some empty space at the bottom.
 }
 
 .post {
@@ -333,6 +339,19 @@ $views-color: #545d70;
 
   .like-button i:hover, .like-button i.fas {
     color: #f783ac;
+  }
+}
+
+#thread-buttons {
+  border-top: 1px solid $border-color;
+  width: 100%;
+  padding-top: $control-padding-y;
+  padding-bottom: $control-padding-y;
+  @extend .clearfix;
+
+  .btn {
+    float: right;
+    margin-right: 0;
   }
 }
 

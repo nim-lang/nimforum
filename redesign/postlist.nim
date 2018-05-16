@@ -249,4 +249,11 @@ when defined(js):
           if prevPost.isSome:
             genTimePassed(prevPost.get(), none[Post](), true)
 
+          tdiv(id="thread-buttons"):
+            button(class="btn btn-secondary",
+                   onClick=(e: Event, n: VNode) =>
+                         onReplyClick(e, n, none[Post]())):
+              italic(class="fas fa-reply")
+              text " Reply"
+
           render(state.replyBox, list.thread, state.replyingTo, false)
