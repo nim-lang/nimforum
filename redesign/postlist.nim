@@ -17,7 +17,7 @@ when defined(js):
   include karax/prelude
   import karax / [vstyles, kajax, kdom]
 
-  import karaxutils, error, replybox
+  import karaxutils, error, replybox, editbox
 
   type
     State = ref object
@@ -26,6 +26,8 @@ when defined(js):
       status: HttpCode
       replyingTo: Option[Post]
       replyBox: ReplyBox
+      editing: Option[Post] ## If in edit mode, this contains the post.
+      editBox: EditBox
 
   proc onReplyPosted(id: int)
   proc newState(): State =
@@ -34,7 +36,8 @@ when defined(js):
       loading: false,
       status: Http200,
       replyingTo: none[Post](),
-      replyBox: newReplyBox(onReplyPosted)
+      replyBox: newReplyBox(onReplyPosted),
+      editBox: newEditBox()
     )
 
   var
@@ -106,9 +109,20 @@ when defined(js):
     ## Executed when a reply has been successfully posted.
     loadMore(state.list.get().posts.len, @[id])
 
+  proc onEditPosted(id: int, content: string) =
+    ## Executed when an edit has been successfully posted.
+    let list = state.list.get()
+    for i in 0 ..< list.posts.len:
+      if list.posts[i].id == id:
+        list.posts[i].info.content = content
+        break
+
   proc onReplyClick(e: Event, n: VNode, p: Option[Post]) =
     state.replyingTo = p
     state.replyBox.show()
+
+  proc onEditClick(e: Event, n: VNode, p: Option[Post]) =
+    state.editing = p
 
   proc onLoadMore(ev: Event, n: VNode, start: int, post: Post) =
     loadMore(start, post.moreBefore) # TODO: Don't load all!
@@ -128,8 +142,12 @@ when defined(js):
               span(class="more-post-count"):
                 text "(" & $post.moreBefore.len & ")"
 
-  proc genPost(post: Post, thread: Thread, isLoggedIn: bool): VNode =
+  proc genPost(post: Post, thread: Thread, currentUser: Option[User]): VNode =
     let postCopy = post # TODO: Another workaround here, closure capture :(
+    let loggedIn = currentUser.isSome()
+    let authoredByUser =
+      loggedIn and currentUser.get().name == post.author.name
+
     result = buildHtml():
       tdiv(class="post", id = $post.id):
         tdiv(class="post-icon"):
@@ -144,18 +162,33 @@ when defined(js):
               a(href=renderPostUrl(post, thread), title=title):
                 text renderActivity(post.info.creation)
           tdiv(class="post-content"):
-            verbatim(post.info.content)
+            if state.editing.isSome() and state.editing.get() == post:
+              render(state.editBox, postCopy)
+            else:
+              verbatim(post.info.content)
           tdiv(class="post-buttons"):
-            tdiv(class="like-button"):
-              button(class="btn"):
-                span(class="like-count"):
-                  if post.likes.len > 0:
-                    text $post.likes.len
-                  italic(class="far fa-heart")
-            if isLoggedIn:
-              tdiv(class="flag-button"):
+            if authoredByUser:
+              tdiv(class="edit-button", onClick=(e: Event, n: VNode) =>
+                   onEditClick(e, n, some(postCopy))):
                 button(class="btn"):
-                  italic(class="far fa-flag")
+                  italic(class="far fa-edit")
+              tdiv(class="delete-button"):
+                button(class="btn"):
+                  italic(class="far fa-trash-alt")
+            else:
+              tdiv(class="like-button"):
+                button(class="btn"):
+                  span(class="like-count"):
+                    if post.likes.len > 0:
+                      text $post.likes.len
+                    italic(class="far fa-heart")
+
+              if loggedIn:
+                tdiv(class="flag-button"):
+                  button(class="btn"):
+                    italic(class="far fa-flag")
+
+            if loggedIn:
               tdiv(class="reply-button"):
                 button(class="btn", onClick=(e: Event, n: VNode) =>
                        onReplyClick(e, n, some(postCopy))):
@@ -205,7 +238,7 @@ when defined(js):
             text diffStr
 
   proc renderPostList*(threadId: int, postId: Option[int],
-                       isLoggedIn: bool): VNode =
+                       currentUser: Option[User]): VNode =
     if state.status != Http200:
       return renderError("Couldn't retrieve posts.")
 
@@ -243,7 +276,7 @@ when defined(js):
               genTimePassed(prevPost.get(), some(post), false)
             if post.moreBefore.len > 0:
               genLoadMore(post, i)
-            genPost(post, list.thread, isLoggedIn)
+            genPost(post, list.thread, currentUser)
             prevPost = some(post)
 
           if prevPost.isSome:

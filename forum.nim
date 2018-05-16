@@ -1258,6 +1258,21 @@ routes:
 
     resp $(%list), "application/json"
 
+  get "/karax/post.rst":
+    createTFD()
+    let postId = getInt(@"id", -1)
+    cond postId != -1
+
+    let postQuery = sql"""
+      select content from post where id = ?;
+    """
+
+    let content = getValue(db, postQuery, postId)
+    if content.len == 0:
+      resp Http404, "Post not found"
+    else:
+      resp content, "text/x-rst"
+
   get "/karax/profile.json":
     createTFD()
     var

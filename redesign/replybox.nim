@@ -40,6 +40,7 @@ when defined(js):
     state.shown = true
 
   proc getText*(state: ReplyBox): kstring = state.text
+  proc setText*(state: ReplyBox, text: kstring) = state.text = text
 
   proc onPreviewPost(httpStatus: int, response: kstring, state: ReplyBox) =
     postFinished:

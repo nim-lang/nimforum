@@ -63,7 +63,7 @@ proc render(): VNode =
             renderPostList(
               params["id"].parseInt(),
               if postId == 0: none[int]() else: some[int](postId),
-              isLoggedIn()
+              getLoggedInUser()
             )
           )
       ),
