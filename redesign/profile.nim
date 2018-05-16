@@ -79,8 +79,9 @@ when defined(js):
           dl():
             dt(text "Joined")
             dd(text threadlist.renderActivity(profile.joinTime))
-            dt(text "Last Post")
-            dd(text renderActivity(profile.posts[0].creation))
+            if profile.posts.len > 0:
+              dt(text "Last Post")
+              dd(text renderActivity(profile.posts[0].creation))
             dt(text "Last Online")
             dd(text renderActivity(profile.user.lastOnline))
             dt(text "Posts")
@@ -102,16 +103,17 @@ when defined(js):
               dd(class="spoiler"):
                 text profile.email.get()
 
-        tdiv(class="columns"):
-          tdiv(class="column col-6"):
-            h4(text "Latest Posts")
-            tdiv(class="posts"):
-              for post in profile.posts:
-                genPostLink(post)
-          tdiv(class="column col-6"):
-            h4(text "Latest Threads")
-            tdiv(class="posts"):
-              for thread in profile.threads:
-                genPostLink(thread)
+        if profile.posts.len > 0 or profile.threads.len > 0:
+          tdiv(class="columns"):
+            tdiv(class="column col-6"):
+              h4(text "Latest Posts")
+              tdiv(class="posts"):
+                for post in profile.posts:
+                  genPostLink(post)
+            tdiv(class="column col-6"):
+              h4(text "Latest Threads")
+              tdiv(class="posts"):
+                for thread in profile.threads:
+                  genPostLink(thread)
 
 

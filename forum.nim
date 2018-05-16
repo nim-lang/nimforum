@@ -1286,38 +1286,42 @@ routes:
 
     let postsQuery = sql("""
       select p.id, strftime('%s', p.creation),
-             u.name, u.email, strftime('%s', u.lastOnline), u.status,
-             strftime('%s', u.creation), u.id,
              t.name, t.id
       $1
       order by p.id desc limit 10;
     """ % postsFrom)
+
+    let userQuery = sql("""
+      select name, email, strftime('%s', lastOnline), status,
+             strftime('%s', creation), id
+      from person
+      where name = ?
+    """)
 
     var profile = Profile(
       threads: @[],
       posts: @[]
     )
 
-    let rows = db.getAllRows(postsQuery, username)
-    let userID = rows[0][7]
-    profile.user = selectUser(@[
-      rows[0][2], rows[0][3], rows[0][4], rows[0][5]
-    ], avatarSize=200)
-    profile.joinTime = rows[0][6].parseInt()
+    let userRow = db.getRow(userQuery, username)
+
+    let userID = userRow[^1]
+    profile.user = selectUser(userRow, avatarSize=200)
+    profile.joinTime = userRow[4].parseInt()
     profile.postCount =
       getValue(db, sql("select count(*) " & postsFrom), username).parseInt()
     profile.threadCount =
       getValue(db, sql("select count(*) " & threadsFrom), userID).parseInt()
 
     if c.rank >= Admin:
-      profile.email = some(rows[0][3])
+      profile.email = some(userRow[1])
 
-    for row in rows:
+    for row in db.getAllRows(postsQuery, username):
       profile.posts.add(
         PostLink(
           creation: row[1].parseInt(),
-          topic: row[8],
-          threadId: row[9].parseInt(),
+          topic: row[2],
+          threadId: row[3].parseInt(),
           postId: row[0].parseInt()
         )
       )
