@@ -144,6 +144,11 @@ $logo-height: $navbar-height - 20px;
   a.visited {
     color: lighten($body-font-color, 40%);
   }
+
+  i {
+    // Icon
+    margin-right: $control-padding-x-sm;
+  }
 }
 
 $super-popular-color: #f86713;

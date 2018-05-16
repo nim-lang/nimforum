@@ -100,12 +100,17 @@ when defined(js):
       tr(class=class({"no-border": noBorder})):
         td(class="thread-title"):
           if thread.isLocked:
-            italic(class="fas fa-lock fa-xs")
+            italic(class="fas fa-lock fa-xs",
+                   title="Thread cannot be replied to")
           if thread.isInvisible:
-            italic(class="fas fa-eye-slash fa-xs")
+            italic(class="fas fa-eye-slash fa-xs",
+                   title="Thread is moderated")
           if thread.isSolved:
-            italic(class="fas fa-check-square fa-xs")
-          a(href=makeUri("/t/" & $thread.id), onClick=anchorCB): text thread.topic
+            italic(class="fas fa-check-square fa-xs",
+                   title="Thread has a solution")
+          a(href=makeUri("/t/" & $thread.id),
+            onClick=anchorCB):
+            text thread.topic
         td():
           render(thread.category)
         genUserAvatars(thread.users)

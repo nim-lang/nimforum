@@ -1099,6 +1099,14 @@ proc executeRegister(c: TForumData, name, pass, antibot, userIp,
   ## Registers a new user and returns a new session key for that user's
   ## session if registration was successful. Exceptions are raised otherwise.
 
+  # email validation
+  if not ('@' in email and '.' in email):
+    raise newForumError("Invalid email", @["email"])
+  if getValue(
+      db, sql"select email from person where email = ?", email
+  ).len > 0:
+    raise newForumError("Email already exists", @["email"])
+
   # Username validation:
   if name.len == 0 or not allCharsInSet(name, UsernameIdent):
     raise newForumError("Invalid username", @["username"])
@@ -1117,10 +1125,6 @@ proc executeRegister(c: TForumData, name, pass, antibot, userIp,
       raise newForumError(
         "Invalid recaptcha answer", @[]
       )
-
-  # email validation
-  if not ('@' in email and '.' in email):
-    raise newForumError("Invalid email", @["email"])
 
   # perform registration:
   var salt = makeSalt()
@@ -1142,7 +1146,7 @@ proc executeRegister(c: TForumData, name, pass, antibot, userIp,
   exec(db,
     sql("INSERT INTO person(name, password, email, salt, status, lastOnline) " &
         "VALUES (?, ?, ?, ?, ?, DATETIME('now'))"), name,
-              password, email, salt, $Moderated)
+              password, email, salt, $EmailUnconfirmed)
 
   return password
 
