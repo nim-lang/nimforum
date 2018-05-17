@@ -1365,7 +1365,7 @@ routes:
     profile.threadCount =
       getValue(db, sql("select count(*) " & threadsFrom), userID).parseInt()
 
-    if c.rank >= Admin:
+    if c.rank >= Admin or c.username == username:
       profile.email = some(userRow[1])
 
     for row in db.getAllRows(postsQuery, username):
