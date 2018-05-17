@@ -15,7 +15,6 @@ type
     creation*: int64 ## Unix timestamp
     isLocked*: bool
     isSolved*: bool
-    isDeleted*: bool
 
   ThreadList* = ref object
     threads*: seq[Thread]

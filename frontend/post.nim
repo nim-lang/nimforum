@@ -19,7 +19,6 @@ type
                             ## older versions of the post.
     info*: PostInfo
     moreBefore*: seq[int]
-    isDeleted*: bool
     replyingTo*: Option[PostLink]
 
   PostLink* = object ## Used by profile

@@ -953,15 +953,19 @@ proc selectThread(threadRow: seq[string]): Thread =
   var thread = Thread(
     id: threadRow[0].parseInt,
     topic: threadRow[1],
-    category: Category(id: "", color: "#ff0000"), # TODO
+    category: Category(
+      id: threadRow[5].parseInt,
+      name: threadRow[6],
+      description: threadRow[7],
+      color: threadRow[8]
+    ),
     users: @[],
     replies: posts[0].parseInt-1,
     views: threadRow[2].parseInt,
     activity: threadRow[3].parseInt,
     creation: posts[1].parseInt,
-    isLocked: false, # TODO:
+    isLocked: threadRow[4] == "1",
     isSolved: false, # TODO: Add a field to `post` to identify the solution.
-    isDeleted: false # TODO:
   )
 
   # Gather the users list.
@@ -1171,8 +1175,10 @@ routes:
       count = getInt(@"count", 30)
 
     const threadsQuery =
-      sql"""select id, name, views, strftime('%s', modified) from thread
-            where isDeleted = 0
+      sql"""select t.id, t.name, views, strftime('%s', modified), isLocked,
+                   c.id, c.name, c.description, c.color
+            from thread t, category c
+            where isDeleted = 0 and category = c.id
             order by modified desc limit ?, ?;"""
 
     let thrCount = getValue(db, sql"select count(*) from thread;").parseInt()
@@ -1195,8 +1201,10 @@ routes:
       count = 10
 
     const threadsQuery =
-      sql"""select id, name, views, strftime('%s', modified) from thread
-            where id = ? and isDeleted = 0;"""
+      sql"""select t.id, t.name, views, strftime('%s', modified), isLocked,
+                   c.id, c.name, c.description, c.color
+            from thread t, category c
+            where t.id = ? and isDeleted = 0 and category = c.id;"""
 
     let threadRow = getRow(db, threadsQuery, id)
     let thread = selectThread(threadRow)
