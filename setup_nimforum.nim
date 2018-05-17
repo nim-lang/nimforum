@@ -38,7 +38,9 @@ proc initialiseDb(admin: tuple[username, password, email: string]) =
       description varchar(500) not null,
       color varchar(10) not null
     );
+  """)
 
+  db.exec(sql"""
     insert into category (id, name, description, color)
     values (0, 'Default', '', '');
   """)
