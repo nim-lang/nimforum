@@ -975,7 +975,7 @@ proc executeReply(c: TForumData, threadId: int, content: string,
   )
 
   exec(db, sql"update thread set modified = DATETIME('now') where id = ?",
-       $c.threadId)
+       $threadId)
 
   return retID
 
