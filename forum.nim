@@ -1148,7 +1148,8 @@ routes:
 
     const threadsQuery =
       sql"""select id, name, views, strftime('%s', modified) from thread
-            order by modified desc limit ?, ?;""" # TODO: Moderation
+            where isDeleted = 0
+            order by modified desc limit ?, ?;"""
 
     let thrCount = getValue(db, sql"select count(*) from thread;").parseInt()
     let moreCount = max(0, thrCount - (start + count))
@@ -1171,7 +1172,7 @@ routes:
 
     const threadsQuery =
       sql"""select id, name, views, strftime('%s', modified) from thread
-            where id = ?;"""
+            where id = ? and isDeleted = 0;"""
 
     let threadRow = getRow(db, threadsQuery, id)
     let thread = selectThread(threadRow)
@@ -1181,7 +1182,7 @@ routes:
         """select p.id, p.content, strftime('%s', p.creation), p.author,
                   u.name, u.email, strftime('%s', u.lastOnline), u.status
            from post p, person u
-           where u.id = p.author and p.thread = ?
+           where u.id = p.author and p.thread = ? and p.isDeleted = 0
            order by p.id"""
       )
 
