@@ -71,6 +71,9 @@ proc render(): VNode =
             )
           )
       ),
+      r("/404",
+        (params: Params) => render404()
+      ),
       r("/", (params: Params) => renderThreadList(getLoggedInUser()))
     ])
 

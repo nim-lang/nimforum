@@ -1503,6 +1503,33 @@ routes:
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
 
+  get "/t/@id":
+    cond "id" in request.params
+
+    const threadsQuery =
+      sql"""select id from thread where id = ? and isDeleted = 0;"""
+
+    let value = getValue(db, threadsQuery, @"id")
+    if value == @"id":
+      pass
+    else:
+      redirect uri("/404")
+
+  get "/profile/@username":
+    cond "username" in request.params
+
+    const threadsQuery =
+      sql"""select name from person where name = ? and isDeleted = 0;"""
+
+    let value = getValue(db, threadsQuery, @"username")
+    if value == @"username":
+      pass
+    else:
+      redirect uri("/404")
+
+  get "/404":
+    resp Http404, readFile("frontend/karax.html")
+
   get re"/(.+)?":
     resp readFile("frontend/karax.html")
 
