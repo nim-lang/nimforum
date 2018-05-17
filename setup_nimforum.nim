@@ -105,9 +105,11 @@ proc initialiseDb(admin: tuple[username, password, email: string]) =
       thread integer not null,
       creation timestamp not null default (DATETIME('now')),
       isDeleted boolean not null default 0,
+      replyingTo integer,
 
       foreign key (thread) references thread(id),
-      foreign key (author) references person(id)
+      foreign key (author) references person(id),
+      foreign key (replyingTo) references post(id)
     );""", [])
 
   db.exec sql"create index PostByAuthorIdx on post(thread, author);"
