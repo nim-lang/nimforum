@@ -13,8 +13,8 @@ import
 import cgi except setCookie
 import options
 
-import redesign/threadlist except User
-import redesign/[
+import frontend/threadlist except User
+import frontend/[
   category, postlist, error, header, post, profile, user, karaxutils
 ]
 
@@ -346,8 +346,7 @@ proc getBanErrorMsg(banValue: string; rank: Rank): string =
   if banValue.len > 0:
     return "You have been banned: " & banValue
   case rank
-  of Spammer: return "You are a spammer."
-  of Troll: return "You have been banned."
+  of Spammer, Troll, Banned: return "You have been banned."
   of EmailUnconfirmed:
     return "You need to confirm your email first."
   of Moderated, Rank.User, Moderator, Admin:
@@ -1202,11 +1201,11 @@ routes:
     resp data
 
   get "/karax/nimforum.css":
-    resp readFile("redesign/nimforum.css"), "text/css"
+    resp readFile("frontend/nimforum.css"), "text/css"
   get "/karax/nimcache/forum.js":
-    resp readFile("redesign/nimcache/forum.js"), "application/javascript"
+    resp readFile("frontend/nimcache/forum.js"), "application/javascript"
   get "/karax/images/crown.png":
-    resp readFile("redesign/images/crown.png"), "image/png"
+    resp readFile("frontend/images/crown.png"), "image/png"
 
 
   get "/karax/threads.json":
@@ -1563,7 +1562,7 @@ routes:
       resp Http400, $(%exc.data), "application/json"
 
   get re"/karax/(.+)?":
-    resp readFile("redesign/karax.html")
+    resp readFile("frontend/karax.html")
 
   get "/threadActivity.xml":
     createTFD()

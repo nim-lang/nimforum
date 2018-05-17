@@ -7,7 +7,7 @@ from times import getTime, getGMTime, format
 let
   UsernameIdent* = IdentChars # TODO: Double check that everyone follows this.
 
-import redesign/karaxutils
+import frontend/karaxutils
 export parseInt
 
 proc `%`*[T](opt: Option[T]): JsonNode =
