@@ -320,12 +320,9 @@
       <td>${fieldValid(c, "email", "E-Mail:")}</td>
       <td>${textWidget(c, "email", reuseText, maxlength=300)}</td>
     </tr>
-    #if useCaptcha:
     <tr>
       <td>${fieldValid(c, "g-recaptcha-response", "Captcha:")}</td>
       <td>${captcha.render(includeNoScript=true)}</td>
-    </tr>
-    #end if
   </table>
   #if c.errorMsg != "":
       <div style="float: left; width: 100%;">
@@ -494,12 +491,10 @@
       <td>${fieldValid(c, "nick", "Your nickname:")}</td>
       <td><input type="text" name="nick" maxlength="20" /></td>
     </tr>
-    #if useCaptcha:
     <tr>
       <td>${fieldValid(c, "g-recaptcha-response", "Captcha:")}</td>
       <td>${captcha.render(includeNoScript=true)}</td>
     </tr>
-    #end if
   </table>
   #if c.errorMsg != "":
       <div style="float: left; width: 100%;">

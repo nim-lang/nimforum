@@ -24,6 +24,7 @@ type
     mlistAddress: string
     recaptchaSecretKey*: string
     recaptchaSiteKey*: string
+    isDev*: bool
 
 var docConfig: StringTableRef
 
@@ -43,6 +44,7 @@ proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
     result.mlistAddress = root{"mlistAddress"}.getStr("")
     result.recaptchaSecretKey = root{"recaptchaSecretKey"}.getStr("")
     result.recaptchaSiteKey = root{"recaptchaSiteKey"}.getStr("")
+    result.isDev = root{"isDev"}.getBool()
   except:
     echo("[WARNING] Couldn't read config file: ", filename)
 

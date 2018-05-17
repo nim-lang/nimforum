@@ -75,8 +75,8 @@ when defined(js):
     not getLoggedInUser().isNone
 
   proc renderHeader*(): VNode =
-    if state.data.isNone:
-      getStatus() # TODO: Call this every render?
+    if state.data.isNone and state.status == Http200:
+      getStatus()
 
     let user = state.data.map(x => x.user).flatten
     result = buildHtml(tdiv()): # TODO: Why do some buildHtml's need this?

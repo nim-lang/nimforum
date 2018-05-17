@@ -13,6 +13,8 @@ import
 import cgi except setCookie
 import options
 
+import auth
+
 import frontend/threadlist except User
 import frontend/[
   category, postlist, error, header, post, profile, user, karaxutils
@@ -85,7 +87,6 @@ var
   db: DbConn
   isFTSAvailable: bool
   config: Config
-  useCaptcha: bool
   captcha: ReCaptcha
 
 proc newForumError(message: string,
@@ -230,62 +231,7 @@ proc genGravatar(email: string, size: int = 80): string =
   result = "<img width=\"$1\" height=\"$2\" src=\"$3\" />" %
             [$size, $size, getGravatarUrl(email, size)]
 
-proc randomSalt(): string =
-  result = ""
-  for i in 0..127:
-    var r = random(225)
-    if r >= 32 and r <= 126:
-      result.add(chr(random(225)))
 
-proc devRandomSalt(): string =
-  when defined(posix):
-    result = ""
-    var f = open("/dev/urandom")
-    var randomBytes: array[0..127, char]
-    discard f.readBuffer(addr(randomBytes), 128)
-    for i in 0..127:
-      if ord(randomBytes[i]) >= 32 and ord(randomBytes[i]) <= 126:
-        result.add(randomBytes[i])
-    f.close()
-  else:
-    result = randomSalt()
-
-proc makeSalt(): string =
-  ## Creates a salt using a cryptographically secure random number generator.
-  ##
-  ## Ensures that the resulting salt contains no ``\0``.
-  try:
-    result = devRandomSalt()
-  except IOError:
-    result = randomSalt()
-
-  var newResult = ""
-  for i in 0 .. <result.len:
-    if result[i] != '\0':
-      newResult.add result[i]
-  return newResult
-
-proc makePassword(password, salt: string, comparingTo = ""): string =
-  ## Creates an MD5 hash by combining password and salt.
-  when defined(windows):
-    result = getMD5(salt & getMD5(password))
-  else:
-    let bcryptSalt = if comparingTo != "": comparingTo else: genSalt(8)
-    result = hash(getMD5(salt & getMD5(password)), bcryptSalt)
-
-proc makeIdentHash(user, password, epoch, secret: string,
-                   comparingTo = ""): string =
-  ## Creates a hash verifying the identity of a user. Used for password reset
-  ## links and email activation links.
-  ## If ``epoch`` is smaller than the epoch of the user's last login then
-  ## the link is invalid.
-  ## The ``secret`` is the 'salt' field in the ``person`` table.
-  echo(user, password, epoch, secret)
-  when defined(windows):
-    result = getMD5(user & password & epoch & secret)
-  else:
-    let bcryptSalt = if comparingTo != "": comparingTo else: genSalt(8)
-    result = hash(user & password & epoch & secret, bcryptSalt)
 
 # -----------------------------------------------------------------------------
 template `||`(x: untyped): untyped = (if not isNil(x): x else: "")
@@ -301,7 +247,7 @@ proc setError(c: TForumData, field, msg: string): bool {.inline.} =
 
 proc resetPassword(c: TForumData, nick, antibot, userIp: string): Future[bool] {.async.} =
   # captcha validation:
-  if useCaptcha:
+  if config.recaptchaSecretKey.len > 0:
     var captchaValid: bool = false
     try:
       captchaValid = await captcha.verify(antibot, userIp)
@@ -365,15 +311,10 @@ proc checkLoggedIn(c: TForumData) =
       c.req.ip, pass)
 
     let row = getRow(db,
-      sql"select name, email, status, ban from person where id = ?", c.userid)
+      sql"select name, email, status from person where id = ?", c.userid)
     c.username = ||row[0]
     c.email = ||row[1]
     c.rank = parseEnum[Rank](||row[2])
-    let ban = getBanErrorMsg(||row[3], c.rank)
-    if ban.len > 0:
-      discard c.setError("name", ban)
-      logout(c)
-      return
 
     # Update lastOnline
     db.exec(sql"update person set lastOnline = DATETIME('now') where id = ?",
@@ -917,16 +858,13 @@ proc initialise() =
               database="nimforum")
   isFTSAvailable = db.getAllRows(sql("SELECT name FROM sqlite_master WHERE " &
       "type='table' AND name='post_fts'")).len == 1
+
   config = loadConfig()
   if len(config.recaptchaSecretKey) > 0 and len(config.recaptchaSiteKey) > 0:
-    useCaptcha = true
     captcha = initReCaptcha(config.recaptchaSecretKey, config.recaptchaSiteKey)
   else:
-    useCaptcha = false
-  var http = true
-  if paramCount() > 0:
-    if paramStr(1) == "scgi":
-      http = false
+    doAssert config.isDev, "Recaptcha required for production!"
+    echo("[WARNING] No recaptcha secret key specified.")
 
 template createTFD() =
   var c {.inject.}: TForumData
@@ -1027,13 +965,13 @@ proc executeReply(c: TForumData, threadId: int, content: string,
   # Verify that content can be parsed as RST.
   let retID = insertID(
     db,
-    crud(crCreate, "post", "author", "ip", "header", "content", "thread"),
-    c.userId, c.req.ip, subject, content, $threadId, ""
+    crud(crCreate, "post", "author", "ip", "content", "thread"),
+    c.userId, c.req.ip, content, $threadId, ""
   )
   discard tryExec(
     db,
-    crud(crCreate, "post_fts", "id", "header", "content"),
-    retID.int, subject, content
+    crud(crCreate, "post_fts", "id", "content"),
+    retID.int, content
   )
 
   exec(db, sql"update thread set modified = DATETIME('now') where id = ?",
@@ -1156,7 +1094,7 @@ proc executeRegister(c: TForumData, name, pass, antibot, userIp,
     raise newForumError("Please choose a longer password", @["password"])
 
   # captcha validation:
-  if useCaptcha:
+  if config.recaptchaSecretKey.len > 0:
     var verifyFut = captcha.verify(antibot, userIp)
     yield verifyFut
     if verifyFut.failed:
@@ -1409,14 +1347,22 @@ routes:
   post "/signup":
     createTFD()
     let formData = request.formData
+    if not config.isDev:
+      cond "g-recaptcha-response" in formData
+
     let username = formData["username"].body
     let password = formData["password"].body
+    let recaptcha =
+      if "g-recaptcha-response" in formData:
+        formData["g-recaptcha-response"].body
+      else:
+        ""
     try:
       discard await executeRegister(
         c,
         username,
         password,
-        formData["g-recaptcha-response"].body,
+        recaptcha,
         request.host,
         formData["email"].body
       )
@@ -1446,7 +1392,7 @@ routes:
     let status = UserStatus(
       user: user,
       recaptchaSiteKey:
-        if useCaptcha:
+        if not config.isDev:
           some(config.recaptchaSiteKey)
         else:
           none[string]()
