@@ -306,8 +306,17 @@ $views-color: #545d70;
     }
   }
 
-  .post-time {
+  .post-metadata {
     float: right;
+
+    .post-replyingTo {
+      display: inline-block;
+      margin-right: $control-padding-x;
+
+      i.fa-reply {
+        transform: rotate(180deg);
+      }
+    }
   }
 }
 

@@ -212,7 +212,13 @@ when defined(js):
               if post.author.rank == Admin:
                 italic(class="fas fa-chess-knight",
                        title="User is an admin")
-            tdiv(class="post-time"):
+            tdiv(class="post-metadata"):
+              if post.replyingTo.isSome():
+                let replyingTo = post.replyingTo.get()
+                tdiv(class="post-replyingTo"):
+                  a(href=renderPostUrl(replyingTo)):
+                    italic(class="fas fa-reply")
+                  renderUserMention(replyingTo.author.get())
               let title = post.info.creation.fromUnix().local.
                           format("MMM d, yyyy HH:mm")
               a(href=renderPostUrl(post, thread), title=title):

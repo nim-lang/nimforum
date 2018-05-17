@@ -38,6 +38,7 @@ when defined(js):
 
   proc renderUserMention*(user: User): VNode =
     result = buildHtml():
-      # TODO: Add URL to profile.
-      span(class="user-mention"):
-           text "@" & user.name
+      a(class="user-mention",
+        href=makeUri("/profile/" & user.name),
+        onClick=anchorCB):
+        text "@" & user.name
