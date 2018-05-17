@@ -5,6 +5,7 @@ type
     message*: string
 
 when defined(js):
+  import json
   include karax/prelude
   import karax / [vstyles, kajax, kdom]
 

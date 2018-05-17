@@ -16,7 +16,7 @@ type
 when defined(js):
   include karax/prelude
   import karax/[kajax]
-  import karaxutils
+  import karaxutils, postbutton
 
   type
     ProfileTab* = enum
@@ -32,6 +32,7 @@ when defined(js):
       currentTab: ProfileTab
       loading: bool
       status: HttpCode
+      resetPassword: Option[PostButton]
 
   proc newProfileState*(): ProfileState =
     ProfileState(
@@ -63,6 +64,8 @@ when defined(js):
 
     state.profile = some(profile)
     resetSettings(state)
+    if profile.email.isSome():
+      state.resetPassword = some(newResetPasswordButton(profile.email.get()))
 
   proc genPostLink(link: PostLink): VNode =
     let url = renderPostUrl(link)
@@ -244,6 +247,14 @@ when defined(js):
                       text "Rank"
                   tdiv(class="col-9 col-sm-12"):
                     rankSelect
+                if state.resetPassword.isSome():
+                  tdiv(class="form-group"):
+                    tdiv(class="col-3 col-sm-12"):
+                      label(class="form-label"):
+                        text "Password"
+                    tdiv(class="col-9 col-sm-12"):
+                      render(state.resetPassword.get(),
+                             disabled=state.settings.rank==EmailUnconfirmed)
 
               tdiv(class="float-right"):
                 button(class="btn btn-link",
