@@ -4,6 +4,7 @@ type
   Rank* {.pure.} = enum ## serialized as 'status'
     Spammer          ## spammer: every post is invisible
     Troll            ## troll: cannot write new posts
+    Banned           ## A non-specific ban
     EmailUnconfirmed ## member with unconfirmed email address
     Moderated        ## new member: posts manually reviewed before everybody
                      ## can see them

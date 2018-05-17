@@ -167,10 +167,6 @@ when defined(js):
                 text $profile.threadCount
             dt(text "Rank")
             dd(text $profile.user.rank)
-            if profile.email.isSome():
-              dt(text "Email")
-              dd(class="spoiler"):
-                text profile.email.get()
 
         if currentUser.isSome():
           let user = currentUser.get()
