@@ -888,10 +888,12 @@ proc selectUser(userRow: seq[string], avatarSize: int=80): User =
     rank: parseEnum[Rank](userRow[3])
   )
 
-proc selectPost(postRow: seq[string], skippedPosts: seq[int]): Post =
+proc selectPost(postRow: seq[string], skippedPosts: seq[int],
+                replyingTo: Option[PostLink]): Post =
   return Post(
     id: postRow[0].parseInt,
-    author: selectUser(@[postRow[4], postRow[5], postRow[6], postRow[7]]),
+    replyingTo: replyingTo,
+    author: selectUser(@[postRow[5], postRow[6], postRow[7], postRow[8]]),
     likes: @[], # TODO:
     seen: false, # TODO:
     history: @[], # TODO:
@@ -901,6 +903,28 @@ proc selectPost(postRow: seq[string], skippedPosts: seq[int]): Post =
     ),
     moreBefore: skippedPosts
   )
+
+proc selectReplyingTo(replyingTo: string): Option[PostLink] =
+  if replyingTo.len == 0: return
+
+  const replyingToQuery = sql"""
+    select p.id, strftime('%s', p.creation), p.thread,
+           u.name, u.email, strftime('%s', u.lastOnline), u.status,
+           t.name
+    from post p, person u, thread t
+    where p.thread = t.id and p.author = u.id and p.id = ? and p.isDeleted = 0;
+  """
+
+  let row = getRow(db, replyingToQuery, replyingTo)
+  if row[0].len == 0: return
+
+  return some(PostLink(
+    creation: row[1].parseInt(),
+    topic: row[^1],
+    threadId: row[2].parseInt(),
+    postId: row[0].parseInt(),
+    author: some(selectUser(@[row[3], row[4], row[5], row[6]]))
+  ))
 
 proc selectThread(threadRow: seq[string]): Thread =
   const postsQuery =
@@ -950,23 +974,23 @@ proc selectThread(threadRow: seq[string]): Thread =
   return thread
 
 proc executeReply(c: TForumData, threadId: int, content: string,
-                  replyingTo: int): int64 =
+                  replyingTo: Option[int]): int64 =
   # TODO: Refactor TForumData.
   assert c.loggedIn()
 
-  let subject = "" # TODO: Remove this redundant field.
   if rateLimitCheck(c):
     raise newForumError("You're posting too fast!")
 
   if not validateRst(c, content):
     raise newForumError("Message needs to be valid RST", @["msg"])
 
-  # TODO: Replying to.
   # Verify that content can be parsed as RST.
   let retID = insertID(
     db,
-    crud(crCreate, "post", "author", "ip", "content", "thread"),
-    c.userId, c.req.ip, content, $threadId, ""
+    crud(crCreate, "post", "author", "ip", "content", "thread", "replyingTo"),
+    c.userId, c.req.ip, content, $threadId,
+    if replyingTo.isSome(): $replyingTo.get()
+    else: nil
   )
   discard tryExec(
     db,
@@ -1043,7 +1067,7 @@ proc executeNewThread(c: TForumData, subject, msg: string): (int64, int64) =
 
   discard tryExec(db, crud(crCreate, "thread_fts", "id", "name"),
                       c.threadID, subject)
-  result[1] = executeReply(c, result[0].int, msg, -1)
+  result[1] = executeReply(c, result[0].int, msg, none[int]())
   discard tryExec(db, sql"insert into post_fts(post_fts) values('optimize')")
   discard tryExec(db, sql"insert into post_fts(thread_fts) values('optimize')")
 
@@ -1180,6 +1204,7 @@ routes:
     let postsQuery =
       sql(
         """select p.id, p.content, strftime('%s', p.creation), p.author,
+                  p.replyingTo,
                   u.name, u.email, strftime('%s', u.lastOnline), u.status
            from post p, person u
            where u.id = p.author and p.thread = ? and p.isDeleted = 0
@@ -1200,7 +1225,8 @@ routes:
       let addDetail = i < count or rows.len-i < count or id == anchor
 
       if addDetail:
-        let post = selectPost(rows[i], skippedPosts)
+        let replyingTo = selectReplyingTo(rows[i][4])
+        let post = selectPost(rows[i], skippedPosts, replyingTo)
         list.posts.add(post)
         skippedPosts = @[]
       else:
@@ -1217,6 +1243,7 @@ routes:
     let intIDs = ids.elems.map(x => x.getInt())
     let postsQuery = sql("""
       select p.id, p.content, strftime('%s', p.creation), p.author,
+             p.replyingTo,
              u.name, u.email, strftime('%s', u.lastOnline), u.status
       from post p, person u
       where u.id = p.author and p.id in ($#)
@@ -1226,7 +1253,7 @@ routes:
     var list: seq[Post] = @[]
 
     for row in db.getAllRows(postsQuery):
-      list.add(selectPost(row, @[]))
+      list.add(selectPost(row, @[], selectReplyingTo(row[4])))
 
     resp $(%list), "application/json"
 
@@ -1440,11 +1467,14 @@ routes:
     let threadId = getInt(formData["threadId"].body, -1)
     cond threadId != -1
 
-    let replyingTo =
+    let replyingToId =
       if "replyingTo" in formData:
         getInt(formData["replyingTo"].body, -1)
       else:
         -1
+    let replyingTo =
+      if replyingToId == -1: none[int]()
+      else: some(replyingToId)
 
     try:
       let id = executeReply(c, threadId, msg, replyingTo)

@@ -1,4 +1,4 @@
-import strformat
+import strformat, options
 
 import user, threadlist
 
@@ -20,12 +20,14 @@ type
     info*: PostInfo
     moreBefore*: seq[int]
     isDeleted*: bool
+    replyingTo*: Option[PostLink]
 
   PostLink* = object ## Used by profile
     creation*: int64
     topic*: string
     threadId*: int
     postId*: int
+    author*: Option[User] ## Only used for `replyingTo`.
 
 proc isModerated*(post: Post): bool =
   ## Determines whether the specified thread is under moderation.
