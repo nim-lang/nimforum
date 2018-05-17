@@ -300,6 +300,10 @@ $views-color: #545d70;
   .post-username {
     font-weight: bold;
     display: inline-block;
+
+    i {
+      margin-left: $control-padding-x;
+    }
   }
 
   .post-time {

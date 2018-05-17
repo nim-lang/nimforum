@@ -203,6 +203,15 @@ when defined(js):
           tdiv(class="post-title"):
             tdiv(class="post-username"):
               text post.author.name
+              if post.isModerated:
+                italic(class="fas fa-eye-slash",
+                       title="User is moderated")
+              if post.author.rank == Moderator:
+                italic(class="fas fa-shield-alt",
+                       title="User is a moderator")
+              if post.author.rank == Admin:
+                italic(class="fas fa-chess-knight",
+                       title="User is an admin")
             tdiv(class="post-time"):
               let title = post.info.creation.fromUnix().local.
                           format("MMM d, yyyy HH:mm")
@@ -293,6 +302,8 @@ when defined(js):
         tdiv(class="posts"):
           var prevPost: Option[Post] = none[Post]()
           for i, post in list.posts:
+            if not post.visibleTo(currentUser): continue
+
             if prevPost.isSome:
               genTimePassed(prevPost.get(), some(post), false)
             if post.moreBefore.len > 0:

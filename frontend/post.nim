@@ -19,12 +19,17 @@ type
                             ## older versions of the post.
     info*: PostInfo
     moreBefore*: seq[int]
+    isDeleted*: bool
 
   PostLink* = object ## Used by profile
     creation*: int64
     topic*: string
     threadId*: int
     postId*: int
+
+proc isModerated*(post: Post): bool =
+  ## Determines whether the specified thread is under moderation.
+  post.author.rank <= Moderated
 
 when defined(js):
   import karaxutils

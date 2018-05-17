@@ -48,11 +48,14 @@ when defined(js):
   var
     state = newState()
 
-  proc visibleTo(thread: Thread, user: Option[User]): bool =
-    ## Determines whether the specified thread should be shown to the user.
+  proc visibleTo*[T](thread: T, user: Option[User]): bool =
+    ## Determines whether the specified thread (or post) should be
+    ## shown to the user. This procedure is generic and works on any
+    ## object with a `isModerated` proc.
     ##
     ## The rules for this are determined by the rank of the user, their
     ## settings (TODO), and whether the thread's creator is moderated or not.
+    mixin isModerated
     if user.isNone(): return not thread.isModerated
 
     let rank = user.get().rank
