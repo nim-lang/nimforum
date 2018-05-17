@@ -8,7 +8,7 @@
 
 import
   os, strutils, times, md5, strtabs, math, db_sqlite,
-  scgi, jester, asyncdispatch, asyncnet, cache, sequtils,
+  scgi, jester, asyncdispatch, asyncnet, sequtils,
   parseutils, utils, random, rst, recaptcha, json, re, sugar
 import cgi except setCookie
 import options
