@@ -21,6 +21,9 @@ type
 proc isOnline*(user: User): bool =
   return getTime().toUnix() - user.lastOnline < (60*5)
 
+proc `==`*(u1, u2: User): bool =
+  u1.name == u2.name
+
 when defined(js):
   include karax/prelude
   import karaxutils
