@@ -4,7 +4,7 @@ from dom import window, Location
 include karax/prelude
 import jester/patterns
 
-import threadlist, postlist, header, profile, newthread
+import threadlist, postlist, header, profile, newthread, error
 import karaxutils
 
 type
@@ -29,7 +29,6 @@ proc onPopState(event: dom.Event) =
   state.url = window.location
   redraw()
 
-const appName = "/karax"
 type Params = Table[string, string]
 type
   Route = object
@@ -38,11 +37,16 @@ type
 
 proc r(n: string, p: proc (params: Params): VNode): Route = Route(n: n, p: p)
 proc route(routes: openarray[Route]): VNode =
+  let path =
+    if state.url.pathname.len == 0: "/" else: $state.url.pathname
+  let prefix = if appName == "/": "" else: appName
   for route in routes:
-    let pattern = (appName & route.n).parsePattern()
-    let (matched, params) = pattern.match($state.url.pathname)
+    let pattern = (prefix & route.n).parsePattern()
+    let (matched, params) = pattern.match(path)
     if matched:
       return route.p(params)
+
+  return renderError("Unmatched route: " & path)
 
 proc render(): VNode =
   result = buildHtml(tdiv()):

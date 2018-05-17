@@ -84,7 +84,7 @@ when defined(js):
         tdiv(class="navbar container grid-xl"):
           section(class="navbar-section"):
             a(href=makeUri("/")):
-              img(src="/karax/images/crown.png", id="img-logo") # TODO: Customisation.
+              img(src="/images/logo.png", id="img-logo") # TODO: Customisation.
           section(class="navbar-section"):
             tdiv(class="input-group input-inline"):
               input(class="search-input input-sm",

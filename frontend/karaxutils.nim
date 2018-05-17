@@ -24,7 +24,7 @@ when defined(js):
 
   import dom except window
 
-  const appName = "/karax/"
+  const appName* = "/"
 
   proc class*(classes: varargs[tuple[name: string, present: bool]],
              defaultClasses: string = ""): string =

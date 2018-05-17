@@ -1191,24 +1191,19 @@ proc executeRegister(c: TForumData, name, pass, antibot, userIp,
 initialise()
 
 routes:
-  get "/":
-    createTFD()
-    c.isThreadsList = true
-    var count = 0
-    let threadList = genThreadsList(c, count)
-    let data = genMain(c, threadList,
-        additionalHeaders = genRSSHeaders(c), showRssLinks = true)
-    resp data
 
-  get "/karax/nimforum.css":
+  get "/nimforum.css":
     resp readFile("frontend/nimforum.css"), "text/css"
-  get "/karax/nimcache/forum.js":
+  get "/nimcache/forum.js":
     resp readFile("frontend/nimcache/forum.js"), "application/javascript"
-  get "/karax/images/crown.png":
-    resp readFile("frontend/images/crown.png"), "image/png"
+  get re"/images/(.+?\.png)/?":
+    let path = "frontend/images/" & request.matches[0]
+    if fileExists(path):
+      resp readFile(path), "image/png"
+    else:
+      resp Http404, "No such file."
 
-
-  get "/karax/threads.json":
+  get "/threads.json":
     var
       start = getInt(@"start", 0)
       count = getInt(@"count", 30)
@@ -1227,7 +1222,7 @@ routes:
 
     resp $(%list), "application/json"
 
-  get "/karax/posts.json":
+  get "/posts.json":
     createTFD()
     var
       id = getInt(@"id", -1)
@@ -1274,7 +1269,7 @@ routes:
 
     resp $(%list), "application/json"
 
-  get "/karax/specific_posts.json":
+  get "/specific_posts.json":
     createTFD()
     var
       ids = parseJson(@"ids")
@@ -1296,7 +1291,7 @@ routes:
 
     resp $(%list), "application/json"
 
-  get "/karax/post.rst":
+  get "/post.rst":
     createTFD()
     let postId = getInt(@"id", -1)
     cond postId != -1
@@ -1311,7 +1306,7 @@ routes:
     else:
       resp content, "text/x-rst"
 
-  get "/karax/profile.json":
+  get "/profile.json":
     createTFD()
     var
       username = @"username"
@@ -1395,7 +1390,7 @@ routes:
 
     resp $(%profile), "application/json"
 
-  post "/karax/login":
+  post "/login":
     createTFD()
     let formData = request.formData
     cond "username" in formData
@@ -1411,7 +1406,7 @@ routes:
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
 
-  post "/karax/signup":
+  post "/signup":
     createTFD()
     let formData = request.formData
     let username = formData["username"].body
@@ -1432,7 +1427,7 @@ routes:
       let exc = (ref ForumError)(getCurrentException())
       resp Http400, $(%exc.data), "application/json"
 
-  get "/karax/status.json":
+  get "/status.json":
     createTFD()
 
     let user =
@@ -1458,7 +1453,7 @@ routes:
     )
     resp $(%status), "application/json"
 
-  post "/karax/preview":
+  post "/preview":
     createTFD()
     if not c.loggedIn():
       let err = PostError(
@@ -1481,7 +1476,7 @@ routes:
       )
       resp Http400, $(%err), "application/json"
 
-  post "/karax/createPost":
+  post "/createPost":
     createTFD()
     if not c.loggedIn():
       let err = PostError(
@@ -1510,7 +1505,7 @@ routes:
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
 
-  post "/karax/updatePost":
+  post "/updatePost":
     createTFD()
     if not c.loggedIn():
       let err = PostError(
@@ -1538,7 +1533,7 @@ routes:
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
 
-  post "/karax/newthread":
+  post "/newthread":
     createTFD()
     if not c.loggedIn():
       let err = PostError(
@@ -1561,7 +1556,7 @@ routes:
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
 
-  get re"/karax/(.+)?":
+  get re"/(.+)?":
     resp readFile("frontend/karax.html")
 
   get "/threadActivity.xml":
@@ -1572,140 +1567,6 @@ routes:
   get "/postActivity.xml":
     createTFD()
     resp genPostsRSS(c), "application/atom+xml"
-
-  get "/t/@threadid/?@page?/?@postid?/?":
-    createTFD()
-    parseInt(@"threadid", c.threadId, -1..1000_000)
-
-    if c.threadId == unselectedThread:
-      # Thread has just been deleted.
-      redirect(uri("/"))
-
-    if @"page".len > 0:
-      parseInt(@"page", c.pageNum, 0..1000_000)
-    if @"postid".len > 0:
-      parseInt(@"postid", c.postId, 0..1000_000)
-    cond(c.pageNum > 0)
-    var count = 0
-    var pSubject = getThreadTitle(c.threadid, c.pageNum)
-    cond validThreadId(c)
-    gatherTotalPosts(c)
-    if (@"action").len > 0:
-      var title = ""
-      case @"action"
-      of "reply":
-        let subject = getValue(db,
-            sql"select header from post where id = (select max(id) from post where thread = ?)",
-            $c.threadId).prependRe
-        body = genPostsList(c, $c.threadId, count)
-        cond count != 0
-        body.add genFormPost(c, "doreply", "Reply", subject, "", false)
-        title = "Replying to thread: " & pSubject
-      of "edit":
-        cond c.postId != -1
-        const query = sql"select header, content from post where id = ?"
-        let row = getRow(db, query, $c.postId)
-        let header = ||row[0]
-        let content = ||row[1]
-        body = genFormPost(c, "doedit", "Edit", header, content, true)
-        title = "Editing post"
-      else: discard
-      resp c.genMain(body, title & " - Nim Forum")
-    else:
-      incrementViews(c)
-      let posts = genPostsList(c, $c.threadId, count)
-      cond count != 0
-      resp genMain(c, posts, pSubject & " - Nim Forum")
-
-  get "/page/?@page?/?":
-    createTFD()
-    c.isThreadsList = true
-    cond(@"page" != "")
-    parseInt(@"page", c.pageNum, 0..1000_000)
-    cond(c.pageNum > 0)
-    var count = 0
-    let list = genThreadsList(c, count)
-    if count == 0:
-      pass()
-    resp genMain(c, list, "Page " & $c.pageNum & " - Nim Forum",
-                 genRSSHeaders(c), showRssLinks = true)
-
-  get "/profile/@nick/?":
-    createTFD()
-    cond(@"nick" != "")
-    var userinfo: TUserInfo
-    if gatherUserInfo(c, @"nick", userinfo):
-      resp genMain(c, c.genProfile(userinfo),
-                   @"nick" & "'s profile - Nim Forum")
-    else:
-      halt()
-
-  get "/login/?":
-    createTFD()
-    resp genMain(c, genFormLogin(c), "Log in - Nim Forum")
-
-  get "/logout/?":
-    createTFD()
-    logout(c)
-    redirect(uri("/"))
-
-  get "/register/?":
-    createTFD()
-    resp genMain(c, genFormRegister(c), "Register - Nim Forum")
-
-  template readIDs() =
-    # Retrieve the threadid, postid and pagenum
-    if (@"threadid").len > 0:
-      parseInt(@"threadid", c.threadId, -1..1000_000)
-    if (@"postid").len > 0:
-      parseInt(@"postid", c.postId, -1..1000_000)
-
-  template finishLogin() =
-    setCookie("sid", c.userpass, daysForward(7))
-    redirect(uri("/"))
-
-  template handleError(action: string, topText: string, isEdit: bool) =
-    if c.isPreview:
-      body().add genPostPreview(c, @"subject", @"content",
-                              c.userName, $getGMTime(getTime()))
-    body().add genFormPost(c, action, topText, reuseText, reuseText, isEdit)
-    resp genMain(c, body(), "Nim Forum - " &
-                            (if c.isPreview: "Preview" else: "Error"))
-
-  post "/donewthread":
-    createTFD()
-    if newThread(c):
-      redirect(uri("/"))
-    else:
-      body = ""
-      handleError("donewthread", "New thread", false)
-
-  post "/doreply":
-    createTFD()
-    readIDs()
-    if reply(c):
-      redirect(c.genThreadUrl(pageNum = $(c.getPagesInThread+1)) & "#" & $c.postId)
-    else:
-      var count = 0
-      if c.isPreview:
-        c.pageNum = c.getPagesInThread+1
-      body = genPostsList(c, $c.threadId, count)
-      handleError("doreply", "Reply", false)
-
-  post "/doedit":
-    createTFD()
-    readIDs()
-    if edit(c, c.postId):
-      redirect(c.genThreadUrl(postId = $c.postId,
-                              pageNum = $(c.getPagesInThread+1)))
-    else:
-      body = ""
-      handleError("doedit", "Edit", true)
-
-  get "/newthread/?":
-    createTFD()
-    resp genMain(c, genFormPost(c, "donewthread", "New thread", "", "", false),
-                 "New Thread - Nim Forum")
 
   get "/deleteAll/?":
     createTFD()
