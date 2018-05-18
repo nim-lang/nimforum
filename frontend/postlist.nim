@@ -1,5 +1,6 @@
 
 import options, json, times, httpcore, strformat, sugar, math, strutils
+import sequtils
 
 import threadlist, category, post, user
 type
@@ -17,7 +18,7 @@ when defined(js):
   include karax/prelude
   import karax / [vstyles, kajax, kdom]
 
-  import karaxutils, error, replybox, editbox, postbutton
+  import karaxutils, error, replybox, editbox, postbutton, delete
 
   type
     State = ref object
@@ -29,10 +30,13 @@ when defined(js):
       editing: Option[Post] ## If in edit mode, this contains the post.
       editBox: EditBox
       likeButton: LikeButton
+      deleteModal: DeleteModal
 
   proc onReplyPosted(id: int)
   proc onEditPosted(id: int, content: string, subject: Option[string])
   proc onEditCancelled()
+  proc onDeletePost(post: Post)
+  proc onDeleteThread(thread: Thread)
   proc newState(): State =
     State(
       list: none[PostList](),
@@ -41,7 +45,8 @@ when defined(js):
       replyingTo: none[Post](),
       replyBox: newReplyBox(onReplyPosted),
       editBox: newEditBox(onEditPosted, onEditCancelled),
-      likeButton: newLikeButton()
+      likeButton: newLikeButton(),
+      deleteModal: newDeleteModal(onDeletePost, onDeleteThread, nil)
     )
 
   var
@@ -137,6 +142,21 @@ when defined(js):
     # TODO: Ensure the edit box is as big as its content. Auto resize the
     # text area.
 
+  proc onDeletePost(post: Post) =
+    state.list.get().posts.keepIf(
+      x => x.id != post.id
+    )
+
+  proc onDeleteThread(thread: Thread) =
+    window.location.href = makeUri("/")
+
+  proc onDeleteClick(e: Event, n: VNode, p: Post) =
+    let list = state.list.get()
+    if list.posts[0].id == p.id:
+      state.deleteModal.show(list.thread)
+    else:
+      state.deleteModal.show(p)
+
   proc onLoadMore(ev: Event, n: VNode, start: int, post: Post) =
     loadMore(start, post.moreBefore) # TODO: Don't load all!
 
@@ -173,7 +193,8 @@ when defined(js):
                onEditClick(e, n, post)):
             button(class="btn"):
               italic(class="far fa-edit")
-          tdiv(class="delete-button"):
+          tdiv(class="delete-button",
+               onClick=(e: Event, n: VNode) => onDeleteClick(e, n, post)):
             button(class="btn"):
               italic(class="far fa-trash-alt")
 
@@ -339,3 +360,5 @@ when defined(js):
               text " Reply"
 
           render(state.replyBox, list.thread, state.replyingTo, false)
+
+          render(state.deleteModal)

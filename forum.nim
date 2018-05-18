@@ -953,6 +953,20 @@ proc selectLikes(postId: int): seq[User] =
   for row in getAllRows(db, likeQuery, $postId):
     result.add(selectUser(row))
 
+proc selectThreadAuthor(threadId: int): User =
+  const authorQuery =
+    sql"""
+      select name, email, strftime('%s', lastOnline), status
+      from person where id in (
+        select author from post
+        where thread = ?
+        order by id
+        limit 1
+      )
+    """
+
+  return selectUser(getRow(db, authorQuery, threadId))
+
 proc selectThread(threadRow: seq[string]): Thread =
   const postsQuery =
     sql"""select count(*), strftime('%s', creation) from post
@@ -963,16 +977,6 @@ proc selectThread(threadRow: seq[string]): Thread =
       select name, email, strftime('%s', lastOnline), status, count(*)
       from person u, post p where p.author = u.id and p.thread = ?
       group by name order by count(*) desc limit 5;
-    """
-  const authorQuery =
-    sql"""
-      select name, email, strftime('%s', lastOnline), status
-      from person where id in (
-        select author from post
-        where thread = ?
-        order by id
-        limit 1
-      )
     """
 
   let posts = getRow(db, postsQuery, threadRow[0])
@@ -1000,7 +1004,7 @@ proc selectThread(threadRow: seq[string]): Thread =
     thread.users.add(selectUser(user))
 
   # Grab the author.
-  thread.author = selectUser(getRow(db, authorQuery, thread.id))
+  thread.author = selectThreadAuthor(thread.id)
 
   return thread
 
@@ -1219,6 +1223,29 @@ proc executeUnlike(c: TForumData, postId: int) =
 
   # Delete the like.
   exec(db, crud(crDelete, "like"), likeId)
+
+proc executeDeletePost(c: TForumData, postId: int) =
+  # Verify that this post belongs to the user.
+  const postQuery = sql"""
+    select p.id from post p
+    where p.author = ? and p.id = ?
+  """
+  let id = getValue(db, postQuery, postId, c.username)
+
+  if id.len == 0 and c.rank < Admin:
+    raise newForumError("You cannot delete this post")
+
+  # Set the `isDeleted` flag.
+  exec(db, crud(crUpdate, "post", "isDeleted"), "1", postId)
+
+proc executeDeleteThread(c: TForumData, threadId: int) =
+  # Verify that this thread belongs to the user.
+  let author = selectThreadAuthor(threadId)
+  if author.name != c.username and c.rank < Admin:
+    raise newForumError("You cannot delete this thread")
+
+  # Set the `isDeleted` flag.
+  exec(db, crud(crUpdate, "thread", "isDeleted"), "1", threadId)
 
 initialise()
 
@@ -1639,6 +1666,33 @@ routes:
         executeLike(c, postId)
       of "/unlike":
         executeUnlike(c, postId)
+      else:
+        assert false
+      resp Http200, "{}", "application/json"
+    except ForumError as exc:
+      resp Http400, $(%exc.data), "application/json"
+
+  post re"/delete(Post|Thread)":
+    createTFD()
+    if not c.loggedIn():
+      let err = PostError(
+        errorFields: @[],
+        message: "Not logged in."
+      )
+      resp Http401, $(%err), "application/json"
+
+    let formData = request.formData
+    cond "id" in formData
+
+    let id = getInt(formData["id"].body, -1)
+    cond id != -1
+
+    try:
+      case request.path
+      of "/deletePost":
+        executeDeletePost(c, id)
+      of "/deleteThread":
+        executeDeleteThread(c, id)
       else:
         assert false
       resp Http200, "{}", "application/json"
