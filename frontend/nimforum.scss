@@ -366,6 +366,10 @@ $views-color: #545d70;
   .like-button i:hover, .like-button i.fas {
     color: #f783ac;
   }
+
+  .like-count {
+    margin-right: $control-padding-x-sm;
+  }
 }
 
 #thread-buttons {

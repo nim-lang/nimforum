@@ -8,7 +8,7 @@ when defined(js):
   include karax/prelude
   import karax/[kajax, kdom]
 
-  import error, karaxutils
+  import error, karaxutils, post, user
 
   type
     PostButton* = ref object
@@ -75,3 +75,67 @@ when defined(js):
       if state.error.isSome():
         p(class="text-error"):
           text state.error.get().message
+
+
+  type
+    LikeButton* = ref object
+      error: Option[PostError]
+      loading: bool
+
+  proc newLikeButton*(): LikeButton =
+    LikeButton()
+
+  proc onPost(httpStatus: int, response: kstring, state: LikeButton,
+              post: Post, user: User) =
+    postFinished:
+      if post.isLikedBy(some(user)):
+        var newLikes: seq[User] = @[]
+        for like in post.likes:
+          if like.name != user.name:
+            newLikes.add(like)
+        post.likes = newLikes
+      else:
+        post.likes.add(user)
+
+  proc onClick(ev: Event, n: VNode, state: LikeButton, post: Post,
+               currentUser: Option[User]) =
+    if state.loading: return
+    if currentUser.isNone():
+      state.error = some[PostError](PostError(message: "Not logged in."))
+
+    state.loading = true
+    state.error = none[PostError]()
+
+    # TODO: This is a hack, karax should support this.
+    var formData = newFormData()
+    formData.append("id", $post.id)
+    let uri =
+      if post.isLikedBy(currentUser):
+        makeUri("/unlike")
+      else:
+        makeUri("/like")
+    ajaxPost(uri, @[], cast[cstring](formData),
+             (s: int, r: kstring) =>
+                onPost(s, r, state, post, currentUser.get()))
+
+    ev.preventDefault()
+
+  proc render*(state: LikeButton, post: Post,
+               currentUser: Option[User]): VNode =
+
+    let liked = isLikedBy(post, currentUser)
+    let tooltip =
+      if state.error.isSome(): state.error.get().message
+      else: ""
+
+    result = buildHtml():
+      tdiv(class="like-button"):
+        button(class=class({"tooltip": state.error.isSome()}, "btn"),
+               onClick=(e: Event, n: VNode) =>
+                  (onClick(e, n, state, post, currentUser)),
+               "data-tooltip"=tooltip):
+          if post.likes.len > 0:
+            span(class="like-count"):
+              text $post.likes.len
+
+          italic(class=class({"far": not liked, "fas": liked}, "fa-heart"))

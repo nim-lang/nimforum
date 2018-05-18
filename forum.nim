@@ -889,12 +889,13 @@ proc selectUser(userRow: seq[string], avatarSize: int=80): User =
   )
 
 proc selectPost(postRow: seq[string], skippedPosts: seq[int],
-                replyingTo: Option[PostLink], history: seq[PostInfo]): Post =
+                replyingTo: Option[PostLink], history: seq[PostInfo],
+                likes: seq[User]): Post =
   return Post(
     id: postRow[0].parseInt,
     replyingTo: replyingTo,
     author: selectUser(@[postRow[5], postRow[6], postRow[7], postRow[8]]),
-    likes: @[], # TODO:
+    likes: likes,
     seen: false, # TODO:
     history: history,
     info: PostInfo(
@@ -939,6 +940,18 @@ proc selectHistory(postId: int): seq[PostInfo] =
       creation: row[0].parseInt(),
       content: row[1].rstToHtml()
     ))
+
+proc selectLikes(postId: int): seq[User] =
+  const likeQuery = sql"""
+    select u.name, u.email, strftime('%s', u.lastOnline), u.status
+    from like h, person u
+    where h.post = ? and h.author = u.id
+    order by h.creation asc;
+  """
+
+  result = @[]
+  for row in getAllRows(db, likeQuery, $postId):
+    result.add(selectUser(row))
 
 proc selectThread(threadRow: seq[string]): Thread =
   const postsQuery =
@@ -1169,12 +1182,43 @@ proc executeRegister(c: TForumData, name, pass, antibot, userIp,
     raise newForumError("Couldn't send activation email", @["email"])
 
   # Add account to person table
-  exec(db,
-    sql("INSERT INTO person(name, password, email, salt, status, lastOnline) " &
-        "VALUES (?, ?, ?, ?, ?, DATETIME('now'))"), name,
-              password, email, salt, $EmailUnconfirmed)
+  exec(db, sql"""
+    INSERT INTO person(name, password, email, salt, status, lastOnline)
+    VALUES (?, ?, ?, ?, ?, DATETIME('now'))
+  """, name, password, email, salt, $EmailUnconfirmed)
 
   return password
+
+proc executeLike(c: TForumData, postId: int) =
+  # Verify the post exists and doesn't belong to the current user.
+  const postQuery = sql"""
+    select u.name from post p, person u
+    where p.id = ? and p.author = u.id and p.isDeleted = 0;
+  """
+
+  let postAuthor = getValue(db, postQuery, postId)
+  if postAuthor.len == 0:
+    raise newForumError("Specified post ID does not exist.", @["id"])
+
+  if postAuthor == c.username:
+    raise newForumError("You cannot like your own post.")
+
+  # Save the like.
+  exec(db, crud(crCreate, "like", "author", "post"), c.userid, postId)
+
+proc executeUnlike(c: TForumData, postId: int) =
+  # Verify the post and like exists for the current user.
+  const likeQuery = sql"""
+    select l.id from like l, person u
+    where l.post = ? and l.author = u.id and u.name = ?;
+  """
+
+  let likeId = getValue(db, likeQuery, postId, c.username)
+  if likeId.len == 0:
+    raise newForumError("Like doesn't exist.", @["id"])
+
+  # Delete the like.
+  exec(db, crud(crDelete, "like"), likeId)
 
 initialise()
 
@@ -1256,8 +1300,11 @@ routes:
 
       if addDetail:
         let replyingTo = selectReplyingTo(rows[i][4])
-        let history = selectHistory(rows[i][0].parseInt())
-        let post = selectPost(rows[i], skippedPosts, replyingTo, history)
+        let history = selectHistory(id)
+        let likes = selectLikes(id)
+        let post = selectPost(
+          rows[i], skippedPosts, replyingTo, history, likes
+        )
         list.posts.add(post)
         skippedPosts = @[]
       else:
@@ -1285,7 +1332,8 @@ routes:
 
     for row in db.getAllRows(postsQuery):
       let history = selectHistory(row[0].parseInt())
-      list.add(selectPost(row, @[], selectReplyingTo(row[4]), history))
+      let likes = selectLikes(row[0].parseInt())
+      list.add(selectPost(row, @[], selectReplyingTo(row[4]), history, likes))
 
     resp $(%list), "application/json"
 
@@ -1567,6 +1615,33 @@ routes:
     try:
       let res = executeNewThread(c, subject, msg)
       resp Http200, $(%[res[0], res[1]]), "application/json"
+    except ForumError as exc:
+      resp Http400, $(%exc.data), "application/json"
+
+  post re"/(like|unlike)":
+    createTFD()
+    if not c.loggedIn():
+      let err = PostError(
+        errorFields: @[],
+        message: "Not logged in."
+      )
+      resp Http401, $(%err), "application/json"
+
+    let formData = request.formData
+    cond "id" in formData
+
+    let postId = getInt(formData["id"].body, -1)
+    cond postId != -1
+
+    try:
+      case request.path
+      of "/like":
+        executeLike(c, postId)
+      of "/unlike":
+        executeUnlike(c, postId)
+      else:
+        assert false
+      resp Http200, "{}", "application/json"
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
 

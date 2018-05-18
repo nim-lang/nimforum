@@ -17,7 +17,7 @@ when defined(js):
   include karax/prelude
   import karax / [vstyles, kajax, kdom]
 
-  import karaxutils, error, replybox, editbox
+  import karaxutils, error, replybox, editbox, postbutton
 
   type
     State = ref object
@@ -28,6 +28,7 @@ when defined(js):
       replyBox: ReplyBox
       editing: Option[Post] ## If in edit mode, this contains the post.
       editBox: EditBox
+      likeButton: LikeButton
 
   proc onReplyPosted(id: int)
   proc onEditPosted(id: int, content: string, subject: Option[string])
@@ -39,7 +40,8 @@ when defined(js):
       status: Http200,
       replyingTo: none[Post](),
       replyBox: newReplyBox(onReplyPosted),
-      editBox: newEditBox(onEditPosted, onEditCancelled)
+      editBox: newEditBox(onEditPosted, onEditCancelled),
+      likeButton: newLikeButton()
     )
 
   var
@@ -175,12 +177,7 @@ when defined(js):
             button(class="btn"):
               italic(class="far fa-trash-alt")
 
-        tdiv(class="like-button"):
-          button(class="btn"):
-            span(class="like-count"):
-              if post.likes.len > 0:
-                text $post.likes.len
-            italic(class="far fa-heart")
+        render(state.likeButton, post, currentUser)
 
         if loggedIn:
           tdiv(class="flag-button"):

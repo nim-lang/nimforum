@@ -35,6 +35,16 @@ proc isModerated*(post: Post): bool =
   ## Determines whether the specified thread is under moderation.
   post.author.rank <= Moderated
 
+proc isLikedBy*(post: Post, user: Option[User]): bool =
+  ## Determines whether the specified user has liked the post.
+  if user.isNone(): return false
+
+  for u in post.likes:
+    if u.name == user.get().name:
+      return true
+
+  return false
+
 when defined(js):
   import karaxutils
 
