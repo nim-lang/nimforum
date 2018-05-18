@@ -175,20 +175,18 @@ when defined(js):
             button(class="btn"):
               italic(class="far fa-trash-alt")
 
-        if not authoredByUser:
-          tdiv(class="like-button"):
-            button(class="btn"):
-              span(class="like-count"):
-                if post.likes.len > 0:
-                  text $post.likes.len
-                italic(class="far fa-heart")
-
-          if loggedIn:
-            tdiv(class="flag-button"):
-              button(class="btn"):
-                italic(class="far fa-flag")
+        tdiv(class="like-button"):
+          button(class="btn"):
+            span(class="like-count"):
+              if post.likes.len > 0:
+                text $post.likes.len
+            italic(class="far fa-heart")
 
         if loggedIn:
+          tdiv(class="flag-button"):
+            button(class="btn"):
+              italic(class="far fa-flag")
+
           tdiv(class="reply-button"):
             button(class="btn", onClick=(e: Event, n: VNode) =>
                    onReplyClick(e, n, some(post))):
