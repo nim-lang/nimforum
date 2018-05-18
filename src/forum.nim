@@ -856,10 +856,6 @@ proc prependRe(s: string): string =
 
 proc initialise() =
   randomize()
-  db = open(connection="nimforum.db", user="postgres", password="",
-              database="nimforum")
-  isFTSAvailable = db.getAllRows(sql("SELECT name FROM sqlite_master WHERE " &
-      "type='table' AND name='post_fts'")).len == 1
 
   config = loadConfig()
   if len(config.recaptchaSecretKey) > 0 and len(config.recaptchaSiteKey) > 0:
@@ -867,6 +863,11 @@ proc initialise() =
   else:
     doAssert config.isDev, "Recaptcha required for production!"
     echo("[WARNING] No recaptcha secret key specified.")
+
+  db = open(connection=config.dbPath, user="", password="",
+              database="nimforum")
+  isFTSAvailable = db.getAllRows(sql("SELECT name FROM sqlite_master WHERE " &
+      "type='table' AND name='post_fts'")).len == 1
 
   let cssLoc = "public" / "css"
   if not existsFile(cssLoc / "nimforum.css"):

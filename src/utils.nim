@@ -25,6 +25,7 @@ type
     recaptchaSecretKey*: string
     recaptchaSiteKey*: string
     isDev*: bool
+    dbPath*: string
 
 var docConfig: StringTableRef
 
@@ -45,6 +46,7 @@ proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
     result.recaptchaSecretKey = root{"recaptchaSecretKey"}.getStr("")
     result.recaptchaSiteKey = root{"recaptchaSiteKey"}.getStr("")
     result.isDev = root{"isDev"}.getBool()
+    result.dbPath = root{"dbPath"}.getStr("nimforum.db")
   except:
     echo("[WARNING] Couldn't read config file: ", filename)
 

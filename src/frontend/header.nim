@@ -93,11 +93,11 @@ when defined(js):
             if state.loading:
               tdiv(class="loading")
             elif user.isNone:
-              button(class="btn btn-primary btn-sm",
+              button(id="signup-btn", class="btn btn-primary btn-sm",
                      onClick=(e: Event, n: VNode) => state.signupModal.show()):
                 italic(class="fas fa-user-plus")
                 text " Sign up"
-              button(class="btn btn-primary btn-sm",
+              button(id="login-btn", class="btn btn-primary btn-sm",
                      onClick=(e: Event, n: VNode) => state.loginModal.show()):
                 italic(class="fas fa-sign-in-alt")
                 text " Log in"

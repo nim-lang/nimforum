@@ -7,21 +7,30 @@
 #
 # Script to initialise the nimforum.
 
-import strutils, db_sqlite, os, times, json
+import strutils, db_sqlite, os, times, json, options
 
 import auth, frontend/user
 
-proc backup(path: string) =
+proc backup(path: string, contents: Option[string]=none[string]()) =
   if existsFile(path):
+    if contents.isSome() and readFile(path) == contents.get():
+      # Don't backup if the files are equivalent.
+      echo("Not backing up because new file is the same.")
+      return
+
     let backupPath = path & "." & $getTime().toUnix()
     echo(path, " already exists. Moving to ", backupPath)
     moveFile(path, backupPath)
 
-proc initialiseDb(admin: tuple[username, password, email: string]) =
-  let path = getCurrentDir() / "nimforum.db"
-  backup(path)
+proc initialiseDb(admin: tuple[username, password, email: string],
+                  filename="nimforum.db") =
+  let path = getCurrentDir() / filename
+  if "-dev" notin filename and "-test" notin filename:
+    backup(path)
 
-  var db = open(connection="nimforum.db", user="", password="",
+  removeFile(path)
+
+  var db = open(connection=path, user="", password="",
                 database="nimforum")
 
   const
@@ -198,10 +207,10 @@ proc initialiseConfig(
   name, hostname: string,
   recaptcha: tuple[siteKey, secretKey: string],
   smtp: tuple[address, user, password: string],
-  isDev: bool
+  isDev: bool,
+  dbPath: string
 ) =
   let path = getCurrentDir() / "forum.json"
-  backup(path)
 
   var j = %{
     "name": %name,
@@ -211,23 +220,47 @@ proc initialiseConfig(
     "smtpAddress": %smtp.address,
     "smtpUser": %smtp.user,
     "smtpPassword": %smtp.password,
-    "isDev": %isDev
+    "isDev": %isDev,
+    "dbPath": %dbPath
   }
 
+  backup(path, some($j))
   writeFile(path, $j)
 
 when isMainModule:
-  if paramCount() > 0 and paramStr(1) == "--dev":
-    echo("Initialising nimforum for development...")
-    initialiseConfig(
-      "Development Forum",
-      "localhost.local",
-      recaptcha=("", ""),
-      smtp=("", "", ""),
-      isDev=true
-    )
+  if paramCount() > 0:
+    case paramStr(1)
+    of "--dev":
+      let dbPath = "nimforum-dev.db"
+      echo("Initialising nimforum for development...")
+      initialiseConfig(
+        "Development Forum",
+        "localhost.local",
+        recaptcha=("", ""),
+        smtp=("", "", ""),
+        isDev=true,
+        dbPath
+      )
 
-    initialiseDb(
-      admin=("admin", "admin", "admin@localhost.local")
-    )
+      initialiseDb(
+        admin=("admin", "admin", "admin@localhost.local"),
+        dbPath
+      )
+    of "--test":
+      let dbPath = "nimforum-test.db"
+      echo("Initialising nimforum for testing...")
+      initialiseConfig(
+        "Test Forum",
+        "localhost.local",
+        recaptcha=("", ""),
+        smtp=("", "", ""),
+        isDev=true,
+        dbPath
+      )
 
+      initialiseDb(
+        admin=("admin", "admin", "admin@localhost.local"),
+        dbPath
+      )
+    else:
+      quit("--dev|--test")
