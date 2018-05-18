@@ -119,7 +119,10 @@ when defined(js):
     let list = state.list.get()
     for i in 0 ..< list.posts.len:
       if list.posts[i].id == id:
-        list.posts[i].info.content = content
+        list.posts[i].history.add(PostInfo(
+          creation: getTime().toUnix(),
+          content: content
+        ))
         break
 
   proc onReplyClick(e: Event, n: VNode, p: Option[Post]) =
@@ -219,6 +222,14 @@ when defined(js):
                   a(href=renderPostUrl(replyingTo)):
                     italic(class="fas fa-reply")
                   renderUserMention(replyingTo.author.get())
+              if post.history.len > 0:
+                let title = post.lastEdit.creation.fromUnix().local.
+                            format("'Last modified' MMM d, yyyy HH:mm")
+                tdiv(class="post-history", title=title):
+                  span(class="edit-count"):
+                    text $post.history.len
+                  italic(class="fas fa-pencil-alt")
+
               let title = post.info.creation.fromUnix().local.
                           format("MMM d, yyyy HH:mm")
               a(href=renderPostUrl(post, thread), title=title):
@@ -227,7 +238,12 @@ when defined(js):
             if state.editing.isSome() and state.editing.get() == post:
               render(state.editBox, postCopy)
             else:
-              verbatim(post.info.content)
+              let content =
+                if post.history.len > 0:
+                  post.lastEdit.content
+                else:
+                  post.info.content
+              verbatim(content)
 
           genPostButtons(postCopy, currentUser)
 

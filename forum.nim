@@ -889,14 +889,14 @@ proc selectUser(userRow: seq[string], avatarSize: int=80): User =
   )
 
 proc selectPost(postRow: seq[string], skippedPosts: seq[int],
-                replyingTo: Option[PostLink]): Post =
+                replyingTo: Option[PostLink], history: seq[PostInfo]): Post =
   return Post(
     id: postRow[0].parseInt,
     replyingTo: replyingTo,
     author: selectUser(@[postRow[5], postRow[6], postRow[7], postRow[8]]),
     likes: @[], # TODO:
     seen: false, # TODO:
-    history: @[], # TODO:
+    history: history,
     info: PostInfo(
       creation: postRow[2].parseInt,
       content: postRow[1].rstToHtml()
@@ -925,6 +925,20 @@ proc selectReplyingTo(replyingTo: string): Option[PostLink] =
     postId: row[0].parseInt(),
     author: some(selectUser(@[row[3], row[4], row[5], row[6]]))
   ))
+
+proc selectHistory(postId: int): seq[PostInfo] =
+  const historyQuery = sql"""
+    select strftime('%s', creation), content from postRevision
+    where original = ?
+    order by creation asc;
+  """
+
+  result = @[]
+  for row in getAllRows(db, historyQuery, $postId):
+    result.add(PostInfo(
+      creation: row[0].parseInt(),
+      content: row[1].rstToHtml()
+    ))
 
 proc selectThread(threadRow: seq[string]): Thread =
   const postsQuery =
@@ -1032,7 +1046,15 @@ proc updatePost(c: TForumData, postId: int, content: string,
     raise newForumError("Message needs to be valid RST", @["msg"])
 
   # Update post.
-  exec(db, crud(crUpdate, "post", "content"), content, $postId)
+  # - We create a new postRevision entry for our edit.
+  exec(
+    db,
+    crud(crCreate, "postRevision", "content", "original"),
+    content,
+    $postId
+  )
+  # - We set the FTS to the latest content as searching for past edits is not
+  #   supported.
   exec(db, crud(crUpdate, "post_fts", "content"), content, $postId)
   # Check if post is the first post of the thread.
   if subject.isSome():
@@ -1234,7 +1256,8 @@ routes:
 
       if addDetail:
         let replyingTo = selectReplyingTo(rows[i][4])
-        let post = selectPost(rows[i], skippedPosts, replyingTo)
+        let history = selectHistory(rows[i][0].parseInt())
+        let post = selectPost(rows[i], skippedPosts, replyingTo, history)
         list.posts.add(post)
         skippedPosts = @[]
       else:
@@ -1261,7 +1284,8 @@ routes:
     var list: seq[Post] = @[]
 
     for row in db.getAllRows(postsQuery):
-      list.add(selectPost(row, @[], selectReplyingTo(row[4])))
+      let history = selectHistory(row[0].parseInt())
+      list.add(selectPost(row, @[], selectReplyingTo(row[4]), history))
 
     resp $(%list), "application/json"
 
@@ -1271,10 +1295,15 @@ routes:
     cond postId != -1
 
     let postQuery = sql"""
-      select content from post where id = ?;
+      select content from (
+        select content, creation from post where id = ?
+        union
+        select content, creation from postRevision where original = ?
+      )
+      order by creation desc limit 1;
     """
 
-    let content = getValue(db, postQuery, postId)
+    let content = getValue(db, postQuery, postId, postId)
     if content.len == 0:
       resp Http404, "Post not found"
     else:

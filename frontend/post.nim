@@ -28,6 +28,9 @@ type
     postId*: int
     author*: Option[User] ## Only used for `replyingTo`.
 
+proc lastEdit*(post: Post): PostInfo =
+  post.history[^1]
+
 proc isModerated*(post: Post): bool =
   ## Determines whether the specified thread is under moderation.
   post.author.rank <= Moderated

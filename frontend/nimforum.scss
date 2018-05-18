@@ -317,6 +317,19 @@ $views-color: #545d70;
         transform: rotate(180deg);
       }
     }
+
+    .post-history {
+      display: inline-block;
+      margin-right: $control-padding-x;
+
+      i {
+        font-size: 90%;
+      }
+
+      .edit-count {
+        margin-right: $control-padding-x-sm/2;
+      }
+    }
   }
 }
 

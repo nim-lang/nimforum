@@ -58,6 +58,9 @@ when defined(js):
              (s: int, r: kstring) => onEditPost(s, r, state))
 
   proc render*(state: EditBox, post: Post): VNode =
+    if state.status != Http200:
+      return renderError("Couldn't retrieve raw post")
+
     if state.rawContent.isNone() or state.post.id != post.id:
       state.post = post
       state.rawContent = none[kstring]()
