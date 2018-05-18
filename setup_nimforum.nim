@@ -78,7 +78,8 @@ proc initialiseDb(admin: tuple[username, password, email: string]) =
     salt varbin(128) not null,
     status varchar(30) not null,
     lastOnline timestamp not null default (DATETIME('now')),
-    isDeleted boolean not null default 0
+    isDeleted boolean not null default 0,
+    needsPasswordReset boolean not null default 0
   );""" % [userNameType, passwordType, emailType]), [])
 
   db.exec(sql"""
