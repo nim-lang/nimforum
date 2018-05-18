@@ -102,6 +102,7 @@ when defined(js):
     if state.loading: return
     if currentUser.isNone():
       state.error = some[PostError](PostError(message: "Not logged in."))
+      return
 
     state.loading = true
     state.error = none[PostError]()
@@ -133,7 +134,9 @@ when defined(js):
         button(class=class({"tooltip": state.error.isSome()}, "btn"),
                onClick=(e: Event, n: VNode) =>
                   (onClick(e, n, state, post, currentUser)),
-               "data-tooltip"=tooltip):
+               "data-tooltip"=tooltip,
+               onmouseleave=(e: Event, n: VNode) =>
+                  (state.error = none[PostError]())):
           if post.likes.len > 0:
             span(class="like-count"):
               text $post.likes.len
