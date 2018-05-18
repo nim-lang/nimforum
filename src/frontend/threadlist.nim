@@ -163,8 +163,10 @@ when defined(js):
     if state.status != Http200:
       return renderError("Couldn't retrieve threads.")
 
-    if state.list.isNone and (not state.loading):
-      ajaxGet(makeUri("threads.json"), @[], onThreadList)
+    if state.list.isNone:
+      if not state.loading:
+        state.loading = true
+        ajaxGet(makeUri("threads.json"), @[], onThreadList)
 
       return buildHtml(tdiv(class="loading loading-lg"))
 
