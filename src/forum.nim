@@ -13,6 +13,8 @@ import
 import cgi except setCookie
 import options
 
+import sass
+
 import auth
 
 import frontend/threadlist except User
@@ -866,6 +868,10 @@ proc initialise() =
     doAssert config.isDev, "Recaptcha required for production!"
     echo("[WARNING] No recaptcha secret key specified.")
 
+  let cssLoc = "public" / "css"
+  if not existsFile(cssLoc / "nimforum.css"):
+    sass.compileFile(cssLoc / "nimforum.scss", cssLoc / "nimforum.css")
+
 template createTFD() =
   var c {.inject.}: TForumData
   new(c)
@@ -1252,11 +1258,11 @@ initialise()
 routes:
 
   get "/nimforum.css":
-    resp readFile("frontend/nimforum.css"), "text/css"
+    resp readFile("public/css/nimforum.css"), "text/css"
   get "/nimcache/forum.js":
-    resp readFile("frontend/nimcache/forum.js"), "application/javascript"
+    resp readFile("public/js/forum.js"), "application/javascript"
   get re"/images/(.+?\.png)/?":
-    let path = "frontend/images/" & request.matches[0]
+    let path = "public/images/" & request.matches[0]
     if fileExists(path):
       resp readFile(path), "image/png"
     else:
@@ -1724,10 +1730,10 @@ routes:
       redirect uri("/404")
 
   get "/404":
-    resp Http404, readFile("frontend/karax.html")
+    resp Http404, readFile("public/karax.html")
 
   get re"/(.+)?":
-    resp readFile("frontend/karax.html")
+    resp readFile("public/karax.html")
 
   get "/threadActivity.xml":
     createTFD()
@@ -1870,10 +1876,10 @@ routes:
     else:
       resp genMain(c, genFormResetPassword(c), "Reset Password - Nim Forum")
 
-  const licenseRst = slurp("static/license.rst")
   get "/license":
     createTFD()
-    resp genMain(c, rstToHtml(licenseRst), "Content license - Nim Forum")
+    resp genMain(c, rstToHtml(readFile("static/license.rst")),
+                 "Content license - Nim Forum")
 
   post "/search/?@page?":
     cond isFTSAvailable

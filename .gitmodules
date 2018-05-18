@@ -1,3 +1,6 @@
 [submodule "frontend/spectre"]
 	path = frontend/spectre
 	url = https://github.com/picturepan2/spectre
+[submodule "public/css/spectre"]
+	path = public/css/spectre
+	url = https://github.com/picturepan2/spectre
