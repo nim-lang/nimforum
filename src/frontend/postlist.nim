@@ -308,7 +308,7 @@ when defined(js):
   proc renderPostList*(threadId: int, postId: Option[int],
                        currentUser: Option[User]): VNode =
     if state.status != Http200:
-      return renderError("Couldn't retrieve posts.")
+      return renderError("Couldn't retrieve posts.", state.status)
 
     if state.list.isNone or state.list.get().thread.id != threadId:
       var params = @[("id", $threadId)]

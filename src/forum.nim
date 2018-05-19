@@ -888,12 +888,18 @@ template createTFD() =
 #[ DB functions. TODO: Move to another module? ]#
 
 proc selectUser(userRow: seq[string], avatarSize: int=80): User =
-  return User(
+  result = User(
     name: userRow[0],
     avatarUrl: userRow[1].getGravatarUrl(avatarSize),
     lastOnline: userRow[2].parseInt,
-    rank: parseEnum[Rank](userRow[3])
+    rank: parseEnum[Rank](userRow[3]),
+    isDeleted: userRow[4] == "1"
   )
+
+  # Don't give data about a deleted user.
+  if result.isDeleted:
+    result.name = "DeletedUser"
+    result.avatarUrl = getGravatarUrl(result.name & userRow[1], avatarSize)
 
 proc selectPost(postRow: seq[string], skippedPosts: seq[int],
                 replyingTo: Option[PostLink], history: seq[PostInfo],
@@ -901,7 +907,7 @@ proc selectPost(postRow: seq[string], skippedPosts: seq[int],
   return Post(
     id: postRow[0].parseInt,
     replyingTo: replyingTo,
-    author: selectUser(@[postRow[5], postRow[6], postRow[7], postRow[8]]),
+    author: selectUser(postRow[5..9]),
     likes: likes,
     seen: false, # TODO:
     history: history,
@@ -918,6 +924,7 @@ proc selectReplyingTo(replyingTo: string): Option[PostLink] =
   const replyingToQuery = sql"""
     select p.id, strftime('%s', p.creation), p.thread,
            u.name, u.email, strftime('%s', u.lastOnline), u.status,
+           u.isDeleted,
            t.name
     from post p, person u, thread t
     where p.thread = t.id and p.author = u.id and p.id = ? and p.isDeleted = 0;
@@ -931,7 +938,7 @@ proc selectReplyingTo(replyingTo: string): Option[PostLink] =
     topic: row[^1],
     threadId: row[2].parseInt(),
     postId: row[0].parseInt(),
-    author: some(selectUser(@[row[3], row[4], row[5], row[6]]))
+    author: some(selectUser(row[3..7]))
   ))
 
 proc selectHistory(postId: int): seq[PostInfo] =
@@ -950,7 +957,8 @@ proc selectHistory(postId: int): seq[PostInfo] =
 
 proc selectLikes(postId: int): seq[User] =
   const likeQuery = sql"""
-    select u.name, u.email, strftime('%s', u.lastOnline), u.status
+    select u.name, u.email, strftime('%s', u.lastOnline), u.status,
+           u.isDeleted
     from like h, person u
     where h.post = ? and h.author = u.id
     order by h.creation asc;
@@ -963,7 +971,7 @@ proc selectLikes(postId: int): seq[User] =
 proc selectThreadAuthor(threadId: int): User =
   const authorQuery =
     sql"""
-      select name, email, strftime('%s', lastOnline), status
+      select name, email, strftime('%s', lastOnline), status, isDeleted
       from person where id in (
         select author from post
         where thread = ?
@@ -981,7 +989,8 @@ proc selectThread(threadRow: seq[string]): Thread =
           order by creation asc limit 1;"""
   const usersListQuery =
     sql"""
-      select name, email, strftime('%s', lastOnline), status, count(*)
+      select name, email, strftime('%s', lastOnline), status, u.isDeleted,
+             count(*)
       from person u, post p where p.author = u.id and p.thread = ?
       group by name order by count(*) desc limit 5;
     """
@@ -1142,7 +1151,7 @@ proc executeLogin(c: TForumData, username, password: string): string =
   const query =
     sql"""
       select id, name, password, email, salt
-      from person where name = ? or email = ?
+      from person where (name = ? or email = ?) and isDeleted = 0
     """
   if username.len == 0:
     raise newForumError("Username cannot be empty", @["username"])
@@ -1280,6 +1289,8 @@ proc executeDeleteUser(c: TForumData, username: string) =
   # Set the `isDeleted` flag.
   exec(db, sql"update person set isDeleted = 1 where name = ?;", username)
 
+  logout(c)
+
 proc updateProfile(
   c: TForumData, username, email: string, rank: Rank
 ) {.async.} =
@@ -1367,7 +1378,8 @@ routes:
       sql(
         """select p.id, p.content, strftime('%s', p.creation), p.author,
                   p.replyingTo,
-                  u.name, u.email, strftime('%s', u.lastOnline), u.status
+                  u.name, u.email, strftime('%s', u.lastOnline), u.status,
+                  u.isDeleted
            from post p, person u
            where u.id = p.author and p.thread = ? and p.isDeleted = 0
            order by p.id"""
@@ -1410,7 +1422,8 @@ routes:
     let postsQuery = sql("""
       select p.id, p.content, strftime('%s', p.creation), p.author,
              p.replyingTo,
-             u.name, u.email, strftime('%s', u.lastOnline), u.status
+             u.name, u.email, strftime('%s', u.lastOnline), u.status,
+             u.isDeleted
       from post p, person u
       where u.id = p.author and p.id in ($#)
       order by p.id;
@@ -1477,10 +1490,10 @@ routes:
     """ % postsFrom)
 
     let userQuery = sql("""
-      select name, email, strftime('%s', lastOnline), status,
+      select name, email, strftime('%s', lastOnline), status, isDeleted,
              strftime('%s', creation), id
       from person
-      where name = ?
+      where name = ? and isDeleted = 0
     """)
 
     var profile = Profile(
@@ -1491,8 +1504,11 @@ routes:
     let userRow = db.getRow(userQuery, username)
 
     let userID = userRow[^1]
+    if userID.len == 0:
+      halt()
+
     profile.user = selectUser(userRow, avatarSize=200)
-    profile.joinTime = userRow[4].parseInt()
+    profile.joinTime = userRow[^2].parseInt()
     profile.postCount =
       getValue(db, sql("select count(*) " & postsFrom), username).parseInt()
     profile.threadCount =

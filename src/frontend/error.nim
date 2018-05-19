@@ -1,4 +1,4 @@
-import options
+import options, httpcore
 type
   PostError* = object
     errorFields*: seq[string] ## IDs of the fields with an error.
@@ -11,7 +11,25 @@ when defined(js):
 
   import karaxutils
 
-  proc renderError*(message: string): VNode =
+  proc render404*(): VNode =
+    result = buildHtml():
+      tdiv(class="empty error"):
+        tdiv(class="empty icon"):
+          italic(class="fas fa-bug fa-5x")
+        p(class="empty-title h5"):
+          text "404 Not Found"
+        p(class="empty-subtitle"):
+          text "Cannot find what you are looking for, it might have been " &
+               "deleted. Sorry!"
+        tdiv(class="empty-action"):
+          a(href="/", onClick=anchorCB):
+            button(class="btn btn-primary"):
+              text "Go back home"
+
+  proc renderError*(message: string, status: HttpCode): VNode =
+    if status == Http404:
+      return render404()
+
     result = buildHtml():
       tdiv(class="empty error"):
         tdiv(class="empty icon"):
@@ -62,18 +80,3 @@ when defined(js):
           errorFields: @[],
           message: "Unknown error occurred."
         ))
-
-  proc render404*(): VNode =
-    result = buildHtml():
-      tdiv(class="empty error"):
-        tdiv(class="empty icon"):
-          italic(class="fas fa-bug fa-5x")
-        p(class="empty-title h5"):
-          text "404 Not Found"
-        p(class="empty-subtitle"):
-          text "Cannot find what you are looking for, it might have been " &
-               "deleted. Sorry!"
-        tdiv(class="empty-action"):
-          a(href="/", onClick=anchorCB):
-            button(class="btn btn-primary"):
-              text "Go back home"

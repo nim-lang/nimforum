@@ -161,7 +161,7 @@ when defined(js):
 
   proc genThreadList(currentUser: Option[User]): VNode =
     if state.status != Http200:
-      return renderError("Couldn't retrieve threads.")
+      return renderError("Couldn't retrieve threads.", state.status)
 
     if state.list.isNone:
       if not state.loading:

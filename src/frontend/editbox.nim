@@ -59,7 +59,7 @@ when defined(js):
 
   proc render*(state: EditBox, post: Post): VNode =
     if state.status != Http200:
-      return renderError("Couldn't retrieve raw post")
+      return renderError("Couldn't retrieve raw post", state.status)
 
     if state.rawContent.isNone() or state.post.id != post.id:
       state.post = post

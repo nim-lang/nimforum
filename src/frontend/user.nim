@@ -20,6 +20,7 @@ type
     avatarUrl*: string
     lastOnline*: int64
     rank*: Rank
+    isDeleted*: bool
 
 proc isOnline*(user: User): bool =
   return getTime().toUnix() - user.lastOnline < (60*5)

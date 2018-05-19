@@ -1,4 +1,4 @@
-import strformat, times, options, json, tables, sugar
+import strformat, times, options, json, tables, sugar, httpcore
 from dom import window, Location
 
 include karax/prelude
@@ -46,7 +46,7 @@ proc route(routes: openarray[Route]): VNode =
     if matched:
       return route.p(params)
 
-  return renderError("Unmatched route: " & path)
+  return renderError("Unmatched route: " & path, Http500)
 
 proc render(): VNode =
   result = buildHtml(tdiv()):

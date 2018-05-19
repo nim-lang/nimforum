@@ -58,7 +58,7 @@ when defined(js):
     currentUser: Option[User]
   ): VNode =
     if state.status != Http200:
-      return renderError("Couldn't retrieve profile.")
+      return renderError("Couldn't retrieve profile.", state.status)
 
     if state.profile.isNone or state.profile.get().user.name != username:
       let uri = makeUri("profile.json", ("username", username))
