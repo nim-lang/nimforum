@@ -1,0 +1,29 @@
+os:
+  - linux
+
+language: c
+
+cache:
+  directories:
+    - "$HOME/.nimble"
+    - "$HOME/.choosenim"
+
+addons:
+  firefox: "60.0.1"
+
+before_install:
+  - wget https://github.com/mozilla/geckodriver/releases/download/v0.20.1/geckodriver-v0.20.1-linux64.tar.gz
+  - mkdir geckodriver
+  - tar -xzf geckodriver-v0.20.1-linux64.tar.gz -C geckodriver
+  - export PATH=$PATH:$PWD/geckodriver
+
+install:
+  - |
+      curl https://nim-lang.org/choosenim/init.sh -sSf > init.sh
+      sh init.sh -y
+  - export PATH=$HOME/.nimble/bin:$PATH
+  - nimble refresh -y
+
+script:
+  - export MOZ_HEADLESS=1
+  - nimble -y test
