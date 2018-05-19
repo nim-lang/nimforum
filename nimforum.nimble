@@ -20,7 +20,7 @@ requires "sass"
 
 requires "karax"
 
-requires "webdriver"
+requires "webdriver#a2be578"
 
 # Tasks
 
