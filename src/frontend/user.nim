@@ -5,9 +5,12 @@ type
     Spammer          ## spammer: every post is invisible
     Troll            ## troll: cannot write new posts
     Banned           ## A non-specific ban
-    EmailUnconfirmed ## member with unconfirmed email address
     Moderated        ## new member: posts manually reviewed before everybody
                      ## can see them
+    EmailUnconfirmed ## member with unconfirmed email address. Their posts
+                     ## are visible, but cannot make new posts. This is so that
+                     ## when a user with existing posts changes their email,
+                     ## their posts don't disappear.
     User             ## Ordinary user
     Moderator        ## Moderator: can change a user's rank
     Admin            ## Admin: can do everything
@@ -23,6 +26,10 @@ proc isOnline*(user: User): bool =
 
 proc `==`*(u1, u2: User): bool =
   u1.name == u2.name
+
+proc canPost*(rank: Rank): bool =
+  ## Determines whether the specified rank can make new posts.
+  rank >= Rank.User or rank == Moderated
 
 when defined(js):
   include karax/prelude

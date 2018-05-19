@@ -1020,6 +1020,13 @@ proc executeReply(c: TForumData, threadId: int, content: string,
   # TODO: Refactor TForumData.
   assert c.loggedIn()
 
+  if not canPost(c.rank):
+    case c.rank
+    of EmailUnconfirmed:
+      raise newForumError("You need to confirm your email before you can post")
+    else:
+      raise newForumError("You are not allowed to post")
+
   if rateLimitCheck(c):
     raise newForumError("You're posting too fast!")
 
@@ -1096,6 +1103,13 @@ proc executeNewThread(c: TForumData, subject, msg: string): (int64, int64) =
     """
 
   assert c.loggedIn()
+
+  if not canPost(c.rank):
+    case c.rank
+    of EmailUnconfirmed:
+      raise newForumError("You need to confirm your email before you can post")
+    else:
+      raise newForumError("You are not allowed to post")
 
   if subject.len <= 2:
     raise newForumError("Subject is too short", @["subject"])
