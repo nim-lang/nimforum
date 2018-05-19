@@ -1,3 +1,5 @@
+dist: xenial
+
 os:
   - linux
 
@@ -12,6 +14,8 @@ addons:
   firefox: "60.0.1"
 
 before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y libsass-dev
   - wget https://github.com/mozilla/geckodriver/releases/download/v0.20.1/geckodriver-v0.20.1-linux64.tar.gz
   - mkdir geckodriver
   - tar -xzf geckodriver-v0.20.1-linux64.tar.gz -C geckodriver
