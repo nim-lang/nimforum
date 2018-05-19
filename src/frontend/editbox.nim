@@ -58,7 +58,7 @@ when defined(js):
              (s: int, r: kstring) => onEditPost(s, r, state))
 
   proc render*(state: EditBox, post: Post): VNode =
-    if state.post.id != post.id:
+    if (not state.post.isNil) and state.post.id != post.id:
       state.rawContent = none[kstring]()
       state.status = Http200
 
