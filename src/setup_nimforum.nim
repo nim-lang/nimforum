@@ -235,7 +235,7 @@ when isMainModule:
       echo("Initialising nimforum for development...")
       initialiseConfig(
         "Development Forum",
-        "localhost.local",
+        "localhost",
         recaptcha=("", ""),
         smtp=("", "", ""),
         isDev=true,
@@ -251,7 +251,7 @@ when isMainModule:
       echo("Initialising nimforum for testing...")
       initialiseConfig(
         "Test Forum",
-        "localhost.local",
+        "localhost",
         recaptcha=("", ""),
         smtp=("", "", ""),
         isDev=true,

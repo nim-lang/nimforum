@@ -1848,6 +1848,15 @@ routes:
   get "/404":
     resp Http404, readFile("public/karax.html")
 
+  get "/about/license.html":
+    let content = readFile("public/license.rst").multiReplace(
+      {
+        "$hostname": config.hostname,
+        "$name": config.name
+      }
+    )
+    resp content.rstToHtml()
+
   get re"/(.+)?":
     resp readFile("public/karax.html")
 
@@ -1991,11 +2000,6 @@ routes:
       resp genMain(c, "Email sent!", "Reset Password - Nim Forum")
     else:
       resp genMain(c, genFormResetPassword(c), "Reset Password - Nim Forum")
-
-  get "/license":
-    createTFD()
-    resp genMain(c, rstToHtml(readFile("static/license.rst")),
-                 "Content license - Nim Forum")
 
   post "/search/?@page?":
     cond isFTSAvailable

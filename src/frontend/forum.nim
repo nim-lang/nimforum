@@ -4,7 +4,7 @@ from dom import window, Location
 include karax/prelude
 import jester/patterns
 
-import threadlist, postlist, header, profile, newthread, error
+import threadlist, postlist, header, profile, newthread, error, about
 import karaxutils
 
 type
@@ -12,6 +12,7 @@ type
     url: Location
     profile: ProfileState
     newThread: NewThread
+    about: About
 
 proc copyLocation(loc: Location): Location =
   # TODO: It sucks that I had to do this. We need a nice way to deep copy in JS.
@@ -30,7 +31,8 @@ proc newState(): State =
   State(
     url: copyLocation(window.location),
     profile: newProfileState(),
-    newThread: newNewThread()
+    newThread: newNewThread(),
+    about: newAbout()
   )
 
 var state = newState()
@@ -86,6 +88,9 @@ proc render(): VNode =
               getLoggedInUser()
             )
           )
+      ),
+      r("/about/?@page?",
+        (params: Params) => (render(state.about, params["page"]))
       ),
       r("/404",
         (params: Params) => render404()

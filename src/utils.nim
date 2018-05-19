@@ -26,6 +26,8 @@ type
     recaptchaSiteKey*: string
     isDev*: bool
     dbPath*: string
+    hostname*: string
+    name*: string
 
 var docConfig: StringTableRef
 
@@ -36,19 +38,18 @@ docConfig["doc.listing_end"] = "</code><div class='code-buttons'><button class='
 proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
   result = Config(smtpAddress: "", smtpPort: 25, smtpUser: "",
                   smtpPassword: "", mlistAddress: "")
-  try:
-    let root = parseFile(filename)
-    result.smtpAddress = root{"smtpAddress"}.getStr("")
-    result.smtpPort = root{"smtpPort"}.getNum(25).int
-    result.smtpUser = root{"smtpUser"}.getStr("")
-    result.smtpPassword = root{"smtpPassword"}.getStr("")
-    result.mlistAddress = root{"mlistAddress"}.getStr("")
-    result.recaptchaSecretKey = root{"recaptchaSecretKey"}.getStr("")
-    result.recaptchaSiteKey = root{"recaptchaSiteKey"}.getStr("")
-    result.isDev = root{"isDev"}.getBool()
-    result.dbPath = root{"dbPath"}.getStr("nimforum.db")
-  except:
-    echo("[WARNING] Couldn't read config file: ", filename)
+  let root = parseFile(filename)
+  result.smtpAddress = root{"smtpAddress"}.getStr("")
+  result.smtpPort = root{"smtpPort"}.getNum(25).int
+  result.smtpUser = root{"smtpUser"}.getStr("")
+  result.smtpPassword = root{"smtpPassword"}.getStr("")
+  result.mlistAddress = root{"mlistAddress"}.getStr("")
+  result.recaptchaSecretKey = root{"recaptchaSecretKey"}.getStr("")
+  result.recaptchaSiteKey = root{"recaptchaSiteKey"}.getStr("")
+  result.isDev = root{"isDev"}.getBool()
+  result.dbPath = root{"dbPath"}.getStr("nimforum.db")
+  result.hostname = root["hostname"].getStr()
+  result.name = root["name"].getStr()
 
 proc processGT(n: XmlNode, tag: string): (int, XmlNode, string) =
   result = (0, newElement(tag), tag)
