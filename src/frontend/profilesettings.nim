@@ -26,6 +26,8 @@ when defined(js):
       state.email = profile.email.get()
       state.rank = profile.user.rank
 
+    state.error = none[PostError]()
+
   proc newProfileSettings*(profile: Profile): ProfileSettings =
     result = ProfileSettings(
       status: Http200,
@@ -38,7 +40,8 @@ when defined(js):
   proc onProfilePost(httpStatus: int, response: kstring,
                      state: ProfileSettings) =
     postFinished:
-     discard
+     state.profile.email = some($state.email)
+     state.profile.user.rank = state.rank
 
   proc onEmailChange(event: Event, node: VNode, state: ProfileSettings) =
     state.email = node.value
@@ -66,11 +69,12 @@ when defined(js):
     ajaxPost(uri, @[], cast[cstring](formData),
              (s: int, r: kstring) => onProfilePost(s, r, state))
 
+  proc needsSave(state: ProfileSettings): bool =
+    state.email != state.profile.email.get() or
+      state.rank != state.profile.user.rank
+
   proc render*(state: ProfileSettings,
                currentUser: Option[User]): VNode =
-    if state.status != Http200:
-      return renderError("Couldn't save profile")
-
     let isAdmin = currentUser.isSome() and currentUser.get().rank == Admin
     let canResetPassword = state.profile.user.rank > EmailUnconfirmed
 
@@ -163,13 +167,21 @@ when defined(js):
                   text " Delete account"
 
           tdiv(class="float-right"):
-            button(class="btn btn-link",
+            if state.error.isSome():
+              span(class="text-error"):
+                text state.error.get().message
+
+            button(class=class(
+                    {"disabled": not needsSave(state)}, "btn btn-link"
+                   ),
                    onClick=(e: Event, n: VNode) => (resetSettings(state))):
               text "Cancel"
 
-            button(class="btn btn-primary",
+            button(class=class(
+                    {"disabled": not needsSave(state)}, "btn btn-primary"
+                   ),
                    onClick=(e: Event, n: VNode) => save(state)):
-              italic(class="fas fa-check")
+              italic(class="fas fa-save")
               text " Save"
 
         render(state.deleteModal)

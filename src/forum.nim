@@ -1144,6 +1144,19 @@ proc executeLogin(c: TForumData, username, password: string): string =
 
   raise newForumError("Invalid username or password")
 
+proc sendEmailActivation(c: TForumData, name, password,
+                         email, salt: string) {.async.} =
+  let epoch = $int(epochTime())
+  let activateUrl = c.req.makeUri("/activateEmail?nick=$1&epoch=$2&ident=$3" %
+      [encodeUrl(name), encodeUrl(epoch),
+       encodeUrl(makeIdentHash(name, password, epoch, salt))])
+
+  let emailSentFut = sendEmailActivation(c.config, email, name, activateUrl)
+  yield emailSentFut
+  if emailSentFut.failed:
+    echo("[WARNING] Couldn't send activation email: ", emailSentFut.error.msg)
+    raise newForumError("Couldn't send activation email", @["email"])
+
 proc executeRegister(c: TForumData, name, pass, antibot, userIp,
                      email: string): Future[string] {.async.} =
   ## Registers a new user and returns a new session key for that user's
@@ -1158,7 +1171,7 @@ proc executeRegister(c: TForumData, name, pass, antibot, userIp,
     raise newForumError("Email already exists", @["email"])
 
   # Username validation:
-  if name.len == 0 or not allCharsInSet(name, UsernameIdent):
+  if name.len == 0 or not allCharsInSet(name, UsernameIdent) or name.len > 20:
     raise newForumError("Invalid username", @["username"])
   if getValue(db, sql"select name from person where name = ?", name).len > 0:
     raise newForumError("Username already exists", @["username"])
@@ -1181,16 +1194,7 @@ proc executeRegister(c: TForumData, name, pass, antibot, userIp,
   let password = makePassword(pass, salt)
 
   # Send activation email.
-  let epoch = $int(epochTime())
-  let activateUrl = c.req.makeUri("/activateEmail?nick=$1&epoch=$2&ident=$3" %
-      [encodeUrl(name), encodeUrl(epoch),
-       encodeUrl(makeIdentHash(name, password, epoch, salt))])
-
-  let emailSentFut = sendEmailActivation(c.config, email, name, activateUrl)
-  yield emailSentFut
-  if emailSentFut.failed:
-    echo("[WARNING] Couldn't send activation email: ", emailSentFut.error.msg)
-    raise newForumError("Couldn't send activation email", @["email"])
+  await sendEmailActivation(c, name, password, email, salt)
 
   # Add account to person table
   exec(db, sql"""
@@ -1253,6 +1257,42 @@ proc executeDeleteThread(c: TForumData, threadId: int) =
 
   # Set the `isDeleted` flag.
   exec(db, crud(crUpdate, "thread", "isDeleted"), "1", threadId)
+
+proc executeDeleteUser(c: TForumData, username: string) =
+  # Verify that the current user has the permissions to do this.
+  if username != c.username and c.rank < Admin:
+    raise newForumError("You cannot delete this user.")
+
+  # Set the `isDeleted` flag.
+  exec(db, sql"update person set isDeleted = 1 where name = ?;", username)
+
+proc updateProfile(
+  c: TForumData, username, email: string, rank: Rank
+) {.async.} =
+  if c.rank < rank:
+    raise newForumError("You cannot set a rank that is higher than yours.")
+
+  if c.username != username and c.rank < Moderator:
+    raise newForumError("You can't change this profile.")
+
+  # Make sure the rank is set to EmailUnconfirmed when the email changes.
+  if c.rank < Moderator:
+    let row = getRow(
+      db,
+      sql"select name, password, email, salt from person where name = ?",
+      username
+    )
+    if row[2] != email:
+      if rank != EmailUnconfirmed:
+        raise newForumError("Rank needs a change when setting new email.")
+
+      await sendEmailActivation(c, row[0], row[1], row[2], row[3])
+
+  exec(
+    db,
+    sql"update person set status = ?, email = ? where name = ?;",
+    $rank, email, username
+  )
 
 initialise()
 
@@ -1704,6 +1744,51 @@ routes:
         assert false
       resp Http200, "{}", "application/json"
     except ForumError as exc:
+      resp Http400, $(%exc.data), "application/json"
+
+  post re"/deleteUser":
+    createTFD()
+    if not c.loggedIn():
+      let err = PostError(
+        errorFields: @[],
+        message: "Not logged in."
+      )
+      resp Http401, $(%err), "application/json"
+
+    let formData = request.formData
+    cond "username" in formData
+
+    let username = formData["username"].body
+
+    try:
+      executeDeleteUser(c, username)
+      resp Http200, "{}", "application/json"
+    except ForumError as exc:
+      resp Http400, $(%exc.data), "application/json"
+
+  post re"/saveProfile":
+    createTFD()
+    if not c.loggedIn():
+      let err = PostError(
+        errorFields: @[],
+        message: "Not logged in."
+      )
+      resp Http401, $(%err), "application/json"
+
+    let formData = request.formData
+    cond "username" in formData
+    cond "email" in formData
+    cond "rank" in formData
+
+    let username = formData["username"].body
+    let email = formData["email"].body
+    let rank = parseEnum[Rank](formData["rank"].body)
+
+    try:
+      await updateProfile(c, username, email, rank)
+      resp Http200, "{}", "application/json"
+    except ForumError:
+      let exc = (ref ForumError)(getCurrentException())
       resp Http400, $(%exc.data), "application/json"
 
   get "/t/@id":

@@ -35,7 +35,8 @@ when defined(js):
     let profile = to(parsed, Profile)
 
     state.profile = some(profile)
-    state.settings = some(newProfileSettings(profile))
+    if profile.email.isSome():
+      state.settings = some(newProfileSettings(profile))
 
   proc genPostLink(link: PostLink): VNode =
     let url = renderPostUrl(link)
