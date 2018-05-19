@@ -13,9 +13,22 @@ type
     profile: ProfileState
     newThread: NewThread
 
+proc copyLocation(loc: Location): Location =
+  # TODO: It sucks that I had to do this. We need a nice way to deep copy in JS.
+  Location(
+    hash: loc.hash,
+    host: loc.host,
+    hostname: loc.hostname,
+    href: loc.href,
+    pathname: loc.pathname,
+    port: loc.port,
+    protocol: loc.protocol,
+    search: loc.search
+  )
+
 proc newState(): State =
   State(
-    url: window.location,
+    url: copyLocation(window.location),
     profile: newProfileState(),
     newThread: newNewThread()
   )
@@ -25,8 +38,11 @@ proc onPopState(event: dom.Event) =
   # This event is usually only called when the user moves back in their
   # history. I fire it in karaxutils.anchorCB as well to ensure the URL is
   # always updated. This should be moved into Karax in the future.
-  kout(kstring"New URL: ", window.location.href)
-  state.url = window.location
+  kout(kstring"New URL: ", window.location.href, " ", state.url.href)
+  if state.url.href != window.location.href:
+    state = newState() # Reload the state to remove stale data.
+  state.url = copyLocation(window.location)
+
   redraw()
 
 type Params = Table[string, string]

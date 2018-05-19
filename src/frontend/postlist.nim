@@ -307,10 +307,14 @@ when defined(js):
 
   proc renderPostList*(threadId: int, postId: Option[int],
                        currentUser: Option[User]): VNode =
+    if state.list.isSome() and state.list.get().thread.id != threadId:
+      state.list = none[PostList]()
+      state.status = Http200
+
     if state.status != Http200:
       return renderError("Couldn't retrieve posts.", state.status)
 
-    if state.list.isNone or state.list.get().thread.id != threadId:
+    if state.list.isNone:
       var params = @[("id", $threadId)]
       if postId.isSome():
         params.add(("anchor", $postId.get()))

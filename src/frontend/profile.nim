@@ -57,10 +57,14 @@ when defined(js):
     username: string,
     currentUser: Option[User]
   ): VNode =
+    if state.profile.isSome() and state.profile.get().user.name != username:
+      state.profile = none[Profile]()
+      state.status = Http200
+
     if state.status != Http200:
       return renderError("Couldn't retrieve profile.", state.status)
 
-    if state.profile.isNone or state.profile.get().user.name != username:
+    if state.profile.isNone:
       let uri = makeUri("profile.json", ("username", username))
       ajaxGet(uri, @[], (s: int, r: kstring) => onProfile(s, r, state))
 
