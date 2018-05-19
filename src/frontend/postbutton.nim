@@ -62,6 +62,7 @@ when defined(js):
               },
               "btn btn-secondary"
              ),
+             `type`="button",
              onClick=(e: Event, n: VNode) => (onClick(e, n, state))):
         if state.posted:
           if state.error.isNone():

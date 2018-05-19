@@ -45,6 +45,17 @@ proc isLikedBy*(post: Post, user: Option[User]): bool =
 
   return false
 
+type
+  Profile* = object
+    user*: User
+    joinTime*: int64
+    threads*: seq[PostLink]
+    posts*: seq[PostLink]
+    postCount*: int
+    threadCount*: int
+    # Information that only admins should see.
+    email*: Option[string]
+
 when defined(js):
   import karaxutils
 
