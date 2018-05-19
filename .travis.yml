@@ -1,4 +1,4 @@
-dist: xenial
+dist: xenial # Needed for libsass-dev :/
 
 os:
   - linux

@@ -24,7 +24,7 @@ template withBackend(body: untyped): untyped =
   ## Starts a new backend instance with a fresh DB.
   doAssert(execCmd("nimble testdb") == QuitSuccess)
 
-  spawn runProcess("nimble runbackend")
+  spawn runProcess("nimble -y runbackend")
   defer:
     discard execCmd("killall " & backend)
 
@@ -51,7 +51,7 @@ when isMainModule:
   defer:
     discard execCmd("killall geckodriver")
 
-  doAssert(execCmd("nimble frontend") == QuitSuccess)
+  doAssert(execCmd("nimble -y frontend") == QuitSuccess)
   echo("Waiting for geckodriver to startup...")
   sleep(5000)
 

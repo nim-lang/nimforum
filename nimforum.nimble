@@ -45,8 +45,8 @@ task devdb, "Creates a test DB":
   exec "./src/setup_nimforum --dev"
 
 task test, "Runs tester":
-  exec "nimble c src/forum.nim"
-  exec "nimble c -r tests/browsertester"
+  exec "nimble c -y src/forum.nim"
+  exec "nimble c -y -r tests/browsertester"
 
 task fasttest, "Runs tester without recompiling backend":
   exec "nimble c -r tests/browsertester"
