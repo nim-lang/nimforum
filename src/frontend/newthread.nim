@@ -49,7 +49,7 @@ when defined(js):
           tdiv(class="title"):
             p(): text "New Thread"
           tdiv(class="content"):
-            input(class="form-input", `type`="text", name="username",
+            input(class="form-input", `type`="text", name="subject",
                   placeholder="Type the title here",
                   onChange=(e: Event, n: VNode) => onSubjectChange(e, n, state))
             if state.error.isSome():
