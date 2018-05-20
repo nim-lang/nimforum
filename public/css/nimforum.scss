@@ -640,3 +640,19 @@ hr {
   text-align: left;
   font-size: 80%;
 }
+
+// - Reset password
+#resetpassword {
+  @extend .grid-sm;
+  @extend .container;
+
+  .form-input {
+    display: inline-block;
+    width: 15rem;
+    margin-bottom: $control-padding-y*2;
+  }
+
+  .footer {
+    margin-top: $control-padding-y*2;
+  }
+}

@@ -45,10 +45,12 @@ when defined(js):
 
     result = buildHtml():
       section(class="container grid-xl"):
-        tdiv(class="resetpassword"):
+        tdiv(id="resetpassword"):
           tdiv(class="title"):
             p(): text "Reset Password"
           tdiv(class="content"):
+            label(class="form-label", `for`="password"):
+              text "Password"
             input(class="form-input", `type`="password", name="password",
                   placeholder="Type your new password here",
                   oninput=(e: Event, n: VNode) => onPassChange(e, n, state))
