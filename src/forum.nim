@@ -5,7 +5,7 @@
 #        Look at license.txt for more info.
 #        All rights reserved.
 #
-
+import system except Thread
 import
   os, strutils, times, md5, strtabs, math, db_sqlite,
   scgi, jester, asyncdispatch, asyncnet, sequtils,
