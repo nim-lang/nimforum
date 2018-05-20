@@ -511,6 +511,8 @@ proc executeLogin(c: TForumData, username, password: string): string =
       select id, name, password, email, salt
       from person where (name = ? or email = ?) and isDeleted = 0
     """
+
+  let username = username.strip()
   if username.len == 0:
     raise newForumError("Username cannot be empty", @["username"])
 
