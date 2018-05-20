@@ -35,7 +35,7 @@ proc initialiseDb(admin: tuple[username, password, email: string],
 
   const
     userNameType = "varchar(20)"
-    passwordType = "varchar(50)"
+    passwordType = "varchar(300)"
     emailType = "varchar(254)" # https://stackoverflow.com/a/574698/492186
 
   # -- Category
@@ -141,7 +141,7 @@ proc initialiseDb(admin: tuple[username, password, email: string],
     create table session(
       id integer primary key,
       ip inet not null,
-      password $# not null,
+      key $# not null,
       userid integer not null,
       lastModified timestamp not null default (DATETIME('now')),
       foreign key (userid) references person(id)

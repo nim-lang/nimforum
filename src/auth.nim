@@ -37,13 +37,15 @@ proc makeSalt*(): string =
       newResult.add result[i]
   return newResult
 
+proc makeSessionKey*(): string =
+  ## Creates a random key to be used to authorize a session.
+  let random = makeSalt()
+  return bcrypt.hash(random, genSalt(8))
+
 proc makePassword*(password, salt: string, comparingTo = ""): string =
   ## Creates an MD5 hash by combining password and salt.
-  when defined(windows):
-    result = getMD5(salt & getMD5(password))
-  else:
-    let bcryptSalt = if comparingTo != "": comparingTo else: genSalt(8)
-    result = hash(getMD5(salt & getMD5(password)), bcryptSalt)
+  let bcryptSalt = if comparingTo != "": comparingTo else: genSalt(8)
+  result = hash(getMD5(salt & getMD5(password)), bcryptSalt)
 
 proc makeIdentHash*(user, password: string, epoch: int64, secret: string,
                    comparingTo = ""): string =
@@ -52,8 +54,5 @@ proc makeIdentHash*(user, password: string, epoch: int64, secret: string,
   ## The ``epoch`` determines the creation time of this hash, it will be checked
   ## during verification to ensure the hash hasn't expired.
   ## The ``secret`` is the 'salt' field in the ``person`` table.
-  when defined(windows):
-    result = getMD5(user & password & $epoch & secret)
-  else:
-    let bcryptSalt = if comparingTo != "": comparingTo else: genSalt(8)
-    result = hash(user & password & $epoch & secret, bcryptSalt)
+  let bcryptSalt = if comparingTo != "": comparingTo else: genSalt(8)
+  result = hash(user & password & $epoch & secret, bcryptSalt)

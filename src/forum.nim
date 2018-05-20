@@ -23,45 +23,26 @@ import frontend/[
   category, postlist, error, header, post, profile, user, karaxutils
 ]
 
-when not defined(windows):
-  import bcrypt # TODO
-
 from htmlgen import tr, th, td, span, input
 
 const
   unselectedThread = -1
-  transientThread = 0
 
   ThreadsPerPage = 15
   PostsPerPage = 10
-  MaxPagesFromCurrent = 8
-  noPageNums = ["/login", "/register", "/dologin", "/doregister", "/profile"]
-  noHomeBtn = ["/", "/login", "/register", "/dologin", "/doregister", "/profile"]
 
 type
   TCrud = enum crCreate, crRead, crUpdate, crDelete
 
-  TSession = object of RootObj
-    threadid: int
-    postid: int
+  Session = object of RootObj
     userName, userPass, email: string
     rank: Rank
 
   TPost = tuple[subject, content: string]
 
-  TForumData = ref object of TSession
+  TForumData = ref object of Session
     req: Request
     userid: string
-    actionContent: string
-    errorMsg, loginErrorMsg: string
-    invalidField: string
-    currentPost: TPost ## Only used for reply previews
-    startTime: float
-    isThreadsList: bool
-    pageNum: int
-    totalPosts: int
-    search: string
-    noPagenumumNav: bool
     config: Config
 
 var
@@ -74,17 +55,8 @@ var
 proc init(c: TForumData) =
   c.userPass = ""
   c.userName = ""
-  c.threadId = unselectedThread
-  c.postId = -1
 
   c.userid = ""
-  c.actionContent = ""
-  c.errorMsg = ""
-  c.loginErrorMsg = ""
-  c.invalidField = ""
-  c.currentPost = (subject: "", content: "")
-
-  c.search = ""
 
 proc loggedIn(c: TForumData): bool =
   result = c.userName.len > 0
@@ -93,7 +65,7 @@ proc loggedIn(c: TForumData): bool =
 
 
 proc genThreadUrl(c: TForumData, postId = "", action = "", threadid = "", pageNum = ""): string =
-  result = "/t/" & (if threadid == "": $c.threadId else: threadid)
+  result = "/t/" & threadid
   if pageNum != "":
     result.add("/" & pageNum)
   if action != "":
@@ -115,10 +87,6 @@ proc getGravatarUrl(email: string, size = 80): string =
 # -----------------------------------------------------------------------------
 template `||`(x: untyped): untyped = (if not isNil(x): x else: "")
 
-proc setError(c: TForumData, field, msg: string): bool {.inline.} =
-  c.invalidField = field
-  c.errorMsg = "Error: " & msg
-  return false
 
 proc resetPassword(
   c: TForumData,
@@ -142,22 +110,21 @@ proc resetPassword(
   )
 
 proc logout(c: TForumData) =
-  const query = sql"delete from session where ip = ? and password = ?"
+  const query = sql"delete from session where ip = ? and key = ?"
   c.username = ""
   c.userpass = ""
   exec(db, query, c.req.ip, c.req.cookies["sid"])
 
 proc checkLoggedIn(c: TForumData) =
   if not c.req.cookies.hasKey("sid"): return
-  let pass = c.req.cookies["sid"]
+  let sid = c.req.cookies["sid"]
   if execAffectedRows(db,
        sql("update session set lastModified = DATETIME('now') " &
-           "where ip = ? and password = ?"),
-           c.req.ip, pass) > 0:
-    c.userpass = pass
+           "where ip = ? and key = ?"),
+           c.req.ip, sid) > 0:
     c.userid = getValue(db,
-      sql"select userid from session where ip = ? and password = ?",
-      c.req.ip, pass)
+      sql"select userid from session where ip = ? and key = ?",
+      c.req.ip, sid)
 
     let row = getRow(db,
       sql"select name, email, status from person where id = ?", c.userid)
@@ -170,7 +137,7 @@ proc checkLoggedIn(c: TForumData) =
             c.userid)
 
   else:
-    echo("SID not found in sessions. Assuming logged out.")
+    warn("SID not found in sessions. Assuming logged out.")
 
 proc incrementViews(threadId: int) =
   const query = sql"update thread set views = views + 1 where id = ?"
@@ -181,7 +148,7 @@ proc validateRst(c: TForumData, content: string): bool =
   try:
     discard rstToHtml(content)
   except EParseError:
-    result = setError(c, "", getCurrentExceptionMsg())
+    result = false
 
 proc crud(c: TCrud, table: string, data: varargs[string]): SqlQuery =
   case c
@@ -273,10 +240,6 @@ template createTFD() =
   new(c)
   init(c)
   c.req = request
-  c.startTime = epochTime()
-  c.isThreadsList = false
-  c.pageNum = 1
-  c.config = config
   if request.cookies.len > 0:
     checkLoggedIn(c)
 
@@ -534,7 +497,7 @@ proc executeNewThread(c: TForumData, subject, msg: string): (int64, int64) =
     raise newForumError("Subject already exists", @["subject"])
 
   discard tryExec(db, crud(crCreate, "thread_fts", "id", "name"),
-                      c.threadID, subject)
+                  result[0], subject)
   result[1] = executeReply(c, result[0].int, msg, none[int]())
   discard tryExec(db, sql"insert into post_fts(post_fts) values('optimize')")
   discard tryExec(db, sql"insert into post_fts(thread_fts) values('optimize')")
@@ -553,12 +516,13 @@ proc executeLogin(c: TForumData, username, password: string): string =
 
   for row in fastRows(db, query, username, username):
     if row[2] == makePassword(password, row[4], row[2]):
+      let key = makeSessionKey()
       exec(
         db,
-        sql"insert into session (ip, password, userid) values (?, ?, ?)",
-        c.req.ip, row[2], row[0]
+        sql"insert into session (ip, key, userid) values (?, ?, ?)",
+        c.req.ip, key, row[0]
       )
-      return row[2]
+      return key
 
   raise newForumError("Invalid username or password")
 
@@ -574,9 +538,8 @@ proc validateEmail(email: string, checkDuplicated: bool) =
       raise newForumError("Email already exists", @["email"])
 
 proc executeRegister(c: TForumData, name, pass, antibot, userIp,
-                     email: string): Future[string] {.async.} =
-  ## Registers a new user and returns a new session key for that user's
-  ## session if registration was successful. Exceptions are raised otherwise.
+                     email: string) {.async.} =
+  ## Registers a new user.
 
   # email validation
   validateEmail(email, checkDuplicated=true)
@@ -618,8 +581,6 @@ proc executeRegister(c: TForumData, name, pass, antibot, userIp,
     INSERT INTO person(name, password, email, salt, status, lastOnline)
     VALUES (?, ?, ?, ?, ?, DATETIME('now'))
   """, name, password, email, salt, $EmailUnconfirmed)
-
-  return password
 
 proc executeLike(c: TForumData, postId: int) =
   # Verify the post exists and doesn't belong to the current user.
@@ -986,7 +947,7 @@ routes:
       else:
         ""
     try:
-      discard await executeRegister(
+      await executeRegister(
         c,
         username,
         password,
@@ -1349,7 +1310,6 @@ routes:
 
   get "/threadActivity.xml":
     createTFD()
-    c.isThreadsList = true
     resp genThreadsRSS(c), "application/atom+xml"
 
   get "/postActivity.xml":
@@ -1369,6 +1329,7 @@ routes:
     #   # if ban == EmailUnconfirmed:
     #   #   success = setStatus(c, @"nick", Moderated, "")
 
+when false:
   post "/search/?@page?":
     cond isFTSAvailable
     createTFD()
