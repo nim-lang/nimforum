@@ -9,13 +9,14 @@
 import
   os, strutils, times, md5, strtabs, math, db_sqlite,
   scgi, jester, asyncdispatch, asyncnet, sequtils,
-  parseutils, utils, random, rst, recaptcha, json, re, sugar
+  parseutils, random, rst, recaptcha, json, re, sugar,
+  strformat
 import cgi except setCookie
 import options
 
 import sass
 
-import auth
+import auth, email, utils
 
 import frontend/threadlist except User
 import frontend/[
@@ -63,24 +64,12 @@ type
     noPagenumumNav: bool
     config: Config
 
-  ForumError = object of Exception
-    data: PostError
-
 var
   db: DbConn
   isFTSAvailable: bool
   config: Config
   captcha: ReCaptcha
-
-proc newForumError(message: string,
-                   fields: seq[string] = @[]): ref ForumError =
-  new(result)
-  result.msg = message
-  result.data =
-    PostError(
-      errorFields: fields,
-      message: message
-    )
+  mailer: Mailer
 
 proc init(c: TForumData) =
   c.userPass = ""
@@ -131,42 +120,23 @@ proc setError(c: TForumData, field, msg: string): bool {.inline.} =
   c.errorMsg = "Error: " & msg
   return false
 
-proc resetPassword(c: TForumData, nick, antibot, userIp: string): Future[bool] {.async.} =
-  # captcha validation:
-  if config.recaptchaSecretKey.len > 0:
-    var captchaValid: bool = false
-    try:
-      captchaValid = await captcha.verify(antibot, userIp)
-    except:
-      echo("[ERROR] Error checking captcha: " & getCurrentExceptionMsg())
-      captchaValid = false
-
-    if not captchaValid:
-      return setError(c, "g-recaptcha-response", "Answer to captcha incorrect!")
-
+proc resetPassword(
+  c: TForumData,
+  email: string
+) {.async.} =
   # Gather some extra information to determine ident hash.
-  let epoch = $int(epochTime())
   let row = db.getRow(
-      sql"select password, salt, email from person where name = ?", nick)
+    sql"select name, password, email, salt from person where email = ?",
+    email
+  )
   if row[0] == "":
-    return setError(c, "nick", "Nickname not found")
-  # Generate URL for the email.
-  # TODO: Get rid of the stupid `%` in main.tmpl as it screws up strutils.%
-  let resetUrl = c.req.makeUri(
-      strutils.`%`("/emailResetPassword?nick=$1&epoch=$2&ident=$3",
-          [encodeUrl(nick), encodeUrl(epoch),
-           encodeUrl(makeIdentHash(nick, row[0], epoch, row[1]))]))
-  echo "User's reset URL is: ", resetUrl
-  # Send the email.
-  let emailSentFut = sendPassReset(c.config, row[2], nick, resetUrl)
-  # TODO: This is a workaround for 'var T' not being usable in async procs.
-  while not emailSentFut.finished:
-    poll()
-  if emailSentFut.failed:
-    echo("[WARNING] Couldn't send activation email: ", emailSentFut.error.msg)
-    return setError(c, "email", "Couldn't send activation email")
+    raise newForumError("Email not found", @["email"])
 
-  return true
+  await sendSecureEmail(
+    mailer,
+    ResetPassword, c.req,
+    row[0], row[1], row[2], row[3]
+  )
 
 proc logout(c: TForumData) =
   const query = sql"delete from session where ip = ? and password = ?"
@@ -278,6 +248,8 @@ proc initialise() =
   else:
     doAssert config.isDev, "Recaptcha required for production!"
     echo("[WARNING] No recaptcha secret key specified.")
+
+  mailer = newMailer(config)
 
   db = open(connection=config.dbPath, user="", password="",
               database="nimforum")
@@ -582,19 +554,6 @@ proc executeLogin(c: TForumData, username, password: string): string =
 
   raise newForumError("Invalid username or password")
 
-proc sendEmailActivation(c: TForumData, name, password,
-                         email, salt: string) {.async.} =
-  let epoch = $int(epochTime())
-  let activateUrl = c.req.makeUri("/activateEmail?nick=$1&epoch=$2&ident=$3" %
-      [encodeUrl(name), encodeUrl(epoch),
-       encodeUrl(makeIdentHash(name, password, epoch, salt))])
-
-  let emailSentFut = sendEmailActivation(c.config, email, name, activateUrl)
-  yield emailSentFut
-  if emailSentFut.failed:
-    echo("[WARNING] Couldn't send activation email: ", emailSentFut.error.msg)
-    raise newForumError("Couldn't send activation email", @["email"])
-
 proc executeRegister(c: TForumData, name, pass, antibot, userIp,
                      email: string): Future[string] {.async.} =
   ## Registers a new user and returns a new session key for that user's
@@ -632,7 +591,9 @@ proc executeRegister(c: TForumData, name, pass, antibot, userIp,
   let password = makePassword(pass, salt)
 
   # Send activation email.
-  await sendEmailActivation(c, name, password, email, salt)
+  await sendSecureEmail(
+    mailer, ActivateEmail, c.req, name, password, email, salt
+  )
 
   # Add account to person table
   exec(db, sql"""
@@ -726,7 +687,9 @@ proc updateProfile(
       if rank != EmailUnconfirmed:
         raise newForumError("Rank needs a change when setting new email.")
 
-      await sendEmailActivation(c, row[0], row[1], row[2], row[3])
+      await sendSecureEmail(
+        mailer, ActivateEmail, c.req, row[0], row[1], row[2], row[3]
+      )
 
   exec(
     db,
@@ -1193,7 +1156,7 @@ routes:
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
 
-  post re"/deleteUser":
+  post "/deleteUser":
     createTFD()
     if not c.loggedIn():
       let err = PostError(
@@ -1213,7 +1176,7 @@ routes:
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
 
-  post re"/saveProfile":
+  post "/saveProfile":
     createTFD()
     if not c.loggedIn():
       let err = PostError(
@@ -1237,6 +1200,25 @@ routes:
     except ForumError:
       let exc = (ref ForumError)(getCurrentException())
       resp Http400, $(%exc.data), "application/json"
+
+  post "/resetPassword":
+    createTFD()
+    if not c.loggedIn():
+      let err = PostError(
+        errorFields: @[],
+        message: "Not logged in."
+      )
+      resp Http401, $(%err), "application/json"
+
+    let formData = request.formData
+    cond "email" in formData
+    try:
+      await resetPassword(c, formData["email"].body)
+      resp Http200, "{}", "application/json"
+    except ForumError:
+      let exc = (ref ForumError)(getCurrentException())
+      resp Http400, $(%exc.data), "application/json"
+
 
   get "/t/@id":
     cond "id" in request.params
@@ -1341,16 +1323,6 @@ routes:
     #     resp genMain(c, "Password reset failure", "Nim Forum")
     # else:
     #   resp genMain(c, "Invalid ident hash", "Nim Forum")
-
-  post "/doresetpassword":
-    createTFD()
-    echo(request.params)
-    cond(@"nick" != "")
-
-    # if await resetPassword(c, @"nick", @"g-recaptcha-response", request.host):
-    #   resp genMain(c, "Email sent!", "Reset Password - Nim Forum")
-    # else:
-    #   resp genMain(c, genFormResetPassword(c), "Reset Password - Nim Forum")
 
   post "/search/?@page?":
     cond isFTSAvailable

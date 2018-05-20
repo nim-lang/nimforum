@@ -52,7 +52,6 @@ proc makeIdentHash*(user, password, epoch, secret: string,
   ## If ``epoch`` is smaller than the epoch of the user's last login then
   ## the link is invalid.
   ## The ``secret`` is the 'salt' field in the ``person`` table.
-  echo(user, password, epoch, secret)
   when defined(windows):
     result = getMD5(user & password & epoch & secret)
   else:
