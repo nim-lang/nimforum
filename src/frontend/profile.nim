@@ -35,8 +35,7 @@ when defined(js):
     let profile = to(parsed, Profile)
 
     state.profile = some(profile)
-    if profile.email.isSome():
-      state.settings = some(newProfileSettings(profile))
+    state.settings = some(newProfileSettings(profile))
 
   proc genPostLink(link: PostLink): VNode =
     let url = renderPostUrl(link)
@@ -106,7 +105,7 @@ when defined(js):
 
         if currentUser.isSome():
           let user = currentUser.get()
-          if user.name == profile.user.name or user.rank == Admin:
+          if user.name == profile.user.name or user.rank >= Moderator:
             ul(class="tab"):
               li(class=class(
                   {"active": state.currentTab == Overview},

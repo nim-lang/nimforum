@@ -27,9 +27,9 @@ when defined(js):
       icon: icon
     )
 
-  proc newResetPasswordButton*(email: string): PostButton =
+  proc newResetPasswordButton*(username: string): PostButton =
     var formData = newFormData()
-    formData.append("email", email)
+    formData.append("email", username)
     result = newPostButton(
         makeUri("/sendResetPassword"),
         formData,

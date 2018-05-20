@@ -126,8 +126,11 @@ proc resetPassword(
 ) {.async.} =
   # Gather some extra information to determine ident hash.
   let row = db.getRow(
-    sql"select name, password, email, salt from person where email = ?",
-    email
+    sql"""
+      select name, password, email, salt from person
+      where email = ? or name = ?
+    """,
+    email, email
   )
   if row[0] == "":
     raise newForumError("Email not found", @["email"])
@@ -559,18 +562,22 @@ proc executeLogin(c: TForumData, username, password: string): string =
 
   raise newForumError("Invalid username or password")
 
+proc validateEmail(email: string, checkDuplicated: bool) =
+  if not ('@' in email and '.' in email):
+    raise newForumError("Invalid email", @["email"])
+  if checkDuplicated:
+    if getValue(
+        db, sql"select email from person where email = ?", email
+    ).len > 0:
+      raise newForumError("Email already exists", @["email"])
+
 proc executeRegister(c: TForumData, name, pass, antibot, userIp,
                      email: string): Future[string] {.async.} =
   ## Registers a new user and returns a new session key for that user's
   ## session if registration was successful. Exceptions are raised otherwise.
 
   # email validation
-  if not ('@' in email and '.' in email):
-    raise newForumError("Invalid email", @["email"])
-  if getValue(
-      db, sql"select email from person where email = ?", email
-  ).len > 0:
-    raise newForumError("Email already exists", @["email"])
+  validateEmail(email, checkDuplicated=true)
 
   # Username validation:
   if name.len == 0 or not allCharsInSet(name, UsernameIdent) or name.len > 20:
@@ -681,20 +688,31 @@ proc updateProfile(
   if c.username != username and c.rank < Moderator:
     raise newForumError("You can't change this profile.")
 
-  # Make sure the rank is set to EmailUnconfirmed when the email changes.
-  if c.rank < Moderator:
-    let row = getRow(
+  # Check if we are only setting the rank.
+  if email.len == 0:
+    exec(
       db,
-      sql"select name, password, email, salt from person where name = ?",
-      username
+      sql"update person set status = ? where name = ?;",
+      $rank, username
     )
-    if row[2] != email:
-      if rank != EmailUnconfirmed:
-        raise newForumError("Rank needs a change when setting new email.")
+    return
 
-      await sendSecureEmail(
-        mailer, ActivateEmail, c.req, row[0], row[1], row[2], row[3]
-      )
+  # Make sure the rank is set to EmailUnconfirmed when the email changes.
+  let row = getRow(
+    db,
+    sql"select name, password, email, salt from person where name = ?",
+    username
+  )
+  let wasEmailChanged = row[2] != email
+  if c.rank < Moderator and wasEmailChanged:
+    if rank != EmailUnconfirmed:
+      raise newForumError("Rank needs a change when setting new email.")
+
+    await sendSecureEmail(
+      mailer, ActivateEmail, c.req, row[0], row[1], row[2], row[3]
+    )
+
+  validateEmail(email, checkDuplicated=wasEmailChanged)
 
   exec(
     db,

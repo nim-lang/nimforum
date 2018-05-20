@@ -24,7 +24,9 @@ when defined(js):
     let profile = state.profile
     if profile.email.isSome():
       state.email = profile.email.get()
-      state.rank = profile.user.rank
+    else:
+      state.email = ""
+    state.rank = profile.user.rank
 
     state.error = none[PostError]()
 
@@ -32,7 +34,7 @@ when defined(js):
     result = ProfileSettings(
       status: Http200,
       deleteModal: newDeleteModal(nil, nil, onUserDelete),
-      resetPassword: newResetPasswordButton(profile.email.get()),
+      resetPassword: newResetPasswordButton(profile.user.name),
       profile: profile
     )
     resetSettings(result)
@@ -70,23 +72,25 @@ when defined(js):
              (s: int, r: kstring) => onProfilePost(s, r, state))
 
   proc needsSave(state: ProfileSettings): bool =
-    state.email != state.profile.email.get() or
-      state.rank != state.profile.user.rank
+    if state.profile.email.isSome():
+      result = state.email != state.profile.email.get()
+    result = result or state.rank != state.profile.user.rank
 
   proc render*(state: ProfileSettings,
                currentUser: Option[User]): VNode =
-    let isAdmin = currentUser.isSome() and currentUser.get().rank == Admin
+    let canEditRank = currentUser.isSome() and
+                      currentUser.get().rank > state.profile.user.rank
     let canResetPassword = state.profile.user.rank > EmailUnconfirmed
 
     let rankSelect = buildHtml(tdiv()):
-      if isAdmin:
+      if canEditRank:
         select(id="rank-field",
                class="form-select", value = $state.rank,
                onchange=(e: Event, n: VNode) => onRankChange(e, n, state)):
           for r in Rank:
             option(text $r)
         p(class="form-input-hint text-warning"):
-          text "As an admin you can modify anyone's rank. Remember: with " &
+          text "You can modify anyone's rank. Remember: with " &
                "great power comes great responsibility."
       else:
         input(id="rank-field", class="form-input",
@@ -125,23 +129,24 @@ when defined(js):
                 p(class="form-input-hint"):
                   text fmt("Users can refer to you by writing" &
                            " @{state.profile.user.name} in their posts.")
-            tdiv(class="form-group"):
-              tdiv(class="col-3 col-sm-12"):
-                label(class="form-label"):
-                  text "Email"
-              tdiv(class="col-9 col-sm-12"):
-                input(id="email-input", class="form-input",
-                      `type`="text", value=state.email,
-                      oninput=(e: Event, n: VNode) =>
-                        onEmailChange(e, n, state)
-                     )
-                p(class="form-input-hint"):
-                  text "Your avatar is linked to this email and can be " &
-                       "changed at "
-                  a(href="https://gravatar.com/emails"):
-                    text "gravatar.com"
-                  text ". Note that any changes to your email will " &
-                       "require email verification."
+            if state.profile.email.isSome():
+              tdiv(class="form-group"):
+                tdiv(class="col-3 col-sm-12"):
+                  label(class="form-label"):
+                    text "Email"
+                tdiv(class="col-9 col-sm-12"):
+                  input(id="email-input", class="form-input",
+                        `type`="text", value=state.email,
+                        oninput=(e: Event, n: VNode) =>
+                          onEmailChange(e, n, state)
+                       )
+                  p(class="form-input-hint"):
+                    text "Your avatar is linked to this email and can be " &
+                         "changed at "
+                    a(href="https://gravatar.com/emails"):
+                      text "gravatar.com"
+                    text ". Note that any changes to your email will " &
+                         "require email verification."
             tdiv(class="form-group"):
               tdiv(class="col-3 col-sm-12"):
                 label(class="form-label"):
