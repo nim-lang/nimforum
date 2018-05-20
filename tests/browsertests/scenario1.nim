@@ -34,7 +34,7 @@ proc test*(session: Session, baseUrl: string) =
     check thread.isNone()
 
   # Logging in
-  test "can login":
+  test "can login/logout":
     let logIn = session.findElement("#login-btn").get()
     logIn.click()
 
@@ -66,3 +66,50 @@ proc test*(session: Session, baseUrl: string) =
 
     check profileName.getText() == "admin"
 
+    # Check whether we can log out.
+    let logoutLink = session.findElement(
+      "Logout",
+      LinkTextSelector
+    ).get()
+    logoutLink.click()
+
+    # Verify we have logged out by looking for the log in button.
+    check session.findElement("#login-btn").isSome()
+
+  test "can register":
+    let signup = session.findElement("#signup-btn").get()
+    signup.click()
+
+    let emailField = session.findElement(
+      "#signup-form input[name='email']"
+    ).get()
+    let usernameField = session.findElement(
+      "#signup-form input[name='username']"
+    ).get()
+    let passwordField = session.findElement(
+      "#signup-form input[name='password']"
+    ).get()
+
+    emailField.sendKeys("test@test.com")
+    usernameField.sendKeys("test")
+    passwordField.sendKeys("test")
+
+    let createAccount = session.findElement(
+      "#signup-modal .modal-footer .btn-primary"
+    ).get()
+
+    createAccount.click()
+
+    waitForLoad(session, 5000)
+
+    # Verify that the user menu has been initialised properly.
+    let profileButton = session.findElement(
+      "#main-navbar figure.avatar"
+    ).get()
+    profileButton.click()
+
+    let profileName = session.findElement(
+      "#main-navbar .menu-right div.tile-content"
+    ).get()
+
+    check profileName.getText() == "test"
