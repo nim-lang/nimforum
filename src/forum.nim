@@ -567,7 +567,9 @@ proc validateEmail(email: string, checkDuplicated: bool) =
     raise newForumError("Invalid email", @["email"])
   if checkDuplicated:
     if getValue(
-        db, sql"select email from person where email = ?", email
+      db,
+      sql"select email from person where email = ? and isDeleted = 0",
+      email
     ).len > 0:
       raise newForumError("Email already exists", @["email"])
 
@@ -576,15 +578,17 @@ proc executeRegister(c: TForumData, name, pass, antibot, userIp,
   ## Registers a new user and returns a new session key for that user's
   ## session if registration was successful. Exceptions are raised otherwise.
 
-  # TODO: Ignore deleted accounts in duplicate checks.
-
   # email validation
   validateEmail(email, checkDuplicated=true)
 
   # Username validation:
   if name.len == 0 or not allCharsInSet(name, UsernameIdent) or name.len > 20:
     raise newForumError("Invalid username", @["username"])
-  if getValue(db, sql"select name from person where name = ?", name).len > 0:
+  if getValue(
+    db,
+    sql"select name from person where name = ? and isDeleted = 0",
+    name
+  ).len > 0:
     raise newForumError("Username already exists", @["username"])
 
   # Password validation:
