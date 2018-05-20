@@ -1,4 +1,4 @@
-import asyncdispatch, smtp, strutils, times, cgi, tables
+import asyncdispatch, smtp, strutils, times, cgi, tables, logging
 
 from jester import Request, makeUri
 
@@ -39,7 +39,7 @@ proc sendMail(
     raise newForumError(msg)
 
   if mailer.config.smtpAddress.len == 0:
-    echo("[WARNING] Cannot send mail: no smtp server configured (smtpAddress).")
+    warn("Cannot send mail: no smtp server configured (smtpAddress).")
     return
 
   var client = newAsyncSmtp()
@@ -101,7 +101,7 @@ proc sendSecureEmail*(
   kind: SecureEmailKind, req: Request,
   name, password, email, salt: string
 ) {.async.} =
-  let epoch = $int(epochTime())
+  let epoch = int(epochTime())
 
   let path =
     case kind
@@ -114,10 +114,12 @@ proc sendSecureEmail*(
       [
         path,
         encodeUrl(name),
-        encodeUrl(epoch),
+        encodeUrl($epoch),
         encodeUrl(makeIdentHash(name, password, epoch, salt))
       ]
   )
+
+  debug(url)
 
   let emailSentFut =
     case kind
@@ -127,7 +129,7 @@ proc sendSecureEmail*(
       sendPassReset(mailer, email, name, url)
   yield emailSentFut
   if emailSentFut.failed:
-    echo("[WARNING] Couldn't send email: ", emailSentFut.error.msg)
+    warn("Couldn't send email: ", emailSentFut.error.msg)
     if emailSentFut.error of ForumError:
       raise emailSentFut.error
     else:

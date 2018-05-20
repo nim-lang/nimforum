@@ -45,7 +45,7 @@ proc makePassword*(password, salt: string, comparingTo = ""): string =
     let bcryptSalt = if comparingTo != "": comparingTo else: genSalt(8)
     result = hash(getMD5(salt & getMD5(password)), bcryptSalt)
 
-proc makeIdentHash*(user, password, epoch, secret: string,
+proc makeIdentHash*(user, password: string, epoch: int64, secret: string,
                    comparingTo = ""): string =
   ## Creates a hash verifying the identity of a user. Used for password reset
   ## links and email activation links.
@@ -53,7 +53,7 @@ proc makeIdentHash*(user, password, epoch, secret: string,
   ## the link is invalid.
   ## The ``secret`` is the 'salt' field in the ``person`` table.
   when defined(windows):
-    result = getMD5(user & password & epoch & secret)
+    result = getMD5(user & password & $epoch & secret)
   else:
     let bcryptSalt = if comparingTo != "": comparingTo else: genSalt(8)
-    result = hash(user & password & epoch & secret, bcryptSalt)
+    result = hash(user & password & $epoch & secret, bcryptSalt)

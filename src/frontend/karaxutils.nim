@@ -1,22 +1,27 @@
 import strutils, options, strformat, parseutils
 
-proc parseInt*(s: string, value: var int, validRange: Slice[int]) {.
-  noSideEffect.} =
+proc parseIntSafe*(s: string, value: var int) {.noSideEffect.} =
   ## parses `s` into an integer in the range `validRange`. If successful,
   ## `value` is modified to contain the result. Otherwise no exception is
   ## raised and `value` is not touched; this way a reasonable default value
   ## won't be overwritten.
-  var x = value
   try:
-    discard parseutils.parseInt(s, x, 0)
+    discard parseutils.parseInt(s, value, 0)
   except OverflowError:
     discard
-  if x in validRange: value = x
 
 proc getInt*(s: string, default = 0): int =
   ## Safely parses an int and returns it.
   result = default
-  parseInt(s, result, 0..1_000_000_000)
+  parseIntSafe(s, result)
+
+proc getInt64*(s: string, default = 0): int64 =
+  ## Safely parses an int and returns it.
+  result = default
+  try:
+    discard parseutils.parseBiggestInt(s, result, 0)
+  except OverflowError:
+    discard
 
 when defined(js):
   include karax/prelude
@@ -32,7 +37,8 @@ when defined(js):
     for class in classes:
       if class.present: result.add(class.name & " ")
 
-  proc makeUri*(relative: string, appName=appName, includeHash=false): string =
+  proc makeUri*(relative: string, appName=appName, includeHash=false,
+                search: string=""): string =
     ## Concatenates ``relative`` to the current URL in a way that is
     ## (possibly) sane.
     var relative = relative
@@ -43,7 +49,7 @@ when defined(js):
             $window.location.host &
             appName &
             relative &
-            $window.location.search &
+            search &
             (if includeHash: $window.location.hash else: "")
 
   proc makeUri*(relative: string, params: varargs[(string, string)],
@@ -55,7 +61,11 @@ when defined(js):
       query.add(param[0] & "=" & param[1])
 
     if query.len > 0:
-      makeUri(relative & "?" & query, appName)
+      var search = $window.location.search
+      if search.len != 0: search.add("&")
+      search.add(query)
+      if search[0] != '?': search = "?" & search
+      makeUri(relative, appName, search=search)
     else:
       makeUri(relative, appName)
 

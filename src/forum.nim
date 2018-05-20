@@ -10,7 +10,7 @@ import
   os, strutils, times, md5, strtabs, math, db_sqlite,
   scgi, jester, asyncdispatch, asyncnet, sequtils,
   parseutils, random, rst, recaptcha, json, re, sugar,
-  strformat
+  strformat, logging
 import cgi except setCookie
 import options
 
@@ -228,16 +228,21 @@ proc rateLimitCheck(c: TForumData): bool =
   return false
 
 
-proc verifyIdentHash(c: TForumData, name, epoch, ident: string): bool =
+proc verifyIdentHash(
+  c: TForumData, name: string, epoch: int64, ident: string
+) =
   const query =
     sql"select password, salt, strftime('%s', lastOnline) from person where name = ?"
   var row = getRow(db, query, name)
-  if row[0] == "": return false
+  if row[0] == "":
+    raise newForumError("User doesn't exist.", @["nick"])
   let newIdent = makeIdentHash(name, row[0], epoch, row[1], ident)
   # Check that the user has not been logged in since this ident hash has been
   # created. Give the timestamp a certain range to prevent false negatives.
-  if row[2].parseInt > (epoch.parseInt + 60): return false
-  result = newIdent == ident
+  if row[2].parseInt > (epoch + 60*3):
+    raise newForumError("Link expired")
+  if newIdent != ident:
+    raise newForumError("Invalid ident hash")
 
 proc initialise() =
   randomize()
@@ -247,7 +252,7 @@ proc initialise() =
     captcha = initReCaptcha(config.recaptchaSecretKey, config.recaptchaSiteKey)
   else:
     doAssert config.isDev, "Recaptcha required for production!"
-    echo("[WARNING] No recaptcha secret key specified.")
+    warn("No recaptcha secret key specified.")
 
   mailer = newMailer(config)
 
@@ -1201,7 +1206,7 @@ routes:
       let exc = (ref ForumError)(getCurrentException())
       resp Http400, $(%exc.data), "application/json"
 
-  post "/resetPassword":
+  post "/sendResetPassword":
     createTFD()
     if not c.loggedIn():
       let err = PostError(
@@ -1219,6 +1224,30 @@ routes:
       let exc = (ref ForumError)(getCurrentException())
       resp Http400, $(%exc.data), "application/json"
 
+  post "/resetPassword":
+    createTFD()
+    cond(@"nick" != "")
+    cond(@"epoch" != "")
+    cond(@"ident" != "")
+    cond(@"newPassword" != "")
+    let epoch = getInt64(@"epoch", -1)
+    try:
+      verifyIdentHash(c, @"nick", epoch, @"ident")
+      var salt = makeSalt()
+      let password = makePassword(@"newPassword", salt)
+
+      exec(
+        db,
+        sql"""
+          update person set password = ?, salt = ?,
+                            lastOnline = DATETIME('now')
+          where name = ?;
+        """,
+        password, salt, @"nick"
+      )
+      resp Http200, "{}", "application/json"
+    except ForumError as exc:
+      resp Http400, $(%exc.data),"application/json"
 
   get "/t/@id":
     cond "id" in request.params
@@ -1276,53 +1305,10 @@ routes:
     var epoch: BiggestInt = 0
     cond(parseBiggestInt(@"epoch", epoch) > 0)
     var success = false
-    if verifyIdentHash(c, @"nick", $epoch, @"ident"):
-      let ban = parseEnum[Rank](db.getValue(sql"select status from person where name = ?", @"nick"))
-      # if ban == EmailUnconfirmed:
-      #   success = setStatus(c, @"nick", Moderated, "")
-
-
-  get "/emailResetPassword/?":
-    createTFD()
-    cond(@"nick" != "")
-    cond(@"epoch" != "")
-    cond(@"ident" != "")
-    var epoch: BiggestInt = 0
-    cond(parseBiggestInt(@"epoch", epoch) > 0)
-    if verifyIdentHash(c, @"nick", $epoch, @"ident"):
-      let formBody = input(`type`="hidden", name="nick", value = @"nick") &
-                     input(`type`="hidden", name="epoch", value = @"epoch") &
-                     input(`type`="hidden", name="ident", value = @"ident") &
-                     input(`type`="password", name="password") &
-                     "<br/>" &
-                     input(`type`="submit", name="submitBtn",
-                           value="Change my password")
-      let message = htmlgen.p("Please enter a new password for ",
-                              htmlgen.b(@"nick"), ':')
-      let content = htmlgen.form(action=c.req.makeUri("/doemailresetpassword"),
-                         `method`="POST", message & formBody)
-
-      # resp genMain(c, content, "Reset password - Nim Forum")
-    else:
-      discard
-      # resp genMain(c, "Invalid ident hash", "Error - Nim Forum")
-
-  post "/doemailresetpassword":
-    createTFD()
-    cond(@"nick" != "")
-    cond(@"epoch" != "")
-    cond(@"ident" != "")
-    cond(@"password" != "")
-    var epoch: BiggestInt = 0
-    cond(parseBiggestInt(@"epoch", epoch) > 0)
     # if verifyIdentHash(c, @"nick", $epoch, @"ident"):
-    #   let res = setPassword(c, @"nick", @"password")
-    #   if res:
-    #     resp genMain(c, "Password reset successfully!", "Nim Forum")
-    #   else:
-    #     resp genMain(c, "Password reset failure", "Nim Forum")
-    # else:
-    #   resp genMain(c, "Invalid ident hash", "Nim Forum")
+    #   let ban = parseEnum[Rank](db.getValue(sql"select status from person where name = ?", @"nick"))
+    #   # if ban == EmailUnconfirmed:
+    #   #   success = setStatus(c, @"nick", Moderated, "")
 
   post "/search/?@page?":
     cond isFTSAvailable
@@ -1336,7 +1322,7 @@ routes:
       elif q[i] == '\'':  q[i] = '"'
     c.search = q.replace("\"","&quot;")
     if @"page".len > 0:
-      parseInt(@"page", c.pageNum, 0..1000_000)
+      parseIntSafe(@"page", c.pageNum)
       cond(c.pageNum > 0)
     iterator searchResults(): db_sqlite.Row {.closure, tags: [ReadDbEffect].} =
       const queryFT = "fts.sql".slurp.sql

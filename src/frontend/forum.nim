@@ -5,6 +5,7 @@ include karax/prelude
 import jester/patterns
 
 import threadlist, postlist, header, profile, newthread, error, about
+import resetpassword
 import karaxutils
 
 type
@@ -13,6 +14,7 @@ type
     profile: ProfileState
     newThread: NewThread
     about: About
+    resetPassword: ResetPassword
 
 proc copyLocation(loc: Location): Location =
   # TODO: It sucks that I had to do this. We need a nice way to deep copy in JS.
@@ -32,7 +34,8 @@ proc newState(): State =
     url: copyLocation(window.location),
     profile: newProfileState(),
     newThread: newNewThread(),
-    about: newAbout()
+    about: newAbout(),
+    resetPassword: newResetPassword()
   )
 
 var state = newState()
@@ -91,6 +94,38 @@ proc render(): VNode =
       ),
       r("/about/?@page?",
         (params: Params) => (render(state.about, params["page"]))
+      ),
+      r("/activateEmail/success",
+        (params: Params) => (
+          renderMessage(
+            "Email activated",
+            "You can now create new posts!",
+            "fa-check"
+          )
+        )
+      ),
+      r("/activateEmail/failure",
+        (params: Params) => (
+          renderMessage(
+            "Email activation failed",
+            "Couldn't verify the supplied ident",
+            "fa-exclamation"
+          )
+        )
+      ),
+      r("/resetPassword/success",
+        (params: Params) => (
+          renderMessage(
+            "Password changed",
+            "You can now login using your new password!",
+            "fa-check"
+          )
+        )
+      ),
+      r("/resetPassword",
+        (params: Params) => (
+          render(state.resetPassword)
+        )
       ),
       r("/404",
         (params: Params) => render404()

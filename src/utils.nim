@@ -1,5 +1,5 @@
 import asyncdispatch, smtp, strutils, json, os, rst, rstgen, xmltree, strtabs,
-  htmlparser, streams, parseutils, options
+  htmlparser, streams, parseutils, options, logging
 from times import getTime, getGMTime, format
 
 # Used to be:
@@ -178,4 +178,4 @@ proc rstToHtml*(content: string): string =
     result = ""
     add(result, node, indWidth=0, addNewLines=false)
   except:
-    echo("[WARNING] Could not parse rst html.")
+    warn("Could not parse rst html.")

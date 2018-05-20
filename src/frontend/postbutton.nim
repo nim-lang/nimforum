@@ -31,7 +31,7 @@ when defined(js):
     var formData = newFormData()
     formData.append("email", email)
     result = newPostButton(
-        makeUri("/resetPassword"),
+        makeUri("/sendResetPassword"),
         formData,
         "Send password reset email",
         "fas fa-envelope",

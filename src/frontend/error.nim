@@ -43,6 +43,16 @@ when defined(js):
             button(class="btn btn-primary"):
               text "Report issue"
 
+  proc renderMessage*(message, submessage, icon: string): VNode =
+    result = buildHtml():
+      tdiv(class="empty error"):
+        tdiv(class="empty icon"):
+          italic(class="fas " & icon & " fa-5x")
+        p(class="empty-title h5"):
+          text message
+        p(class="empty-subtitle"):
+          text submessage
+
   proc genFormField*(error: Option[PostError], name, label, typ: string,
                      isLast: bool): VNode =
     let hasError =

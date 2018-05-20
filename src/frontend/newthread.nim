@@ -51,7 +51,7 @@ when defined(js):
           tdiv(class="content"):
             input(class="form-input", `type`="text", name="subject",
                   placeholder="Type the title here",
-                  onChange=(e: Event, n: VNode) => onSubjectChange(e, n, state))
+                  oninput=(e: Event, n: VNode) => onSubjectChange(e, n, state))
             if state.error.isSome():
               p(class="text-error"):
                 text state.error.get().message
