@@ -49,8 +49,8 @@ proc makeIdentHash*(user, password: string, epoch: int64, secret: string,
                    comparingTo = ""): string =
   ## Creates a hash verifying the identity of a user. Used for password reset
   ## links and email activation links.
-  ## If ``epoch`` is smaller than the epoch of the user's last login then
-  ## the link is invalid.
+  ## The ``epoch`` determines the creation time of this hash, it will be checked
+  ## during verification to ensure the hash hasn't expired.
   ## The ``secret`` is the 'salt' field in the ``person`` table.
   when defined(windows):
     result = getMD5(user & password & $epoch & secret)

@@ -240,9 +240,9 @@ proc verifyIdentHash(
   if row[0] == "":
     raise newForumError("User doesn't exist.", @["nick"])
   let newIdent = makeIdentHash(name, row[0], epoch, row[1], ident)
-  # Check that the user has not been logged in since this ident hash has been
-  # created. Give the timestamp a certain range to prevent false negatives.
-  if row[2].parseInt > (epoch + 60*3):
+  # Check that it hasn't expired.
+  let diff = getTime() - epoch.fromUnix()
+  if diff.hours > 2:
     raise newForumError("Link expired")
   if newIdent != ident:
     raise newForumError("Invalid ident hash")
@@ -575,6 +575,8 @@ proc executeRegister(c: TForumData, name, pass, antibot, userIp,
                      email: string): Future[string] {.async.} =
   ## Registers a new user and returns a new session key for that user's
   ## session if registration was successful. Exceptions are raised otherwise.
+
+  # TODO: Ignore deleted accounts in duplicate checks.
 
   # email validation
   validateEmail(email, checkDuplicated=true)
@@ -1278,6 +1280,27 @@ routes:
       resp Http200, "{}", "application/json"
     except ForumError as exc:
       resp Http400, $(%exc.data),"application/json"
+
+  get "/activateEmail":
+    createTFD()
+    cond(@"nick" != "")
+    cond(@"epoch" != "")
+    cond(@"ident" != "")
+    let epoch = getInt64(@"epoch", -1)
+    try:
+      verifyIdentHash(c, @"nick", epoch, @"ident")
+
+      exec(
+        db,
+        sql"""
+          update person set status = ?, lastOnline = DATETIME('now')
+          where name = ?;
+        """,
+        $Rank.Moderated, @"nick"
+      )
+      redirect(uri("/activateEmail/success"))
+    except ForumError as exc:
+      redirect(uri("/activateEmail/failure/" & encodeUrl(exc.data.message)))
 
   get "/t/@id":
     cond "id" in request.params

@@ -1,4 +1,4 @@
-import strformat, times, options, json, tables, sugar, httpcore
+import strformat, times, options, json, tables, sugar, httpcore, uri
 from dom import window, Location
 
 include karax/prelude
@@ -104,11 +104,11 @@ proc render(): VNode =
           )
         )
       ),
-      r("/activateEmail/failure",
+      r("/activateEmail/failure/@msg",
         (params: Params) => (
           renderMessage(
             "Email activation failed",
-            "Couldn't verify the supplied ident",
+            decodeUrl(params["msg"]),
             "fa-exclamation"
           )
         )
