@@ -32,7 +32,7 @@
 #    ORDER BY modified DESC LIMIT 1""")
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-    <title>Nim forum thread activity</title>
+    <title>${config.name} thread activity</title>
     <link href="${c.req.makeUri("/threadActivity.xml")}" rel="self" />
     <link href="${frontQuery}" />
     <id>${frontQuery}</id>
@@ -60,13 +60,14 @@ ${xmlEncode(rstToHtml(!postContent))}</content>
 #
 #proc genPostsRSS(c: TForumData): string =
 #  result = ""
-#  const query = sql"""SELECT A.id, B.name, A.content, A.thread,
-#    A.header, strftime('%Y-%m-%dT%H:%M:%SZ', A.creation),
+#  const query = sql"""SELECT A.id, B.name, A.content, A.thread, T.name,
+#    strftime('%Y-%m-%dT%H:%M:%SZ', A.creation),
 #    A.creation, COUNT(C.id)
-#    FROM post AS A, person AS B, post AS C
+#    FROM post AS A, person AS B, post AS C, thread AS T
 #    WHERE A.author = B.id AND A.thread = C.thread AND C.id <= A.id
+#          AND T.id = A.thread
 #    GROUP BY A.id
-#    ORDER BY A.creation DESC LIMIT ?"""
+#    ORDER BY A.creation DESC LIMIT 10"""
 #  const postId = 0
 #  const postAuthor = 1
 #  const postContent = 2
@@ -81,12 +82,12 @@ ${xmlEncode(rstToHtml(!postContent))}</content>
 #    ORDER BY creation DESC LIMIT 1""")
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-    <title>Nim forum post activity</title>
+    <title>${config.name} post activity</title>
     <link href="${c.req.makeUri("/postActivity.xml")}" rel="self" />
     <link href="${frontQuery}" />
     <id>${frontQuery}</id>
     <updated>${recent}</updated>
-# for row in rows(db, query, 10):
+# for row in rows(db, query):
     <entry>
         <title>${xmlEncode(!postHeader)}</title>
         <id>urn:entry:${!postId}</id>

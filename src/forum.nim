@@ -1305,9 +1305,6 @@ routes:
     )
     resp content.rstToHtml()
 
-  get re"/(.+)?":
-    resp readFile("public/karax.html")
-
   get "/threadActivity.xml":
     createTFD()
     resp genThreadsRSS(c), "application/atom+xml"
@@ -1315,6 +1312,10 @@ routes:
   get "/postActivity.xml":
     createTFD()
     resp genPostsRSS(c), "application/atom+xml"
+
+  get re"/(.+)?":
+    resp readFile("public/karax.html")
+
 
   get "/activateEmail/?":
     createTFD()
