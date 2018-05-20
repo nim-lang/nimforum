@@ -1245,6 +1245,18 @@ routes:
         """,
         password, salt, @"nick"
       )
+
+      # Remove all sessions.
+      exec(
+        db,
+        sql"""
+          delete from session where userid = (
+            select id from person
+            where name = ?
+          )
+        """,
+        @"nick"
+      )
       resp Http200, "{}", "application/json"
     except ForumError as exc:
       resp Http400, $(%exc.data),"application/json"
