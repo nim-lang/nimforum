@@ -277,7 +277,9 @@ $views-color: #545d70;
 
 .post-avatar {
   @extend .avatar;
-  @extend .avatar-xl;
+  font-size: 1.6rem;
+  height: 2.5rem;
+  width: 2.5rem;
 }
 
 .post-main {
@@ -563,14 +565,15 @@ hr {
 
 .profile-icon {
   @extend .tile-icon;
+  margin-right: $control-padding-x;
 }
 
 .profile-avatar {
   @extend .avatar;
   @extend .avatar-xl;
 
-  height: 8.2rem;
-  width: 8.2rem;
+  height: 6.2rem;
+  width: 6.2rem;
 }
 
 .profile-content {
@@ -586,6 +589,7 @@ hr {
   dl {
     border-top: 1px solid $border-color;
     border-bottom: 1px solid $border-color;
+    padding: $control-padding-x $control-padding-y;
   }
 
   dt {
@@ -602,6 +606,10 @@ hr {
   dd {
     margin-right: $control-padding-x-lg;
   }
+}
+
+.profile-tabs {
+  margin-bottom: $control-padding-y-lg*2;
 }
 
 .profile-post {

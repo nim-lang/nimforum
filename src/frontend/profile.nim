@@ -106,7 +106,7 @@ when defined(js):
         if currentUser.isSome():
           let user = currentUser.get()
           if user.name == profile.user.name or user.rank >= Moderator:
-            ul(class="tab"):
+            ul(class="tab profile-tabs"):
               li(class=class(
                   {"active": state.currentTab == Overview},
                   "tab-item"
