@@ -172,7 +172,7 @@ proc checkLoggedIn(c: TForumData) =
   else:
     echo("SID not found in sessions. Assuming logged out.")
 
-proc incrementViews(c: TForumData, threadId: int) =
+proc incrementViews(threadId: int) =
   const query = sql"update thread set views = views + 1 where id = ?"
   exec(db, query, threadId)
 
@@ -818,6 +818,8 @@ routes:
         skippedPosts = @[]
       else:
         skippedPosts.add(id)
+
+    incrementViews(id)
 
     resp $(%list), "application/json"
 
