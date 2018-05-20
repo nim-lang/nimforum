@@ -85,3 +85,11 @@ when defined(js):
                    onClick=(ev: Event, n: VNode) =>
                     (state.onLogIn(); state.shown = false)):
               text "Log in"
+
+            p(class="license-text text-gray"):
+              text "By registering, you agree to the "
+              a(href=makeUri("/about/license"),
+                onClick=(ev: Event, n: VNode) =>
+                    (state.shown = false; anchorCB(ev, n))):
+                text "content license"
+              text "."

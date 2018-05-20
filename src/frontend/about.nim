@@ -40,5 +40,5 @@ when defined(js):
 
     result = buildHtml():
       section(class="container grid-xl"):
-        tdiv(id="about"):
+        tdiv(class="about"):
           verbatim(state.content)
