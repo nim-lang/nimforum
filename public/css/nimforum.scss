@@ -241,6 +241,10 @@ $views-color: #545d70;
 
     margin: 0;
   }
+
+  i.fas {
+    margin-right: $control-padding-x-sm;
+  }
 }
 
 .posts, .about {
@@ -384,6 +388,7 @@ $views-color: #545d70;
   .btn {
     float: right;
     margin-right: 0;
+    margin-left: $control-padding-x;
   }
 }
 

@@ -419,10 +419,28 @@ proc executeReply(c: TForumData, threadId: int, content: string,
   if rateLimitCheck(c):
     raise newForumError("You're posting too fast!")
 
+  if content.strip().len == 0:
+    raise newForumError("Message cannot be empty")
+
   if not validateRst(c, content):
     raise newForumError("Message needs to be valid RST", @["msg"])
 
-  # Verify that content can be parsed as RST.
+  # Ensure that the thread isn't locked.
+  let isLocked = getValue(
+    db,
+    sql"""
+      select isLocked from thread where id in (
+        select thread from post where id = ?
+      )
+    """,
+    threadId
+  )
+  if isLocked.len == 0:
+    raise newForumError("Thread not found.")
+
+  if isLocked == "1":
+    raise newForumError("Cannot reply to a locked thread.")
+
   let retID = insertID(
     db,
     crud(crCreate, "post", "author", "ip", "content", "thread", "replyingTo"),
@@ -629,6 +647,14 @@ proc executeUnlike(c: TForumData, postId: int) =
 
   # Delete the like.
   exec(db, crud(crDelete, "like"), likeId)
+
+proc executeLockState(c: TForumData, threadId: int, locked: bool) =
+  # Verify that the logged in user has the correct permissions.
+  if c.rank < Moderator:
+    raise newForumError("You cannot lock this thread.")
+
+  # Save the like.
+  exec(db, crud(crUpdate, "thread", "isLocked"), locked.int, threadId)
 
 proc executeDeletePost(c: TForumData, postId: int) =
   # Verify that this post belongs to the user.
@@ -1121,6 +1147,33 @@ routes:
         executeLike(c, postId)
       of "/unlike":
         executeUnlike(c, postId)
+      else:
+        assert false
+      resp Http200, "{}", "application/json"
+    except ForumError as exc:
+      resp Http400, $(%exc.data), "application/json"
+
+  post re"/(lock|unlock)":
+    createTFD()
+    if not c.loggedIn():
+      let err = PostError(
+        errorFields: @[],
+        message: "Not logged in."
+      )
+      resp Http401, $(%err), "application/json"
+
+    let formData = request.formData
+    cond "id" in formData
+
+    let threadId = getInt(formData["id"].body, -1)
+    cond threadId != -1
+
+    try:
+      case request.path
+      of "/lock":
+        executeLockState(c, threadId, true)
+      of "/unlock":
+        executeLockState(c, threadId, false)
       else:
         assert false
       resp Http200, "{}", "application/json"

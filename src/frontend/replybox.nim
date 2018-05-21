@@ -121,7 +121,7 @@ when defined(js):
                      value=state.text)
 
           if state.error.isSome():
-            p(class="text-error",
+            span(class="text-error",
                  style=style(StyleAttr.marginTop, "0.4rem")):
               text state.error.get().message
 

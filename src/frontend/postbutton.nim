@@ -8,7 +8,7 @@ when defined(js):
   include karax/prelude
   import karax/[kajax, kdom]
 
-  import error, karaxutils, post, user
+  import error, karaxutils, post, user, threadlist
 
   type
     PostButton* = ref object
@@ -143,3 +143,60 @@ when defined(js):
               text $post.likes.len
 
           italic(class=class({"far": not liked, "fas": liked}, "fa-heart"))
+
+  type
+    LockButton* = ref object
+      error: Option[PostError]
+      loading: bool
+
+  proc newLockButton*(): LockButton =
+    LockButton()
+
+  proc onPost(httpStatus: int, response: kstring, state: LockButton,
+              thread: var Thread) =
+    postFinished:
+      thread.isLocked = not thread.isLocked
+
+  proc onLockClick(ev: Event, n: VNode, state: LockButton, thread: var Thread) =
+    if state.loading: return
+
+    state.loading = true
+    state.error = none[PostError]()
+
+    # TODO: This is a hack, karax should support this.
+    var formData = newFormData()
+    formData.append("id", $thread.id)
+    let uri =
+      if thread.isLocked:
+        makeUri("/unlock")
+      else:
+        makeUri("/lock")
+    ajaxPost(uri, @[], cast[cstring](formData),
+             (s: int, r: kstring) =>
+                onPost(s, r, state, thread))
+
+    ev.preventDefault()
+
+  proc render*(state: LockButton, thread: var Thread,
+               currentUser: Option[User]): VNode =
+    if currentUser.isNone() or
+       currentUser.get().rank < Moderator:
+      return buildHtml(tdiv())
+
+    let tooltip =
+      if state.error.isSome(): state.error.get().message
+      else: ""
+
+    result = buildHtml():
+      button(class="btn btn-secondary",
+           onClick=(e: Event, n: VNode) =>
+              onLockClick(e, n, state, thread),
+           "data-tooltip"=tooltip,
+           onmouseleave=(e: Event, n: VNode) =>
+              (state.error = none[PostError]())):
+        if thread.isLocked:
+          italic(class="fas fa-unlock-alt")
+          text " Unlock Thread"
+        else:
+          italic(class="fas fa-lock")
+          text " Lock Thread"

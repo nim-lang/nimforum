@@ -32,6 +32,7 @@ when defined(js):
       editBox: EditBox
       likeButton: LikeButton
       deleteModal: DeleteModal
+      lockButton: LockButton
 
   proc onReplyPosted(id: int)
   proc onEditPosted(id: int, content: string, subject: Option[string])
@@ -47,7 +48,8 @@ when defined(js):
       replyBox: newReplyBox(onReplyPosted),
       editBox: newEditBox(onEditPosted, onEditCancelled),
       likeButton: newLikeButton(),
-      deleteModal: newDeleteModal(onDeletePost, onDeleteThread, nil)
+      deleteModal: newDeleteModal(onDeletePost, onDeleteThread, nil),
+      lockButton: newLockButton()
     )
 
   var
@@ -363,6 +365,8 @@ when defined(js):
                          onReplyClick(e, n, none[Post]())):
               italic(class="fas fa-reply")
               text " Reply"
+
+            render(state.lockButton, list.thread, currentUser)
 
           render(state.replyBox, list.thread, state.replyingTo, false)
 
