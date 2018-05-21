@@ -141,12 +141,12 @@ $logo-height: $navbar-height - 20px;
 
 // - Thread table
 .thread-title {
-  a, a:visited, a:hover {
+  a, a:hover {
     color: $body-font-color;
     text-decoration: none;
   }
 
-  a.visited {
+  a.visited, a:visited {
     color: lighten($body-font-color, 40%);
   }
 
