@@ -54,7 +54,7 @@ when defined(js):
           text submessage
 
   proc genFormField*(error: Option[PostError], name, label, typ: string,
-                     isLast: bool): VNode =
+                     isLast: bool, placeholder=""): VNode =
     let hasError =
       not error.isNone and (
         name in error.get().errorFields or
@@ -63,13 +63,14 @@ when defined(js):
       tdiv(class=class({"has-error": hasError}, "form-group")):
         label(class="form-label", `for`=name):
           text label
-        input(class="form-input", `type`=typ, name=name)
+        input(class="form-input", `type`=typ, name=name,
+              placeholder=placeholder)
 
         if not error.isNone:
           let e = error.get()
           if (e.errorFields.len == 1 and e.errorFields[0] == name) or
              (isLast and e.errorFields.len == 0):
-            p(class="form-input-hint"):
+            span(class="form-input-hint"):
               text e.message
 
   template postFinished*(onSuccess: untyped): untyped =

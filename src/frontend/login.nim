@@ -5,7 +5,7 @@ when defined(js):
   include karax/prelude
   import karax / [kajax, kdom]
 
-  import error
+  import error, resetpassword
   import karaxutils
 
   type
@@ -15,6 +15,7 @@ when defined(js):
       onLogIn: proc ()
       onSignUp: proc ()
       error: Option[PostError]
+      resetPasswordModal: ResetPasswordModal
 
   proc onLogInPost(httpStatus: int, response: kstring, state: LoginModal) =
     postFinished:
@@ -40,7 +41,8 @@ when defined(js):
     LoginModal(
       shown: false,
       onLogIn: onLogIn,
-      onSignUp: onSignUp
+      onSignUp: onSignUp,
+      resetPasswordModal: newResetPasswordModal()
     )
 
   proc show*(state: LoginModal) =
@@ -52,7 +54,7 @@ when defined(js):
       onLogInClick(e, n, state)
 
   proc render*(state: LoginModal): VNode =
-    result = buildHtml():
+    result = buildHtml(tdiv()):
       tdiv(class=class({"active": state.shown}, "modal modal-sm"),
            id="login-modal"):
         a(href="", class="modal-overlay", "aria-label"="close",
@@ -76,7 +78,8 @@ when defined(js):
                   "password",
                   true
                 )
-              a(href="#reset-password-modal"):
+              a(href="", onClick=(e: Event, n: VNode) =>
+                  (state.resetPasswordModal.show(); e.preventDefault())):
                 text "Reset your password"
           tdiv(class="modal-footer"):
             button(class=class(
@@ -89,3 +92,5 @@ when defined(js):
                    onClick=(ev: Event, n: VNode) =>
                     (state.onSignUp(); state.shown = false)):
               text "Create account"
+
+      render(state.resetPasswordModal)

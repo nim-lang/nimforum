@@ -87,10 +87,21 @@ proc getGravatarUrl(email: string, size = 80): string =
 # -----------------------------------------------------------------------------
 template `||`(x: untyped): untyped = (if not isNil(x): x else: "")
 
+proc validateCaptcha(recaptchaResp, ip: string) {.async.} =
+  # captcha validation:
+  if config.recaptchaSecretKey.len > 0:
+    var verifyFut = captcha.verify(recaptchaResp, ip)
+    yield verifyFut
+    if verifyFut.failed:
+      raise newForumError(
+        "Invalid recaptcha answer", @[]
+      )
 
-proc resetPassword(
+proc sendResetPassword(
   c: TForumData,
-  email: string
+  email: string,
+  recaptchaResp: string,
+  userIp: string
 ) {.async.} =
   # Gather some extra information to determine ident hash.
   let row = db.getRow(
@@ -101,7 +112,9 @@ proc resetPassword(
     email, email
   )
   if row[0] == "":
-    raise newForumError("Email not found", @["email"])
+    raise newForumError("Email or username not found", @["email"])
+
+  await validateCaptcha(recaptchaResp, userIp)
 
   await sendSecureEmail(
     mailer,
@@ -560,14 +573,7 @@ proc executeRegister(c: TForumData, name, pass, antibot, userIp,
   if pass.len < 4:
     raise newForumError("Please choose a longer password", @["password"])
 
-  # captcha validation:
-  if config.recaptchaSecretKey.len > 0:
-    var verifyFut = captcha.verify(antibot, userIp)
-    yield verifyFut
-    if verifyFut.failed:
-      raise newForumError(
-        "Invalid recaptcha answer", @[]
-      )
+  await validateCaptcha(antibot, userIp)
 
   # perform registration:
   var salt = makeSalt()
@@ -1197,17 +1203,28 @@ routes:
 
   post "/sendResetPassword":
     createTFD()
-    if not c.loggedIn():
-      let err = PostError(
-        errorFields: @[],
-        message: "Not logged in."
-      )
-      resp Http401, $(%err), "application/json"
 
     let formData = request.formData
+    let recaptcha =
+      if "g-recaptcha-response" in formData:
+        formData["g-recaptcha-response"].body
+      else:
+        ""
+
+    if not c.loggedIn():
+      if not config.isDev:
+        if "g-recaptcha-response" notin formData:
+          let err = PostError(
+            errorFields: @[],
+            message: "Not logged in."
+          )
+          resp Http401, $(%err), "application/json"
+
     cond "email" in formData
     try:
-      await resetPassword(c, formData["email"].body)
+      await sendResetPassword(
+        c, formData["email"].body, recaptcha, request.host
+      )
       resp Http200, "{}", "application/json"
     except ForumError:
       let exc = (ref ForumError)(getCurrentException())
