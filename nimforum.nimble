@@ -15,6 +15,7 @@ skipExt = @["nim"]
 requires "nim >= 0.14.0"
 requires "jester#64295c8"
 requires "bcrypt#head"
+requires "hmac#9c61ebe2fd134cf97"
 requires "recaptcha 1.0.2"
 requires "sass"
 

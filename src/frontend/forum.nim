@@ -5,7 +5,7 @@ include karax/prelude
 import jester/patterns
 
 import threadlist, postlist, header, profile, newthread, error, about
-import resetpassword
+import resetpassword, activateemail
 import karaxutils
 
 type
@@ -15,6 +15,7 @@ type
     newThread: NewThread
     about: About
     resetPassword: ResetPassword
+    activateEmail: ActivateEmail
 
 proc copyLocation(loc: Location): Location =
   # TODO: It sucks that I had to do this. We need a nice way to deep copy in JS.
@@ -35,7 +36,8 @@ proc newState(): State =
     profile: newProfileState(),
     newThread: newNewThread(),
     about: newAbout(),
-    resetPassword: newResetPassword()
+    resetPassword: newResetPassword(),
+    activateEmail: newActivateEmail()
   )
 
 var state = newState()
@@ -104,13 +106,9 @@ proc render(): VNode =
           )
         )
       ),
-      r("/activateEmail/failure/@msg",
+      r("/activateEmail",
         (params: Params) => (
-          renderMessage(
-            "Email activation failed",
-            decodeUrl(params["msg"]),
-            "fa-exclamation"
-          )
+          render(state.activateEmail)
         )
       ),
       r("/resetPassword/success",

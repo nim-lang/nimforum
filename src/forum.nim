@@ -206,7 +206,7 @@ proc verifyIdentHash(
   var row = getRow(db, query, name)
   if row[0] == "":
     raise newForumError("User doesn't exist.", @["nick"])
-  let newIdent = makeIdentHash(name, row[0], epoch, row[1], ident)
+  let newIdent = makeIdentHash(name, row[0], epoch, row[1])
   # Check that it hasn't expired.
   let diff = getTime() - epoch.fromUnix()
   if diff.hours > 2:
@@ -1250,7 +1250,7 @@ routes:
     except ForumError as exc:
       resp Http400, $(%exc.data),"application/json"
 
-  get "/activateEmail":
+  post "/activateEmail":
     createTFD()
     cond(@"nick" != "")
     cond(@"epoch" != "")
@@ -1267,9 +1267,9 @@ routes:
         """,
         $Rank.Moderated, @"nick"
       )
-      redirect(uri("/activateEmail/success"))
+      resp Http200, "{}", "application/json"
     except ForumError as exc:
-      redirect(uri("/activateEmail/failure/" & encodeUrl(exc.data.message)))
+      resp Http400, $(%exc.data),"application/json"
 
   get "/t/@id":
     cond "id" in request.params

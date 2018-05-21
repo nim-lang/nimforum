@@ -1,6 +1,6 @@
 import random, md5
 
-import bcrypt
+import bcrypt, hmac
 
 proc randomSalt(): string =
   result = ""
@@ -47,12 +47,44 @@ proc makePassword*(password, salt: string, comparingTo = ""): string =
   let bcryptSalt = if comparingTo != "": comparingTo else: genSalt(8)
   result = hash(getMD5(salt & getMD5(password)), bcryptSalt)
 
-proc makeIdentHash*(user, password: string, epoch: int64, secret: string,
-                   comparingTo = ""): string =
+proc makeIdentHash*(user, password: string, epoch: int64,
+                    secret: string): string =
   ## Creates a hash verifying the identity of a user. Used for password reset
   ## links and email activation links.
   ## The ``epoch`` determines the creation time of this hash, it will be checked
   ## during verification to ensure the hash hasn't expired.
   ## The ``secret`` is the 'salt' field in the ``person`` table.
-  let bcryptSalt = if comparingTo != "": comparingTo else: genSalt(8)
-  result = hash(user & password & $epoch & secret, bcryptSalt)
+  result = hmac_sha256(secret, user & password & $epoch).toHex()
+
+
+when isMainModule:
+  block:
+    let ident = makeIdentHash("test", "pass", 1526908753, "randomtext")
+    let ident2 = makeIdentHash("test", "pass", 1526908753, "randomtext")
+    doAssert ident == ident2
+
+    let invalid = makeIdentHash("test", "pass", 1526908754, "randomtext")
+    doAssert ident != invalid
+
+  block:
+    let ident = makeIdentHash(
+      "test",
+      "$2a$08$bY85AhoD1e9u0IsD9sM7Ee6kFSLeXRLxJ6rMgfb1wDnU9liaymoTG",
+      1526908753,
+      "*B2a] IL\"~sh)q-GBd/i$^>.TL]PR~>1IX>Fp-:M3pCm^cFD\um"
+    )
+    let ident2 = makeIdentHash(
+      "test",
+      "$2a$08$bY85AhoD1e9u0IsD9sM7Ee6kFSLeXRLxJ6rMgfb1wDnU9liaymoTG",
+      1526908753,
+      "*B2a] IL\"~sh)q-GBd/i$^>.TL]PR~>1IX>Fp-:M3pCm^cFD\um"
+    )
+    doAssert ident == ident2
+
+    let invalid = makeIdentHash(
+      "test",
+      "$2a$08$bY85AhoD1e9u0IsD9sM7Ee6kFSLeXRLxJ6rMgfb1wDnU9liaymoTG",
+      1526908754,
+      "*B2a] IL\"~sh)q-GBd/i$^>.TL]PR~>1IX>Fp-:M3pCm^cFD\um"
+    )
+    doAssert ident != invalid
