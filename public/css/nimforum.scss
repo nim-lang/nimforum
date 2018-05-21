@@ -340,6 +340,12 @@ $views-color: #545d70;
   }
 }
 
+.post-content {
+  img {
+    max-width: 100%;
+  }
+}
+
 .post-buttons {
   float: right;
 
