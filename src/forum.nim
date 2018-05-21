@@ -250,12 +250,12 @@ proc initialise() =
     sass.compileFile(cssLoc / "nimforum.scss", cssLoc / "nimforum.css")
 
   # Read karax.html and set its properties.
-  karaxHtml = readFile("public/karax.html").multiReplace(
+  karaxHtml = readFile("public/karax.html") %
     {
-      "$title": config.title,
-      "$timestamp": encodeUrl(CompileDate & CompileTime)
-    }
-  )
+      "title": config.title,
+      "timestamp": encodeUrl(CompileDate & CompileTime)
+    }.newStringTable()
+
 
 template createTFD() =
   var c {.inject.}: TForumData
@@ -1314,12 +1314,11 @@ routes:
     resp Http404, readFile("public/karax.html")
 
   get "/about/license.html":
-    let content = readFile("public/license.rst").multiReplace(
+    let content = readFile("public/license.rst") %
       {
-        "$hostname": config.hostname,
-        "$name": config.name
-      }
-    )
+        "hostname": config.hostname,
+        "name": config.name
+      }.newStringTable()
     resp content.rstToHtml()
 
   get "/threadActivity.xml":
