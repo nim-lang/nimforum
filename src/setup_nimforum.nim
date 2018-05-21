@@ -101,7 +101,7 @@ proc initialiseDb(admin: tuple[username, password, email: string],
   let password = makePassword(admin.password, salt)
   db.exec(sql"""
     insert into person (id, name, password, email, salt, status)
-    values (0, ?, ?, ?, ?, ?);
+    values (1, ?, ?, ?, ?, ?);
   """, admin.username, password, admin.email, salt, $Admin)
 
   # -- Post
