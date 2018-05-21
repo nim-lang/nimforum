@@ -455,9 +455,12 @@ blockquote {
     content: "";
   }
 
-  &:not([data-lang="Nim"]) > .code-buttons {
-    display: none;
-  }
+  // &:not([data-lang="Nim"]) > .code-buttons {
+  //   display: none;
+  // }
+}
+.code-buttons {
+  display: none;
 }
 
 .information {
@@ -668,4 +671,19 @@ hr {
   .footer {
     margin-top: $control-padding-y*2;
   }
+}
+
+// - Hide features that have not been implemented yet.
+#main-buttons > section.navbar-section:nth-child(1) {
+  display: none;
+}
+
+#threads-list.table {
+  tr > th:nth-child(2), tr > td:nth-child(2) {
+    display: none;
+  }
+}
+
+#search-box, .category {
+  display: none;
 }

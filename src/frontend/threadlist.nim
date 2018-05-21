@@ -173,7 +173,7 @@ when defined(js):
     let list = state.list.get()
     result = buildHtml():
       section(class="container grid-xl"): # TODO: Rename to `.thread-list`.
-        table(class="table"):
+        table(class="table", id="threads-list"):
           thead():
             tr:
               th(text "Topic")
