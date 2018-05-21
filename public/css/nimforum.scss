@@ -63,6 +63,7 @@ $logo-height: $navbar-height - 20px;
   .search-input {
     @extend .form-input;
     border-color: $navbar-border-color-dark;
+    display: none; // TODO: Make search work and remove this.
   }
 
   .search-input:focus {
@@ -684,6 +685,6 @@ hr {
   }
 }
 
-#search-box, .category {
+.category, div.flag-button {
   display: none;
 }
