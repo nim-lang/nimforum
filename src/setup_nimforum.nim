@@ -97,12 +97,13 @@ proc initialiseDb(admin: tuple[username, password, email: string],
   db.exec sql"create index PersonStatusIdx on person(status);"
 
   # Create default user.
-  let salt = makeSalt()
-  let password = makePassword(admin.password, salt)
-  db.exec(sql"""
-    insert into person (id, name, password, email, salt, status)
-    values (1, ?, ?, ?, ?, ?);
-  """, admin.username, password, admin.email, salt, $Admin)
+  if admin.username.len != 0:
+    let salt = makeSalt()
+    let password = makePassword(admin.password, salt)
+    db.exec(sql"""
+      insert into person (id, name, password, email, salt, status)
+      values (1, ?, ?, ?, ?, ?);
+    """, admin.username, password, admin.email, salt, $Admin)
 
   # -- Post
 
@@ -228,6 +229,11 @@ proc initialiseConfig(
   backup(path, some(pretty(j)))
   writeFile(path, pretty(j))
 
+proc question(q: string): string =
+  while result.len == 0:
+    stdout.write(q)
+    result = stdin.readLine()
+
 when isMainModule:
   if paramCount() > 0:
     case paramStr(1)
@@ -265,5 +271,12 @@ when isMainModule:
         admin=("admin", "admin", "admin@localhost.local"),
         dbPath
       )
+    of "--blank":
+      let dbPath = "nimforum-blank.db"
+      echo("Initialising blank DB...")
+      initialiseDb(
+        admin=("", "", ""),
+        dbPath
+      )
     else:
-      quit("--dev|--test")
+      quit("--dev|--test|--prod")
