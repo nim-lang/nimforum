@@ -13,7 +13,7 @@ skipExt = @["nim"]
 # Dependencies
 
 requires "nim >= 0.14.0"
-requires "jester#d7e2c85a6a72a541dfb"
+requires "jester#64295c8"
 requires "bcrypt#head"
 requires "recaptcha 1.0.2"
 requires "sass"
