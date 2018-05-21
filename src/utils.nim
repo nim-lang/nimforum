@@ -27,7 +27,7 @@ type
     isDev*: bool
     dbPath*: string
     hostname*: string
-    name*: string
+    name*, title*: string
 
   ForumError* = object of Exception
     data*: PostError
@@ -63,6 +63,7 @@ proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
   result.dbPath = root{"dbPath"}.getStr("nimforum.db")
   result.hostname = root["hostname"].getStr()
   result.name = root["name"].getStr()
+  result.title = root["title"].getStr()
 
 proc processGT(n: XmlNode, tag: string): (int, XmlNode, string) =
   result = (0, newElement(tag), tag)

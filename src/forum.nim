@@ -51,6 +51,7 @@ var
   config: Config
   captcha: ReCaptcha
   mailer: Mailer
+  karaxHtml: string
 
 proc init(c: TForumData) =
   c.userPass = ""
@@ -247,6 +248,14 @@ proc initialise() =
   let cssLoc = "public" / "css"
   if not existsFile(cssLoc / "nimforum.css"):
     sass.compileFile(cssLoc / "nimforum.scss", cssLoc / "nimforum.css")
+
+  # Read karax.html and set its properties.
+  karaxHtml = readFile("public/karax.html").multiReplace(
+    {
+      "$title": config.title,
+      "$timestamp": encodeUrl(CompileDate & CompileTime)
+    }
+  )
 
 template createTFD() =
   var c {.inject.}: TForumData
@@ -700,17 +709,6 @@ include "main.tmpl"
 initialise()
 
 routes:
-
-  get "/nimforum.css":
-    resp readFile("public/css/nimforum.css"), "text/css"
-  get "/nimcache/forum.js":
-    resp readFile("public/js/forum.js"), "application/javascript"
-  get re"/images/(.+?\.png)/?":
-    let path = "public/images/" & request.matches[0]
-    if fileExists(path):
-      resp readFile(path), "image/png"
-    else:
-      resp Http404, "No such file."
 
   get "/threads.json":
     var
@@ -1332,22 +1330,9 @@ routes:
     createTFD()
     resp genPostsRSS(c), "application/atom+xml"
 
-  get re"/(.+)?":
-    resp readFile("public/karax.html")
-
-
-  get "/activateEmail/?":
-    createTFD()
-    cond(@"nick" != "")
-    cond(@"epoch" != "")
-    cond(@"ident" != "")
-    var epoch: BiggestInt = 0
-    cond(parseBiggestInt(@"epoch", epoch) > 0)
-    var success = false
-    # if verifyIdentHash(c, @"nick", $epoch, @"ident"):
-    #   let ban = parseEnum[Rank](db.getValue(sql"select status from person where name = ?", @"nick"))
-    #   # if ban == EmailUnconfirmed:
-    #   #   success = setStatus(c, @"nick", Moderated, "")
+  get re"/(.*)":
+    cond request.matches[0].splitFile.ext == ""
+    resp karaxHtml
 
 when false:
   post "/search/?@page?":

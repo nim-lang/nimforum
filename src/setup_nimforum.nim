@@ -204,7 +204,7 @@ proc initialiseDb(admin: tuple[username, password, email: string],
   close(db)
 
 proc initialiseConfig(
-  name, hostname: string,
+  name, title, hostname: string,
   recaptcha: tuple[siteKey, secretKey: string],
   smtp: tuple[address, user, password: string],
   isDev: bool,
@@ -214,6 +214,7 @@ proc initialiseConfig(
 
   var j = %{
     "name": %name,
+    "title": %title,
     "hostname": %hostname,
     "recaptchaSiteKey": %recaptcha.siteKey,
     "recaptchaSecretKey": %recaptcha.secretKey,
@@ -224,8 +225,8 @@ proc initialiseConfig(
     "dbPath": %dbPath
   }
 
-  backup(path, some($j))
-  writeFile(path, $j)
+  backup(path, some(pretty(j)))
+  writeFile(path, pretty(j))
 
 when isMainModule:
   if paramCount() > 0:
@@ -234,6 +235,7 @@ when isMainModule:
       let dbPath = "nimforum-dev.db"
       echo("Initialising nimforum for development...")
       initialiseConfig(
+        "Development Forum",
         "Development Forum",
         "localhost",
         recaptcha=("", ""),
@@ -250,6 +252,7 @@ when isMainModule:
       let dbPath = "nimforum-test.db"
       echo("Initialising nimforum for testing...")
       initialiseConfig(
+        "Test Forum",
         "Test Forum",
         "localhost",
         recaptcha=("", ""),
