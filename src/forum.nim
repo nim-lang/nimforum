@@ -1340,6 +1340,9 @@ routes:
     else:
       redirect uri("/404")
 
+  get "/t/@id/@page":
+    redirect uri("/t/" & @"id")
+
   get "/profile/@username":
     cond "username" in request.params
 
