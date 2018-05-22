@@ -664,6 +664,10 @@ hr {
   }
 }
 
+.profile-post-title {
+  @extend .thread-title;
+}
+
 // - Sign up modal
 
 #signup-modal {
