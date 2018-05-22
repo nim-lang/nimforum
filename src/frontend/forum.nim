@@ -2,10 +2,10 @@ import strformat, times, options, json, tables, sugar, httpcore, uri
 from dom import window, Location
 
 include karax/prelude
-import jester/patterns
+import jester/[patterns]
 
 import threadlist, postlist, header, profile, newthread, error, about
-import resetpassword, activateemail
+import resetpassword, activateemail, search
 import karaxutils
 
 type
@@ -16,6 +16,7 @@ type
     about: About
     resetPassword: ResetPassword
     activateEmail: ActivateEmail
+    search: Search
 
 proc copyLocation(loc: Location): Location =
   # TODO: It sucks that I had to do this. We need a nice way to deep copy in JS.
@@ -37,7 +38,8 @@ proc newState(): State =
     newThread: newNewThread(),
     about: newAbout(),
     resetPassword: newResetPassword(),
-    activateEmail: newActivateEmail()
+    activateEmail: newActivateEmail(),
+    search: newSearch()
   )
 
 var state = newState()
@@ -65,7 +67,8 @@ proc route(routes: openarray[Route]): VNode =
   let prefix = if appName == "/": "" else: appName
   for route in routes:
     let pattern = (prefix & route.n).parsePattern()
-    let (matched, params) = pattern.match(path)
+    var (matched, params) = pattern.match(path)
+    parseUrlQuery($state.url.search, params)
     if matched:
       return route.p(params)
 
@@ -123,6 +126,11 @@ proc render(): VNode =
       r("/resetPassword",
         (params: Params) => (
           render(state.resetPassword)
+        )
+      ),
+      r("/search",
+        (params: Params) => (
+          render(state.search, params["q"], getLoggedInUser())
         )
       ),
       r("/404",

@@ -4,19 +4,21 @@
 SELECT
         thread_id,
         snippet(thread_fts, '<b>', '</b>', '<b>...</b>') AS thread,
-        0 AS post_id,
-        '' AS header,
-        '' AS content,
-        person.name AS author,
+        post_id,
+        post_content,
         cdate,
-        author_id,
+        person.name AS author,
         person.email AS email,
+        strftime('%s', person.lastOnline) AS lastOnline,
+        person.status AS status,
+        person.isDeleted as person_isDeleted,
         0 AS what
     FROM (
         SELECT
                 thread_fts.id AS thread_id,
                 post.id AS post_id,
-                post.creation AS cdate,
+                post.content AS post_content,
+                strftime('%s', post.creation) AS cdate,
                 MIN(post.creation) AS cdate,
                 post.author AS author_id
             FROM thread_fts
@@ -28,7 +30,7 @@ SELECT
                     FROM post_fts JOIN post USING(id)
                     WHERE post_fts MATCH ?
             )
-            LIMIT ? OFFSET (? - 1) * ?
+            LIMIT ? OFFSET ?
     )
         JOIN thread_fts ON thread_fts.id=thread_id
         JOIN person ON person.id=author_id
@@ -40,30 +42,23 @@ SELECT
         thread.name AS thread,
         post.id AS post_id,
         CASE what WHEN 1
-            THEN snippet(post_fts, '<b>', '</b>', '...', what)
-            ELSE post_fts.header END AS header,
-        CASE what WHEN 2
             THEN snippet(post_fts, '**', '**', '...', what, -45)
             ELSE SUBSTR(post_fts.content, 1, 200) END AS content,
-        person.name AS author,
         cdate,
-        post.author AS author_id,
+        person.name AS author,
         person.email AS email,
+        strftime('%s', person.lastOnline) AS lastOnline,
+        person.status AS status,
+        person.isDeleted as person_isDeleted,
         what
     FROM post_fts JOIN (
     -- inner query, selects ids of matching posts, orders and limits them,
     -- so snippets only for limited count of posts are created (in outer query)
-        SELECT id, post.creation AS cdate, thread, 1 AS what, post.author AS author
-            FROM post_fts JOIN post USING(id)
-            WHERE post_fts.header MATCH ?
-            GROUP BY post.header
-            HAVING SUBSTR(post.header,1,3)<>'Re:'
-        UNION
-        SELECT id, post.creation AS cdate, thread, 2 AS what, post.author AS author
+        SELECT id, strftime('%s', post.creation) AS cdate, thread, 1 AS what, post.author AS author
             FROM post_fts JOIN post USING(id)
             WHERE post_fts.content MATCH ?
         ORDER BY what, cdate DESC
-        LIMIT ? OFFSET (? - 1) * ?
+        LIMIT ? OFFSET ?
     ) AS post USING(id)
         JOIN thread ON thread.id=thread
         JOIN person ON person.id=author

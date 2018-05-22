@@ -51,7 +51,6 @@ $logo-height: $navbar-height - 20px;
   .search-input {
     @extend .form-input;
     border-color: $navbar-border-color-dark;
-    display: none; // TODO: Make search work and remove this.
   }
 
   .search-input:focus {
@@ -290,6 +289,15 @@ $views-color: #545d70;
   &, a, a:visited, a:hover {
     color: lighten($body-font-color, 20%);
     text-decoration: none;
+  }
+
+
+  .thread-title {
+    width: 100%;
+
+    a > div {
+      display: inline-block;
+    }
   }
 
   .post-username {

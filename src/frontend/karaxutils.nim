@@ -1,4 +1,4 @@
-import strutils, options, strformat, parseutils
+import strutils, options, strformat, parseutils, tables
 
 proc parseIntSafe*(s: string, value: var int) {.noSideEffect.} =
   ## parses `s` into an integer in the range `validRange`. If successful,
@@ -27,7 +27,7 @@ when defined(js):
   include karax/prelude
   import karax / [kdom]
 
-  import dom except window
+  from dom import nil
 
   const appName* = "/"
 
@@ -53,7 +53,8 @@ when defined(js):
             (if includeHash: $window.location.hash else: "")
 
   proc makeUri*(relative: string, params: varargs[(string, string)],
-                appName=appName, includeHash=false): string =
+                appName=appName, includeHash=false,
+                reuseSearch=true): string =
     var query = ""
     for i in 0 ..< params.len:
       let param = params[i]
@@ -61,7 +62,7 @@ when defined(js):
       query.add(param[0] & "=" & param[1])
 
     if query.len > 0:
-      var search = $window.location.search
+      var search = if reuseSearch: $window.location.search else: ""
       if search.len != 0: search.add("&")
       search.add(query)
       if search[0] != '?': search = "?" & search
@@ -74,13 +75,13 @@ when defined(js):
     dom.pushState(dom.window.history, 0, cstring"", uri)
 
     # Fire the popState event.
-    dom.window.dispatchEvent(newEvent("popstate"))
+    dom.dispatchEvent(dom.window, dom.newEvent("popstate"))
 
   proc anchorCB*(e: kdom.Event, n: VNode) = # TODO: Why does this need disamb?
     e.preventDefault()
 
     # TODO: Why does Karax have it's own Node type? That's just silly.
-    let url = cast[dom.Node](n.dom).getAttribute(cstring"href")
+    let url = n.getAttr("href")
 
     navigateTo(url)
 
@@ -100,3 +101,21 @@ when defined(js):
 
   proc renderPostUrl*(threadId, postId: int): string =
     makeUri(fmt"/t/{threadId}#{postId}")
+
+  proc parseUrlQuery*(query: string, result: var Table[string, string])
+    {.deprecated: "use stdlib".} =
+    ## Based on copy from Jester. Use stdlib when
+    ## https://github.com/nim-lang/Nim/pull/7761 is merged.
+    var i = 0
+    i = query.skip("?")
+    while i < query.len()-1:
+      var key = ""
+      var val = ""
+      i += query.parseUntil(key, '=', i)
+      if query[i] != '=':
+        raise newException(ValueError, "Expected '=' at " & $i &
+                           " but got: " & $query[i])
+      inc(i) # Skip =
+      i += query.parseUntil(val, '&', i)
+      inc(i) # Skip &
+      result[$decodeUri(key)] = $decodeUri(val)

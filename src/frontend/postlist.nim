@@ -10,7 +10,7 @@ type
     thread*: Thread
     history*: seq[Thread] ## If the thread was edited this will contain the
                           ## older versions of the thread (title/category
-                          ## changes).
+                          ## changes). TODO
     posts*: seq[Post]
 
 when defined(js):
@@ -225,15 +225,7 @@ when defined(js):
           tdiv(class="post-title"):
             tdiv(class="post-username"):
               text post.author.name
-              if post.isModerated:
-                italic(class="fas fa-eye-slash",
-                       title="User is moderated")
-              if post.author.rank == Moderator:
-                italic(class="fas fa-shield-alt",
-                       title="User is a moderator")
-              if post.author.rank == Admin:
-                italic(class="fas fa-chess-knight",
-                       title="User is an admin")
+              renderUserRank(post.author)
             tdiv(class="post-metadata"):
               if post.replyingTo.isSome():
                 let replyingTo = post.replyingTo.get()

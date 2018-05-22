@@ -8,12 +8,14 @@ type
 
 when defined(js):
   include karax/prelude
-  import karax / [kajax]
+  import karax / [kajax, kdom]
 
   import login, signup, usermenu
   import karaxutils
 
-  from dom import setTimeout, window, document, getElementById, focus
+  from dom import
+    setTimeout, window, document, getElementById, focus
+
 
   type
     State = ref object
@@ -74,22 +76,28 @@ when defined(js):
   proc isLoggedIn*(): bool =
     not getLoggedInUser().isNone
 
+  proc onKeyDown(e: Event, n: VNode) =
+    let event = cast[KeyboardEvent](e)
+    if event.key == "Enter":
+      navigateTo(makeUri("/search", ("q", $n.value), reuseSearch=false))
+
   proc renderHeader*(): VNode =
     if state.data.isNone and state.status == Http200:
       getStatus()
 
     let user = state.data.map(x => x.user).flatten
-    result = buildHtml(tdiv()): # TODO: Why do some buildHtml's need this?
+    result = buildHtml(tdiv()):
       header(id="main-navbar"):
         tdiv(class="navbar container grid-xl"):
           section(class="navbar-section"):
             a(href=makeUri("/")):
-              img(src="/images/logo.png", id="img-logo") # TODO: Customisation.
+              img(src="/images/logo.png", id="img-logo")
           section(class="navbar-section"):
             tdiv(class="input-group input-inline"):
               input(class="search-input input-sm",
                     `type`="text", placeholder="search",
-                    id="search-box")
+                    id="search-box",
+                    onKeyDown=onKeyDown)
             if state.loading:
               tdiv(class="loading")
             elif user.isNone:

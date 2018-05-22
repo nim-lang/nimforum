@@ -50,3 +50,21 @@ when defined(js):
         href=makeUri("/profile/" & user.name),
         onClick=anchorCB):
         text "@" & user.name
+
+  proc renderUserRank*(user: User): VNode =
+    result = buildHtml():
+      case user.rank
+      of Spammer, Troll, Banned:
+        italic(class="fas fa-eye-ban",
+               title="User is banned")
+      of Rank.User, EmailUnconfirmed:
+        span()
+      of Moderated:
+        italic(class="fas fa-eye-slash",
+               title="User is moderated")
+      of Moderator:
+        italic(class="fas fa-shield-alt",
+               title="User is a moderator")
+      of Admin:
+        italic(class="fas fa-chess-knight",
+               title="User is an admin")

@@ -18,7 +18,7 @@ import auth, email, utils, buildcss
 
 import frontend/threadlist except User
 import frontend/[
-  category, postlist, error, header, post, profile, user, karaxutils
+  category, postlist, error, header, post, profile, user, karaxutils, search
 ]
 
 from htmlgen import tr, th, td, span, input
@@ -1377,6 +1377,35 @@ routes:
   get "/postActivity.xml":
     createTFD()
     resp genPostsRSS(c), "application/atom+xml"
+
+  get "/search.json":
+    cond "q" in request.params
+    let q = @"q"
+    cond q.len > 0
+
+    var results: seq[SearchResult] = @[]
+
+    const queryFT = "fts.sql".slurp.sql
+    let data = [
+      q, q, $ThreadsPerPage, $0, q,
+      q, $ThreadsPerPage, $0, q
+    ]
+    for rowFT in fastRows(db, queryFT, data):
+      var content = rowFT[3]
+      try: content = content.rstToHtml() except EParseError: discard
+      results.add(
+        SearchResult(
+          kind: SearchResultKind(rowFT[^1].parseInt()),
+          threadId: rowFT[0].parseInt(),
+          threadTitle: rowFT[1],
+          postId: rowFT[2].parseInt(),
+          postContent: content,
+          creation: rowFT[4].parseInt(),
+          author: selectUser(rowFT[5 .. 9]),
+        )
+      )
+
+    resp Http200, $(%results), "application/json"
 
   get re"/(.*)":
     cond request.matches[0].splitFile.ext == ""
