@@ -73,7 +73,7 @@ when defined(js):
             verbatim(searchResult.postContent)
 
   proc render*(state: Search, query: string, currentUser: Option[User]): VNode =
-    if state.list.isNone() or state.query != query:
+    if state.query != query:
       state.list = none[seq[SearchResult]]()
       state.status = Http200
       state.query = query

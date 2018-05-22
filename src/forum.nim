@@ -285,7 +285,7 @@ proc selectUser(userRow: seq[string], avatarSize: int=80): User =
     name: userRow[0],
     avatarUrl: userRow[1].getGravatarUrl(avatarSize),
     lastOnline: userRow[2].parseInt,
-    previousVisitAt: userRow[3]. parseInt,
+    previousVisitAt: userRow[3].parseInt,
     rank: parseEnum[Rank](userRow[4]),
     isDeleted: userRow[5] == "1"
   )

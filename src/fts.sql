@@ -10,6 +10,7 @@ SELECT
         person.name AS author,
         person.email AS email,
         strftime('%s', person.lastOnline) AS lastOnline,
+        strftime('%s', person.previousVisitAt) AS previousVisitAt,
         person.status AS status,
         person.isDeleted as person_isDeleted,
         0 AS what
@@ -48,6 +49,7 @@ SELECT
         person.name AS author,
         person.email AS email,
         strftime('%s', person.lastOnline) AS lastOnline,
+        strftime('%s', person.previousVisitAt) AS previousVisitAt,
         person.status AS status,
         person.isDeleted as person_isDeleted,
         what
