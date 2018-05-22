@@ -41,8 +41,7 @@
     <entry>
         <title>${xmlEncode(!name)}</title>
         <id>urn:entry:${!threadid}</id>
-        # let url = c.genThreadUrl(threadid = !threadid,
-        #   pageNum = $(ceil(parseInt(!postCount) / PostsPerPage).int)) &
+        # let url = c.genThreadUrl(threadid = !threadid) &
         #   "#" & !postId
         <link rel="alternate" type="text/html"
           href="${c.req.makeUri(url)}"/>
@@ -91,8 +90,7 @@ ${xmlEncode(rstToHtml(!postContent))}</content>
     <entry>
         <title>${xmlEncode(!postHeader)}</title>
         <id>urn:entry:${!postId}</id>
-        # let url = c.genThreadUrl(threadid = !postThread,
-        #   pageNum = $(ceil(parseInt(!postPosition) / PostsPerPage).int)) &
+        # let url = c.genThreadUrl(threadid = !postThread) &
         #   "#" & !postId
         <link rel="alternate" type="text/html"
           href="${c.req.makeUri(url)}"/>

@@ -23,12 +23,6 @@ import frontend/[
 
 from htmlgen import tr, th, td, span, input
 
-const
-  unselectedThread = -1
-
-  ThreadsPerPage = 15
-  PostsPerPage = 10
-
 type
   TCrud = enum crCreate, crRead, crUpdate, crDelete
 
@@ -63,10 +57,9 @@ proc loggedIn(c: TForumData): bool =
 # --------------- HTML widgets ------------------------------------------------
 
 
-proc genThreadUrl(c: TForumData, postId = "", action = "", threadid = "", pageNum = ""): string =
+proc genThreadUrl(c: TForumData, postId = "", action = "",
+                  threadid = ""): string =
   result = "/t/" & threadid
-  if pageNum != "":
-    result.add("/" & pageNum)
   if action != "":
     result.add("?action=" & action)
     if postId != "":
@@ -1386,9 +1379,10 @@ routes:
     var results: seq[SearchResult] = @[]
 
     const queryFT = "fts.sql".slurp.sql
+    const count = 40
     let data = [
-      q, q, $ThreadsPerPage, $0, q,
-      q, $ThreadsPerPage, $0, q
+      q, q, $count, $0, q,
+      q, $count, $0, q
     ]
     for rowFT in fastRows(db, queryFT, data):
       var content = rowFT[3]
@@ -1410,27 +1404,3 @@ routes:
   get re"/(.*)":
     cond request.matches[0].splitFile.ext == ""
     resp karaxHtml
-
-when false:
-  post "/search/?@page?":
-    cond isFTSAvailable
-    createTFD()
-    c.isThreadsList  = true
-    c.noPagenumumNav = true
-    var count = 0
-    var q = @"q"
-    for i in 0 .. q.len-1:
-      if   q[i].int < 32: q[i] = ' '
-      elif q[i] == '\'':  q[i] = '"'
-    c.search = q.replace("\"","&quot;")
-    if @"page".len > 0:
-      parseIntSafe(@"page", c.pageNum)
-      cond(c.pageNum > 0)
-    iterator searchResults(): db_sqlite.Row {.closure, tags: [ReadDbEffect].} =
-      const queryFT = "fts.sql".slurp.sql
-      for rowFT in fastRows(db, queryFT,
-                    [q,q,$ThreadsPerPage,$c.pageNum,$ThreadsPerPage,q,
-                     q,q,$ThreadsPerPage,$c.pageNum,$ThreadsPerPage,q]):
-        yield rowFT
-    # resp genMain(c, genSearchResults(c, searchResults, count),
-    #              additionalHeaders = genRSSHeaders(c), showRssLinks = true)
