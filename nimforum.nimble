@@ -33,7 +33,7 @@ task runbackend, "Runs the forum backend":
   exec "./src/forum"
 
 task frontend, "Builds the necessary JS frontend (with CSS)":
-  exec "nimble c -r src/frontend/buildcss"
+  exec "nimble c -r src/buildcss"
   exec "nimble js -d:release src/frontend/forum.nim"
   mkDir "public/js"
   cpFile "src/frontend/nimcache/forum.js", "public/js/forum.js"

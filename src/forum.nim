@@ -14,9 +14,7 @@ import
 import cgi except setCookie
 import options
 
-import sass
-
-import auth, email, utils
+import auth, email, utils, buildcss
 
 import frontend/threadlist except User
 import frontend/[
@@ -245,9 +243,7 @@ proc initialise() =
   isFTSAvailable = db.getAllRows(sql("SELECT name FROM sqlite_master WHERE " &
       "type='table' AND name='post_fts'")).len == 1
 
-  let cssLoc = "public" / "css"
-  if not existsFile(cssLoc / "nimforum.css"):
-    sass.compileFile(cssLoc / "nimforum.scss", cssLoc / "nimforum.css")
+  buildCSS(config)
 
   # Read karax.html and set its properties.
   karaxHtml = readFile("public/karax.html") %
