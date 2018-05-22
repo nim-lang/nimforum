@@ -58,7 +58,7 @@ when defined(js):
         tdiv(class="post-main"):
           tdiv(class="post-title"):
             tdiv(class="thread-title"):
-              a(href=url):
+              a(href=url, onClick=anchorCB):
                 verbatim(searchResult.threadTitle)
             tdiv(class="post-username"):
               text searchResult.author.name
@@ -67,7 +67,7 @@ when defined(js):
               # TODO: History and replying to.
               let title = searchResult.creation.fromUnix().local.
                           format("MMM d, yyyy HH:mm")
-              a(href=url, title=title):
+              a(href=url, title=title, onClick=anchorCB):
                 text renderActivity(searchResult.creation)
           tdiv(class="post-content"):
             verbatim(searchResult.postContent)
