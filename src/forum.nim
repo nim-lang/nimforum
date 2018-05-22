@@ -447,9 +447,7 @@ proc executeReply(c: TForumData, threadId: int, content: string,
   let isLocked = getValue(
     db,
     sql"""
-      select isLocked from thread where id in (
-        select thread from post where id = ?
-      )
+      select isLocked from thread where id = ?;
     """,
     threadId
   )
