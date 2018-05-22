@@ -28,7 +28,7 @@ type
     dbPath*: string
     hostname*: string
     name*, title*: string
-    scripts*: string
+    ga*: string
 
   ForumError* = object of Exception
     data*: PostError
@@ -65,7 +65,7 @@ proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
   result.hostname = root["hostname"].getStr()
   result.name = root["name"].getStr()
   result.title = root["title"].getStr()
-  result.scripts = root{"scripts"}.getStr()
+  result.ga = root{"ga"}.getStr()
 
 proc processGT(n: XmlNode, tag: string): (int, XmlNode, string) =
   result = (0, newElement(tag), tag)

@@ -267,7 +267,7 @@ proc initialise() =
     {
       "title": config.title,
       "timestamp": encodeUrl(CompileDate & CompileTime),
-      "scripts": config.scripts
+      "ga": config.ga
     }.newStringTable()
 
 
