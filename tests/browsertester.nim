@@ -21,8 +21,7 @@ const backend = "forum"
 const port = 5000
 const baseUrl = "http://localhost:" & $port & "/"
 template withBackend(body: untyped): untyped =
-  ## Starts a new backend instance with a fresh DB.
-  doAssert(execCmd("nimble testdb") == QuitSuccess)
+  ## Starts a new backend instance.
 
   spawn runProcess("nimble -y runbackend")
   defer:
@@ -50,6 +49,9 @@ when isMainModule:
   spawn runProcess("geckodriver -p 4444 --log config")
   defer:
     discard execCmd("killall geckodriver")
+
+  # Create a fresh DB for the tester.
+  doAssert(execCmd("nimble testdb") == QuitSuccess)
 
   doAssert(execCmd("nimble -y frontend") == QuitSuccess)
   echo("Waiting for geckodriver to startup...")
