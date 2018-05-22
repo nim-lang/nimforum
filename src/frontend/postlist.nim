@@ -71,8 +71,7 @@ when defined(js):
         () => (
           # Would have used scrollIntoView but then the `:target` selector
           # isn't activated.
-          window.location.hash = "";
-          window.location.hash = "#" & $postId.get()
+          getVNodeById($postId.get()).dom.scrollIntoView()
         ),
         100
       )
@@ -214,11 +213,13 @@ when defined(js):
               italic(class="fas fa-reply")
               text " Reply"
 
-  proc genPost(post: Post, thread: Thread, currentUser: Option[User]): VNode =
+  proc genPost(
+    post: Post, thread: Thread, currentUser: Option[User], highlight: bool
+  ): VNode =
     let postCopy = post # TODO: Another workaround here, closure capture :(
 
     result = buildHtml():
-      tdiv(class="post", id = $post.id):
+      tdiv(class=class({"highlight": highlight}, "post"), id = $post.id):
         tdiv(class="post-icon"):
           render(post.author, "post-avatar")
         tdiv(class="post-main"):
@@ -345,7 +346,8 @@ when defined(js):
               genTimePassed(prevPost.get(), some(post), false)
             if post.moreBefore.len > 0:
               genLoadMore(post, i)
-            genPost(post, list.thread, currentUser)
+            let highlight = postId.isSome() and postId.get() == post.id
+            genPost(post, list.thread, currentUser, highlight)
             prevPost = some(post)
 
           if prevPost.isSome:
