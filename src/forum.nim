@@ -29,8 +29,7 @@ type
   Session = object of RootObj
     userName, userPass, email: string
     rank: Rank
-
-  TPost = tuple[subject, content: string]
+    previousVisitAt: int64
 
   TForumData = ref object of Session
     req: Request
@@ -137,9 +136,34 @@ proc checkLoggedIn(c: TForumData) =
     c.email = ||row[1]
     c.rank = parseEnum[Rank](||row[2])
 
-    # Update lastOnline
-    db.exec(sql"update person set lastOnline = DATETIME('now') where id = ?",
-            c.userid)
+    # In order to handle the "last visit" line appropriately, i.e.
+    # it shouldn't disappear after a refresh, we need to manage a
+    # special field called `previousVisitAt` appropriately.
+    # That is if a user hasn't been seen for more than an hour (or so), we can
+    # update `previousVisitAt` to the last time they were online.
+    let personRow = getRow(
+      db,
+      sql"""
+        select strftime('%s', lastOnline), strftime('%s', previousVisitAt)
+        from person where id = ?
+      """,
+      c.userid
+    )
+    c.previousVisitAt = personRow[1].parseInt
+    let diff = getTime() - fromUnix(personRow[0].parseInt)
+    if diff.minutes > 30:
+      c.previousVisitAt = personRow[0].parseInt
+      db.exec(
+        sql"""
+          update person set
+            previousVisitAt = lastOnline, lastOnline = DATETIME('now')
+          where id = ?;
+        """,
+        c.userid
+      )
+    else:
+      db.exec(sql"update person set lastOnline = DATETIME('now') where id = ?",
+              c.userid)
 
   else:
     warn("SID not found in sessions. Assuming logged out.")
@@ -207,7 +231,7 @@ proc verifyIdentHash(
   c: TForumData, name: string, epoch: int64, ident: string
 ) =
   const query =
-    sql"select password, salt, strftime('%s', lastOnline) from person where name = ?"
+    sql"select password, salt from person where name = ?"
   var row = getRow(db, query, name)
   if row[0] == "":
     raise newForumError("User doesn't exist.", @["nick"])
@@ -261,8 +285,9 @@ proc selectUser(userRow: seq[string], avatarSize: int=80): User =
     name: userRow[0],
     avatarUrl: userRow[1].getGravatarUrl(avatarSize),
     lastOnline: userRow[2].parseInt,
-    rank: parseEnum[Rank](userRow[3]),
-    isDeleted: userRow[4] == "1"
+    previousVisitAt: userRow[3]. parseInt,
+    rank: parseEnum[Rank](userRow[4]),
+    isDeleted: userRow[5] == "1"
   )
 
   # Don't give data about a deleted user.
@@ -276,7 +301,7 @@ proc selectPost(postRow: seq[string], skippedPosts: seq[int],
   return Post(
     id: postRow[0].parseInt,
     replyingTo: replyingTo,
-    author: selectUser(postRow[5..9]),
+    author: selectUser(postRow[5..10]),
     likes: likes,
     seen: false, # TODO:
     history: history,
@@ -292,7 +317,8 @@ proc selectReplyingTo(replyingTo: string): Option[PostLink] =
 
   const replyingToQuery = sql"""
     select p.id, strftime('%s', p.creation), p.thread,
-           u.name, u.email, strftime('%s', u.lastOnline), u.status,
+           u.name, u.email, strftime('%s', u.lastOnline),
+           strftime('%s', u.previousVisitAt), u.status,
            u.isDeleted,
            t.name
     from post p, person u, thread t
@@ -307,7 +333,7 @@ proc selectReplyingTo(replyingTo: string): Option[PostLink] =
     topic: row[^1],
     threadId: row[2].parseInt(),
     postId: row[0].parseInt(),
-    author: some(selectUser(row[3..7]))
+    author: some(selectUser(row[3..8]))
   ))
 
 proc selectHistory(postId: int): seq[PostInfo] =
@@ -326,7 +352,8 @@ proc selectHistory(postId: int): seq[PostInfo] =
 
 proc selectLikes(postId: int): seq[User] =
   const likeQuery = sql"""
-    select u.name, u.email, strftime('%s', u.lastOnline), u.status,
+    select u.name, u.email, strftime('%s', u.lastOnline),
+           strftime('%s', u.previousVisitAt), u.status,
            u.isDeleted
     from like h, person u
     where h.post = ? and h.author = u.id
@@ -340,7 +367,8 @@ proc selectLikes(postId: int): seq[User] =
 proc selectThreadAuthor(threadId: int): User =
   const authorQuery =
     sql"""
-      select name, email, strftime('%s', lastOnline), status, isDeleted
+      select name, email, strftime('%s', lastOnline),
+             strftime('%s', previousVisitAt), status, isDeleted
       from person where id in (
         select author from post
         where thread = ?
@@ -353,12 +381,12 @@ proc selectThreadAuthor(threadId: int): User =
 
 proc selectThread(threadRow: seq[string]): Thread =
   const postsQuery =
-    sql"""select count(*), strftime('%s', creation) from post
-          where thread = ?
-          order by creation asc limit 1;"""
+    sql"""select count(*), min(strftime('%s', creation)) from post
+          where thread = ?;"""
   const usersListQuery =
     sql"""
-      select name, email, strftime('%s', lastOnline), status, u.isDeleted,
+      select name, email, strftime('%s', lastOnline),
+             strftime('%s', previousVisitAt), status, u.isDeleted,
              count(*)
       from person u, post p where p.author = u.id and p.thread = ?
       group by name order by count(*) desc limit 5;
@@ -740,7 +768,7 @@ routes:
     let thrCount = getValue(db, sql"select count(*) from thread;").parseInt()
     let moreCount = max(0, thrCount - (start + count))
 
-    var list = ThreadList(threads: @[], lastVisit: 0, moreCount: moreCount)
+    var list = ThreadList(threads: @[], moreCount: moreCount)
     for data in getAllRows(db, threadsQuery, start, count):
       let thread = selectThread(data)
       list.threads.add(thread)
@@ -769,7 +797,8 @@ routes:
       sql(
         """select p.id, p.content, strftime('%s', p.creation), p.author,
                   p.replyingTo,
-                  u.name, u.email, strftime('%s', u.lastOnline), u.status,
+                  u.name, u.email, strftime('%s', u.lastOnline),
+                  strftime('%s', u.previousVisitAt), u.status,
                   u.isDeleted
            from post p, person u
            where u.id = p.author and p.thread = ? and p.isDeleted = 0
@@ -815,7 +844,8 @@ routes:
     let postsQuery = sql("""
       select p.id, p.content, strftime('%s', p.creation), p.author,
              p.replyingTo,
-             u.name, u.email, strftime('%s', u.lastOnline), u.status,
+             u.name, u.email, strftime('%s', u.lastOnline),
+             strftime('%s', u.previousVisitAt), u.status,
              u.isDeleted
       from post p, person u
       where u.id = p.author and p.id in ($#)
@@ -883,7 +913,8 @@ routes:
     """ % postsFrom)
 
     let userQuery = sql("""
-      select name, email, strftime('%s', lastOnline), status, isDeleted,
+      select name, email, strftime('%s', lastOnline),
+             strftime('%s', previousVisitAt), status, isDeleted,
              strftime('%s', creation), id
       from person
       where name = ? and isDeleted = 0
@@ -994,6 +1025,7 @@ routes:
           name: c.username,
           avatarUrl: c.email.getGravatarUrl(),
           lastOnline: getTime().toUnix(),
+          previousVisitAt: c.previousVisitAt,
           rank: c.rank
         ))
       else:
@@ -1398,7 +1430,7 @@ routes:
           postId: rowFT[2].parseInt(),
           postContent: content,
           creation: rowFT[4].parseInt(),
-          author: selectUser(rowFT[5 .. 9]),
+          author: selectUser(rowFT[5 .. 10]),
         )
       )
 

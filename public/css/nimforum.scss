@@ -145,7 +145,7 @@ $logo-height: $navbar-height - 20px;
 
 $super-popular-color: #f86713;
 $popular-color: darken($super-popular-color, 25%);
-$views-color: #545d70;
+$threads-meta-color: #545d70;
 
 .super-popular-text {
   color: $super-popular-color;
@@ -156,7 +156,7 @@ $views-color: #545d70;
 }
 
 .views-text {
-  color: $views-color;
+  color: $threads-meta-color;
 }
 
 .label-custom {
@@ -233,6 +233,19 @@ $views-color: #545d70;
   i.fas {
     margin-right: $control-padding-x-sm;
   }
+}
+
+.thread-time {
+  color: $threads-meta-color;
+
+  &.is-new {
+    @extend .text-success;
+  }
+
+  &.is-old {
+    @extend .text-gray;
+  }
+
 }
 
 .posts, .about {

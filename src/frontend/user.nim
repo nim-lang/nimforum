@@ -19,6 +19,7 @@ type
     name*: string
     avatarUrl*: string
     lastOnline*: int64
+    previousVisitAt*: int64 ## Tracks the "last visit" line position
     rank*: Rank
     isDeleted*: bool
 

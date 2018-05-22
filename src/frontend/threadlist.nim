@@ -18,7 +18,6 @@ type
 
   ThreadList* = ref object
     threads*: seq[Thread]
-    lastVisit*: int64 ## Unix timestamp
     moreCount*: int ## How many more threads are left
 
 proc isModerated*(thread: Thread): bool =
@@ -108,6 +107,7 @@ when defined(js):
       return $duration.seconds & "s"
 
   proc genThread(thread: Thread, isNew: bool, noBorder: bool): VNode =
+    let isOld = (getTime() - thread.creation.fromUnix).weeks > 2
     result = buildHtml():
       tr(class=class({"no-border": noBorder})):
         td(class="thread-title"):
@@ -136,7 +136,15 @@ when defined(js):
             text fmt"{thread.views/1000:.1f}k"
           else:
             text $thread.views
-        td(class=class({"text-success": isNew, "text-gray": not isNew})): # TODO: Colors.
+
+        let friendlyCreation = thread.creation.fromUnix.local.format(
+          "'First post:' MMM d, yyyy HH:mm'\n'"
+        )
+        let friendlyActivity = thread.activity.fromUnix.local.format(
+          "'Last reply:' MMM d, yyyy HH:mm"
+        )
+        td(class=class({"is-new": isNew, "is-old": isOld}, "thread-time"),
+           title=friendlyCreation & friendlyActivity):
           text renderActivity(thread.activity)
 
   proc onThreadList(httpStatus: int, response: kstring) =
@@ -150,7 +158,6 @@ when defined(js):
     if state.list.isSome:
       state.list.get().threads.add(list.threads)
       state.list.get().moreCount = list.moreCount
-      state.list.get().lastVisit = list.lastVisit
     else:
       state.list = some(list)
 
@@ -158,6 +165,29 @@ when defined(js):
     state.loading = true
     let start = state.list.get().threads.len
     ajaxGet(makeUri("threads.json?start=" & $start), @[], onThreadList)
+
+  proc getInfo(
+    list: seq[Thread], i: int, currentUser: Option[User]
+  ): tuple[isLastUnseen, isNew: bool] =
+    ## Determines two properties about a thread.
+    ##
+    ## * isLastUnseen - Whether this is the last thread that had new
+    ## activity since the last time the user visited the forum.
+    ## * isNew - Whether this thread was created during the time that the
+    #            user was absent from the forum.
+    let previousVisitAt =
+      if currentUser.isSome(): currentUser.get().previousVisitAt
+      else: getTime().toUnix
+    assert previousVisitAt != 0
+
+    let thread = list[i]
+    let isUnseen = thread.activity > previousVisitAt
+    let isNextUnseen = i+1 < list.len and list[i+1].activity > previousVisitAt
+
+    return (
+      isLastUnseen: isUnseen and (not isNextUnseen),
+      isNew: thread.creation > previousVisitAt
+    )
 
   proc genThreadList(currentUser: Option[User]): VNode =
     if state.status != Http200:
@@ -187,13 +217,11 @@ when defined(js):
               let thread = list.threads[i]
               if not visibleTo(thread, currentUser): continue
 
-              let isLastVisit =
-                i+1 < list.threads.len and
-                list.threads[i].activity < list.lastVisit
-              let isNew = thread.creation < list.lastVisit
+              let isLastThread = i+1 == list.threads.len
+              let (isLastUnseen, isNew) = getInfo(list.threads, i, currentUser)
               genThread(thread, isNew,
-                        noBorder=isLastVisit or i+1 == list.threads.len)
-              if isLastVisit:
+                        noBorder=isLastUnseen or isLastThread)
+              if isLastUnseen:
                 tr(class="last-visit-separator"):
                   td(colspan="6"):
                     span(text "last visit")
