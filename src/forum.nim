@@ -266,7 +266,8 @@ proc initialise() =
   karaxHtml = readFile("public/karax.html") %
     {
       "title": config.title,
-      "timestamp": encodeUrl(CompileDate & CompileTime)
+      "timestamp": encodeUrl(CompileDate & CompileTime),
+      "scripts": config.scripts
     }.newStringTable()
 
 
