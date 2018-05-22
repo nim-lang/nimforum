@@ -1,5 +1,5 @@
 import strformat, times, options, json, tables, sugar, httpcore, uri
-from dom import window, Location
+from dom import window, Location, document
 
 include karax/prelude
 import jester/[patterns]
@@ -10,6 +10,7 @@ import karaxutils
 
 type
   State = ref object
+    originalTitle: cstring
     url: Location
     profile: ProfileState
     newThread: NewThread
@@ -33,6 +34,7 @@ proc copyLocation(loc: Location): Location =
 
 proc newState(): State =
   State(
+    originalTitle: document.title,
     url: copyLocation(window.location),
     profile: newProfileState(),
     newThread: newNewThread(),
@@ -48,6 +50,7 @@ proc onPopState(event: dom.Event) =
   # history. I fire it in karaxutils.anchorCB as well to ensure the URL is
   # always updated. This should be moved into Karax in the future.
   kout(kstring"New URL: ", window.location.href, " ", state.url.href)
+  document.title = state.originalTitle
   if state.url.href != window.location.href:
     state = newState() # Reload the state to remove stale data.
   state.url = copyLocation(window.location)

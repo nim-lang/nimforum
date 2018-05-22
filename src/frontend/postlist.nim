@@ -14,7 +14,7 @@ type
     posts*: seq[Post]
 
 when defined(js):
-  from dom import nil
+  from dom import document
 
   include karax/prelude
   import karax / [vstyles, kajax, kdom]
@@ -64,6 +64,8 @@ when defined(js):
     let list = to(parsed, PostList)
 
     state.list = some(list)
+
+    dom.document.title = list.thread.topic & " - " & dom.document.title
 
     # The anchor should be jumped to once all the posts have been loaded.
     if postId.isSome():

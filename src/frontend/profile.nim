@@ -3,6 +3,7 @@ import options, httpcore, json, sugar, times, strformat, strutils
 import threadlist, post, category, error, user
 
 when defined(js):
+  from dom import document
   include karax/prelude
   import karax/[kajax, kdom]
   import karaxutils, postbutton, delete, profilesettings
@@ -36,6 +37,8 @@ when defined(js):
 
     state.profile = some(profile)
     state.settings = some(newProfileSettings(profile))
+
+    dom.document.title = profile.user.name & " - " & dom.document.title
 
   proc genPostLink(link: PostLink): VNode =
     let url = renderPostUrl(link)
