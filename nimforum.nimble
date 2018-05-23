@@ -17,7 +17,7 @@ requires "jester#64295c8"
 requires "bcrypt#head"
 requires "hmac#9c61ebe2fd134cf97"
 requires "recaptcha 1.0.2"
-requires "sass"
+requires "sass#649e0701fa5c"
 
 requires "https://github.com/dom96/karax#7a884fb"
 
