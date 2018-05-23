@@ -29,6 +29,7 @@ type
     hostname*: string
     name*, title*: string
     ga*: string
+    port*: int
 
   ForumError* = object of Exception
     data*: PostError
@@ -66,6 +67,7 @@ proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
   result.name = root["name"].getStr()
   result.title = root["title"].getStr()
   result.ga = root{"ga"}.getStr()
+  result.port = root{"port"}.getNum(5000).int
 
 proc processGT(n: XmlNode, tag: string): (int, XmlNode, string) =
   result = (0, newElement(tag), tag)

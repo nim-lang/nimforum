@@ -750,6 +750,9 @@ include "main.tmpl"
 
 initialise()
 
+settings:
+  port = config.port.Port
+
 routes:
 
   get "/threads.json":
