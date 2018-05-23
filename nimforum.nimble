@@ -41,13 +41,17 @@ task frontend, "Builds the necessary JS frontend (with CSS)":
 task minify, "Minifies the JS using Google's closure compiler":
   exec "closure-compiler public/js/forum.js --js_output_file public/js/forum.js.opt"
 
-task testdb, "Creates a test DB":
+task testdb, "Creates a test DB (with admin account!)":
   exec "nimble c src/setup_nimforum"
   exec "./src/setup_nimforum --test"
 
-task devdb, "Creates a test DB":
+task devdb, "Creates a test DB (with admin account!)":
   exec "nimble c src/setup_nimforum"
   exec "./src/setup_nimforum --dev"
+
+task blankdb, "Creates a blank DB":
+  exec "nimble c src/setup_nimforum"
+  exec "./src/setup_nimforum --blank"
 
 task test, "Runs tester":
   exec "nimble c -y src/forum.nim"

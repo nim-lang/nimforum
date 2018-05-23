@@ -53,7 +53,7 @@ when defined(js):
     if event.key == "Enter":
       onLogInClick(e, n, state)
 
-  proc render*(state: LoginModal): VNode =
+  proc render*(state: LoginModal, recaptchaSiteKey: Option[string]): VNode =
     result = buildHtml(tdiv()):
       tdiv(class=class({"active": state.shown}, "modal modal-sm"),
            id="login-modal"):
@@ -93,4 +93,4 @@ when defined(js):
                     (state.onSignUp(); state.shown = false)):
               text "Create account"
 
-      render(state.resetPasswordModal)
+      render(state.resetPasswordModal, recaptchaSiteKey)

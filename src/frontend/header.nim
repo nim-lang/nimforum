@@ -113,7 +113,6 @@ when defined(js):
               render(state.userMenu, user.get())
 
       # Modals
-      render(state.loginModal)
-
       if state.data.isSome():
+        render(state.loginModal, state.data.get().recaptchaSiteKey)
         render(state.signupModal, state.data.get().recaptchaSiteKey)

@@ -1290,7 +1290,7 @@ routes:
         if "g-recaptcha-response" notin formData:
           let err = PostError(
             errorFields: @[],
-            message: "Not logged in."
+            message: "Not logged in and no recaptcha."
           )
           resp Http401, $(%err), "application/json"
 

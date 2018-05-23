@@ -89,6 +89,8 @@ when defined(js):
     ajaxPost(uri, @[], cast[cstring](formData),
              (s: int, r: kstring) => onPost(s, r, state))
 
+    ev.preventDefault()
+
   proc onClose(ev: Event, n: VNode, state: ResetPasswordModal) =
     state.shown = false
     ev.preventDefault()
@@ -106,7 +108,8 @@ when defined(js):
     if event.key == "Enter":
       onClick(e, n, state)
 
-  proc render*(state: ResetPasswordModal): VNode =
+  proc render*(state: ResetPasswordModal,
+               recaptchaSiteKey: Option[string]): VNode =
     result = buildHtml():
       tdiv(class=class({"active": state.shown}, "modal"),
            id="resetpassword-modal"):
@@ -132,6 +135,11 @@ when defined(js):
                   true,
                   placeholder="Username or email"
                 )
+                if recaptchaSiteKey.isSome:
+                  tdiv(id="recaptcha"):
+                    tdiv(class="g-recaptcha",
+                         "data-sitekey"=recaptchaSiteKey.get())
+                    script(src="https://www.google.com/recaptcha/api.js")
           tdiv(class="modal-footer"):
             if state.sent:
               span(class="text-success"):
@@ -142,5 +150,6 @@ when defined(js):
                       {"loading": state.loading},
                       "btn btn-primary"
                      ),
+                     `type`="button",
                      onClick=(ev: Event, n: VNode) => onClick(ev, n, state)):
                 text "Reset password"
