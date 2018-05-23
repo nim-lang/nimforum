@@ -483,6 +483,12 @@ blockquote {
   display: none;
 }
 
+.post-content {
+  pre:not(.code) {
+    overflow: scroll;
+  }
+}
+
 .information {
   @extend .tile;
   border-top: 1px solid $border-color;
