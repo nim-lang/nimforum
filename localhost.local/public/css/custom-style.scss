@@ -10,3 +10,7 @@ $body-bg: #ffffff;
 $navbar-color: $body-bg;
 $navbar-border-color-dark: $body-bg;
 $navbar-primary-color: #e80080;
+
+#main-navbar input#search-box {
+  border: 1px solid #e6e6e6;
+}
