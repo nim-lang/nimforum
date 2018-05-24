@@ -1,6 +1,7 @@
 import times
 
 type
+  # If you add more "Banned" states, be sure to modify forum's threadsQuery too.
   Rank* {.pure.} = enum ## serialized as 'status'
     Spammer          ## spammer: every post is invisible
     Troll            ## troll: cannot write new posts

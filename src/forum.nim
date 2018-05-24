@@ -380,7 +380,7 @@ proc selectThreadAuthor(threadId: int): User =
 
   return selectUser(getRow(db, authorQuery, threadId))
 
-proc selectThread(threadRow: seq[string]): Thread =
+proc selectThread(threadRow: seq[string], author: User): Thread =
   const postsQuery =
     sql"""select count(*), min(strftime('%s', creation)) from post
           where thread = ?;"""
@@ -418,7 +418,7 @@ proc selectThread(threadRow: seq[string]): Thread =
     thread.users.add(selectUser(user))
 
   # Grab the author.
-  thread.author = selectThreadAuthor(thread.id)
+  thread.author = author
 
   return thread
 
@@ -762,9 +762,19 @@ routes:
 
     const threadsQuery =
       sql"""select t.id, t.name, views, strftime('%s', modified), isLocked,
-                   c.id, c.name, c.description, c.color
-            from thread t, category c
-            where isDeleted = 0 and category = c.id
+                   c.id, c.name, c.description, c.color,
+                   u.name, u.email, strftime('%s', u.lastOnline),
+                   strftime('%s', u.previousVisitAt), u.status, u.isDeleted
+            from thread t, category c, person u
+            where t.isDeleted = 0 and category = c.id and
+                  u.status <> 'Spammer' and u.status <> 'Troll' and
+                  u.status <> 'Banned' and
+                  u.id in (
+                    select u.id from post p, person u
+                    where p.author = u.id and p.thread = t.id
+                    order by u.id
+                    limit 1
+                  )
             order by modified desc limit ?, ?;"""
 
     let thrCount = getValue(db, sql"select count(*) from thread;").parseInt()
@@ -772,7 +782,7 @@ routes:
 
     var list = ThreadList(threads: @[], moreCount: moreCount)
     for data in getAllRows(db, threadsQuery, start, count):
-      let thread = selectThread(data)
+      let thread = selectThread(data[0 .. 8], selectUser(data[9 .. ^1]))
       list.threads.add(thread)
 
     resp $(%list), "application/json"
@@ -793,7 +803,7 @@ routes:
             where t.id = ? and isDeleted = 0 and category = c.id;"""
 
     let threadRow = getRow(db, threadsQuery, id)
-    let thread = selectThread(threadRow)
+    let thread = selectThread(threadRow, selectThreadAuthor(id))
 
     let postsQuery =
       sql(

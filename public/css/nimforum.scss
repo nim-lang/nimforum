@@ -248,10 +248,6 @@ $threads-meta-color: #545d70;
 
 }
 
-#threads-list tr.banned {
-  display: none; // TODO: Fix server so that it doesn't send banned threads.
-}
-
 .posts, .about {
   @extend .grid-md;
   @extend .container;
