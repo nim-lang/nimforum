@@ -3,7 +3,7 @@
 ##
 ## Used for password reset emails.
 
-import options, httpcore, json, sugar
+import options, httpcore, json, sugar, sequtils, strutils
 when defined(js):
   include karax/prelude
   import karax/[kajax, kdom]
@@ -139,7 +139,8 @@ when defined(js):
                onmouseleave=(e: Event, n: VNode) =>
                   (state.error = none[PostError]())):
           if post.likes.len > 0:
-            span(class="like-count"):
+            let names = post.likes.map(x => x.name).join(", ")
+            span(class="like-count tooltip", "data-tooltip"=names):
               text $post.likes.len
 
           italic(class=class({"far": not liked, "fas": liked}, "fa-heart"))
