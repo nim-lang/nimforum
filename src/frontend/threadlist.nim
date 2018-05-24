@@ -226,7 +226,7 @@ when defined(js):
               let (isLastUnseen, isNew) = getInfo(list.threads, i, currentUser)
               genThread(thread, isNew,
                         noBorder=isLastUnseen or isLastThread)
-              if isLastUnseen:
+              if isLastUnseen and (not isLastThread):
                 tr(class="last-visit-separator"):
                   td(colspan="6"):
                     span(text "last visit")
