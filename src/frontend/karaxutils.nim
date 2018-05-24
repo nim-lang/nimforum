@@ -77,13 +77,15 @@ when defined(js):
     # Fire the popState event.
     dom.dispatchEvent(dom.window, dom.newEvent("popstate"))
 
-  proc anchorCB*(e: kdom.Event, n: VNode) = # TODO: Why does this need disamb?
-    e.preventDefault()
+  proc anchorCB*(e: Event, n: VNode) =
+    let mE = e.MouseEvent
+    if not (mE.metaKey or mE.ctrlKey):
+      e.preventDefault()
 
-    # TODO: Why does Karax have it's own Node type? That's just silly.
-    let url = n.getAttr("href")
+      # TODO: Why does Karax have it's own Node type? That's just silly.
+      let url = n.getAttr("href")
 
-    navigateTo(url)
+      navigateTo(url)
 
   type
     FormData* = ref object
