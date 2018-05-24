@@ -1410,6 +1410,10 @@ routes:
       }.newStringTable()
     resp content.rstToHtml()
 
+  get "/about/rst.html":
+    let content = readFile("public/rst.rst")
+    resp content.rstToHtml()
+
   get "/threadActivity.xml":
     createTFD()
     resp genThreadsRSS(c), "application/atom+xml"

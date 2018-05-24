@@ -1,5 +1,5 @@
-reStructuredText cheat sheet
-===========================================================================
+Markdown and RST supported by this forum
+========================================
 
 This is a cheat sheet for the *reStructuredText* dialect as implemented by
 Nim's documentation generator which has been reused for this forum.
@@ -10,7 +10,6 @@ or the `quick reference <http://docutils.sourceforge.net/docs/user/rst/quickref.
 for further information.
 
 Elements of **markdown** are also supported.
-
 
 Inline elements
 ---------------
@@ -28,6 +27,18 @@ Plain text                        Result
 ``\\escape``                      \\escape
 ===============================   ============================================
 
+Quoting other users can be done by prefixing their message with ``>``::
+
+  > Hello World
+
+  Hi!
+
+Which will result in:
+
+> Hello World
+
+Hi!
+
 Links
 -----
 
@@ -44,33 +55,22 @@ Or like this::
 Code blocks
 -----------
 
-are done this way::
+The code blocks can be written in the same style as most common Markdown
+flavours::
+
+  ```nim
+    if x == "abc":
+      echo "xyz"
+  ```
+
+or using RST syntax::
 
   .. code-block:: nim
     
     if x == "abc":
       echo "xyz"
 
-
-Is rendered as:
-
-.. code-block:: nim
-  
-  if x == "abc":
-    echo "xyz"
-
-
-Except Nim, the programming languages C, C++, Java and C# have highlighting
-support.
-
-An alternative github-like syntax is also supported. This has the advantage
-that no excessive indentation is needed::
-
-  ```nim  
-    if x == "abc":
-      echo "xyz"```
-
-Is rendered as:
+Both are rendered as:
 
 .. code-block:: nim
   
@@ -78,18 +78,20 @@ Is rendered as:
     echo "xyz"
 
 
+Apart from Nim, the programming languages C, C++, Java and C# also
+have highlighting support.
 
 Literal blocks
 --------------
 
-Are introduced by '::' and a newline. The block is indicated by indentation: 
+These are introduced by '::' and a newline. The block is indicated by indentation:
 
 ::
   ::
     if x == "abc":
       echo "xyz"
       
-Is rendered as::
+The above is rendered as::
 
     if x == "abc":
       echo "xyz"
@@ -99,7 +101,7 @@ Is rendered as::
 Bullet lists
 ------------
 
-look like this::
+Bullet lists look like this::
 
   * Item 1
   * Item 2 that
@@ -110,7 +112,7 @@ look like this::
     - item 3b
     - valid bullet characters are ``+``, ``*`` and ``-``
 
-Is rendered as:
+The above rendered as:
 * Item 1
 * Item 2 that
   spans over multiple lines
@@ -124,7 +126,7 @@ Is rendered as:
 Enumerated lists
 ----------------
 
-are written like this::
+Enumerated lists are written like this::
 
   1. This is the first item
   2. This is the second item
@@ -132,60 +134,13 @@ are written like this::
      single letters, or roman numerals
   #. This item is auto-enumerated 
 
-Is rendered as:
+They are rendered as:
 
 1. This is the first item
 2. This is the second item
 3. Enumerators are arabic numbers,
    single letters, or roman numerals
-#. This item is auto-enumerated 
-
-
-Quoting someone
----------------
-
-quotes are just::
-
-    **Someone said**:  Indented paragraphs,
-
-        and they may nest. 
-
-Is rendered as:
-
-    **Someone said**:  Indented paragraphs,
-
-        and they may nest. 
-
-
-
-Definition lists
-----------------
-
-are written like this::
-
-  what
-    Definition lists associate a term with
-    a definition.
-
-  how
-    The term is a one-line phrase, and the
-    definition is one or more paragraphs or
-    body elements, indented relative to the
-    term. Blank lines are not allowed
-    between term and definition.
-
-and look like:
-
-what
-  Definition lists associate a term with
-  a definition.
-
-how
-  The term is a one-line phrase, and the
-  definition is one or more paragraphs or
-  body elements, indented relative to the
-  term. Blank lines are not allowed
-  between term and definition.
+#. This item is auto-enumerated
 
 
 Tables
@@ -221,6 +176,35 @@ Cell 7                  Cell 8                Cell 9
 Images
 ------
 
+Image embedding is supported. This includes GIFs as well as mp4 (for which a
+<video> tag will be automatically generated).
+
+For example:
+
 ```
-.. image:: path/to/img.png
+.. image:: https://upload.wikimedia.org/wikipedia/commons/6/69/Dog_morphological_variation.png
 ```
+
+Will render as:
+
+.. image:: https://upload.wikimedia.org/wikipedia/commons/6/69/Dog_morphological_variation.png
+
+And a GIF example:
+
+```
+.. image:: https://upload.wikimedia.org/wikipedia/commons/2/2c/Rotating_earth_%28large%29.gif
+```
+
+Will render as:
+
+.. image:: https://upload.wikimedia.org/wikipedia/commons/2/2c/Rotating_earth_%28large%29.gif
+
+You can also specify the size of the image:
+
+```
+.. image:: https://upload.wikimedia.org/wikipedia/commons/6/69/Dog_morphological_variation.png
+   :width: 40%
+```
+
+.. image:: https://upload.wikimedia.org/wikipedia/commons/6/69/Dog_morphological_variation.png
+   :width: 40%

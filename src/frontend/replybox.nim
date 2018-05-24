@@ -118,6 +118,8 @@ when defined(js):
                      onChange=(e: Event, n: VNode) =>
                         onChange(e, n, state),
                      value=state.text)
+            a(href=makeUri("/about/rst"), target="blank_"):
+              text "Styling with RST is supported"
 
           if state.error.isSome():
             span(class="text-error",
