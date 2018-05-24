@@ -105,7 +105,8 @@ proc sendResetPassword(
   if row[0] == "":
     raise newForumError("Email or username not found", @["email"])
 
-  await validateCaptcha(recaptchaResp, userIp)
+  if not c.loggedIn:
+    await validateCaptcha(recaptchaResp, userIp)
 
   await sendSecureEmail(
     mailer,
