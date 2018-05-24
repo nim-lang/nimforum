@@ -67,8 +67,10 @@ when defined(js):
       return renderError("Couldn't retrieve profile.", state.status)
 
     if state.profile.isNone:
-      let uri = makeUri("profile.json", ("username", username))
-      ajaxGet(uri, @[], (s: int, r: kstring) => onProfile(s, r, state))
+      if not state.loading:
+        state.loading = true
+        let uri = makeUri("profile.json", ("username", username))
+        ajaxGet(uri, @[], (s: int, r: kstring) => onProfile(s, r, state))
 
       return buildHtml(tdiv(class="loading loading-lg"))
 

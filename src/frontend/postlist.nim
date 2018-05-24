@@ -317,7 +317,9 @@ when defined(js):
       if postId.isSome():
         params.add(("anchor", $postId.get()))
       let uri = makeUri("posts.json", params)
-      ajaxGet(uri, @[], (s: int, r: kstring) => onPostList(s, r, postId))
+      if not state.loading:
+        state.loading = true
+        ajaxGet(uri, @[], (s: int, r: kstring) => onPostList(s, r, postId))
 
       return buildHtml(tdiv(class="loading loading-lg"))
 
