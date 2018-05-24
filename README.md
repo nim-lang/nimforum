@@ -9,6 +9,8 @@ language and uses SQLite for its database.
 
 [![forum.nim-lang.org](https://i.imgur.com/hdIF5Az.png)](https://forum.nim-lang.org)
 
+<p align="center" margin="0"><a href="https://forum.nim-lang.org"><b>forum.nim-lang.org</b></a></p>
+
 ## Features
 
 * Efficient, type safe and clean **single-page application** developed using the
