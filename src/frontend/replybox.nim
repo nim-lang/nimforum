@@ -88,9 +88,8 @@ when defined(js):
     state.shown = false
 
   proc onChange(e: Event, n: VNode, state: ReplyBox) =
-    # TODO: There should be a karax-way to do this. I guess I can just call
-    # `value` on the node? We need to document this better :)
-    state.text = cast[dom.TextAreaElement](n.dom).value
+    # TODO: Please document this better in Karax.
+    state.text = n.value
 
   proc renderContent*(state: ReplyBox, thread: Option[Thread],
                       post: Option[Post]): VNode =
