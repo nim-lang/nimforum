@@ -112,8 +112,9 @@ $logo-height: $navbar-height - 20px;
     max-height: none;
   }
 
-  .form-input {
-    margin-bottom: $control-padding-y*2;
+  .panel-body {
+    padding-top: $control-padding-y*2;
+    padding-bottom: $control-padding-y*2;
   }
 
   textarea.form-input, .panel-body > div {
