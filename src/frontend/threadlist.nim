@@ -111,22 +111,22 @@ when defined(js):
     let isBanned = thread.author.rank < Moderated
     result = buildHtml():
       tr(class=class({"no-border": noBorder, "banned": isBanned})):
-        td(class="thread-title"):
-          if thread.isLocked:
-            italic(class="fas fa-lock fa-xs",
-                   title="Thread cannot be replied to")
-          if thread.isModerated:
-            if isBanned:
-              italic(class="fas fa-ban fa-xs",
-                     title="Thread author is banned")
-            else:
-              italic(class="fas fa-eye-slash fa-xs",
-                     title="Thread is moderated")
-          if thread.isSolved:
-            italic(class="fas fa-check-square fa-xs",
-                   title="Thread has a solution")
-          a(href=makeUri("/t/" & $thread.id),
-            onClick=anchorCB):
+        a(href=makeUri("/t/" & $thread.id),
+          onClick=anchorCB):
+          td(class="thread-title"):
+            if thread.isLocked:
+              italic(class="fas fa-lock fa-xs",
+                    title="Thread cannot be replied to")
+            if thread.isModerated:
+              if isBanned:
+                italic(class="fas fa-ban fa-xs",
+                      title="Thread author is banned")
+              else:
+                italic(class="fas fa-eye-slash fa-xs",
+                      title="Thread is moderated")
+            if thread.isSolved:
+              italic(class="fas fa-check-square fa-xs",
+                    title="Thread has a solution")
             text thread.topic
         td():
           render(thread.category)
