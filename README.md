@@ -9,6 +9,21 @@ language and uses SQLite for its database.
 
 [![forum.nim-lang.org](https://i.imgur.com/hdIF5Az.png)](https://forum.nim-lang.org)
 
+## Features
+
+* Efficient, type safe and clean **single-page application** developed using the
+  [Karax](https://github.com/pragmagic/karax) and
+  [Jester](https://github.com/dom96/jester) frameworks.
+* **Utilizes SQLite** making set up much easier.
+* Endlessly **customizable** using SASS.
+* Spam blocking via new user sandboxing with great tools for moderators.
+* reStructuredText enriched by Markdown to make formatting your posts a breeze.
+* Search powered by SQLite's full-text search.
+* Context-aware replies.
+* Last visit tracking.
+* Gravatar support.
+* And much more!
+
 ## Dependencies
 
 The following lists the dependencies which you may need to install manually
