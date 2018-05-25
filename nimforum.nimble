@@ -19,7 +19,7 @@ requires "hmac#9c61ebe2fd134cf97"
 requires "recaptcha 1.0.2"
 requires "sass#649e0701fa5c"
 
-requires "karax#9882d1aec2bb"
+requires "karax#d8df257dd"
 
 requires "webdriver#a2be578"
 
