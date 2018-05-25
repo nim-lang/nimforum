@@ -162,7 +162,7 @@ proc processMentions(node: XmlNode): XmlNode =
       result.add(child)
   of xnElement:
     case node.tag
-    of "pre", "code", "tt":
+    of "pre", "code", "tt", "a":
       return node
     else:
       result = newElement(node.tag)
