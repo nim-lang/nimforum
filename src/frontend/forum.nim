@@ -1,5 +1,5 @@
 import strformat, times, options, json, tables, sugar, httpcore, uri
-from dom import window, Location, document
+from dom import window, Location, document, decodeURI
 
 include karax/prelude
 import jester/[patterns]
@@ -87,7 +87,13 @@ proc render(): VNode =
       ),
       r("/profile/@username",
         (params: Params) =>
-          (render(state.profile, params["username"], getLoggedInUser()))
+          (
+            render(
+              state.profile,
+              decodeURI(params["username"]),
+              getLoggedInUser()
+            )
+          )
       ),
       r("/t/@id",
         (params: Params) =>

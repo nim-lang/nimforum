@@ -56,9 +56,10 @@ when defined(js):
 
   proc render*(
     state: ProfileState,
-    username: string,
+    username: kstring,
     currentUser: Option[User]
   ): VNode =
+
     if state.profile.isSome() and state.profile.get().user.name != username:
       state.profile = none[Profile]()
       state.status = Http200
@@ -69,7 +70,7 @@ when defined(js):
     if state.profile.isNone:
       if not state.loading:
         state.loading = true
-        let uri = makeUri("profile.json", ("username", username))
+        let uri = makeUri("profile.json", ("username", $username))
         ajaxGet(uri, @[], (s: int, r: kstring) => onProfile(s, r, state))
 
       return buildHtml(tdiv(class="loading loading-lg"))
