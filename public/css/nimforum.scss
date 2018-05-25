@@ -117,6 +117,10 @@ $logo-height: $navbar-height - 20px;
     padding-bottom: $control-padding-y*2;
   }
 
+  .form-input[name='subject'] {
+    margin-bottom: $control-padding-y*2;
+  }
+
   textarea.form-input, .panel-body > div {
     min-height: 40vh;
   }
