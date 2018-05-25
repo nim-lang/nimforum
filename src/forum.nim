@@ -1391,11 +1391,12 @@ routes:
   get "/profile/@username":
     cond "username" in request.params
 
+    let username = decodeUrl(@"username")
     const threadsQuery =
       sql"""select name from person where name = ? and isDeleted = 0;"""
 
-    let value = getValue(db, threadsQuery, @"username")
-    if value == @"username":
+    let value = getValue(db, threadsQuery, username)
+    if value == username:
       pass
     else:
       redirect uri("/404")
