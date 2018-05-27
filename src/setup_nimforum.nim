@@ -7,7 +7,7 @@
 #
 # Script to initialise the nimforum.
 
-import strutils, db_sqlite, os, times, json, options
+import strutils, db_sqlite, os, times, json, options, terminal
 
 import auth, frontend/user
 
@@ -210,7 +210,8 @@ proc initialiseConfig(
   recaptcha: tuple[siteKey, secretKey: string],
   smtp: tuple[address, user, password: string],
   isDev: bool,
-  dbPath: string
+  dbPath: string,
+  ga: string=""
 ) =
   let path = getCurrentDir() / "forum.json"
 
@@ -226,6 +227,8 @@ proc initialiseConfig(
     "isDev": %isDev,
     "dbPath": %dbPath
   }
+  if ga.len > 0:
+    j["ga"] = %ga
 
   backup(path, some(pretty(j)))
   writeFile(path, pretty(j))
@@ -234,6 +237,67 @@ proc question(q: string): string =
   while result.len == 0:
     stdout.write(q)
     result = stdin.readLine()
+
+proc setup() =
+  echo("""
+Welcome to the NimForum setup script. Please answer the following questions.
+These can be changed later in the generated forum.json file.
+  """)
+
+  let name = question("Forum full name: ")
+  let title = question("Forum short name: ")
+
+  let hostname = question("Forum hostname: ")
+
+  let adminUser = question("Admin username: ")
+  let adminPass = readPasswordFromStdin("Admin password: ")
+  let adminEmail = question("Admin email: ")
+
+  echo("")
+  echo("The following question are related to recaptcha. \nYou must set up a " &
+       "recaptcha for your forum before answering them. \nPlease do so now " &
+       "and then answer these questions: https://www.google.com/recaptcha/admin")
+  let recaptchaSiteKey = question("Recaptcha site key: ")
+  let recaptchaSecretKey = question("Recaptcha secret key: ")
+
+
+  echo("The following questions are related to smtp. You must set up a \n" &
+       "mailing server for your forum or use an external service.")
+  let smtpAddress = question("SMTP address (eg: mail.hostname.com): ")
+  let smtpUser = question("SMTP user: ")
+  let smtpPassword = readPasswordFromStdin("SMTP pass: ")
+
+  echo("The following is optional. You can specify your Google Analytics ID " &
+       "if you wish. Otherwise just leave it blank.")
+  stdout.write("Google Analytics (eg: UA-12345678-1): ")
+  let ga = stdin.readLine().strip()
+
+  let dbPath = "nimforum.db"
+  initialiseConfig(
+    name, title, hostname, (recaptchaSiteKey, recaptchaSecretKey),
+    (smtpAddress, smtpUser, smtpPassword), isDev=false,
+    dbPath, ga
+  )
+
+  initialiseDb(
+    admin=(adminUser, adminPass, adminEmail),
+    dbPath
+  )
+
+  echo("Setup complete!")
+
+proc echoHelp() =
+    quit("""
+Usage: setup_nimforum opts
+
+Options:
+  --setup         Performs first time setup for end users.
+
+Development options:
+  --dev           Creates a new development DB and config.
+  --test          Creates a new test DB and config.
+  --blank         Creates a new blank DB.
+  """)
 
 when isMainModule:
   if paramCount() > 0:
@@ -279,5 +343,11 @@ when isMainModule:
         admin=("", "", ""),
         dbPath
       )
+    of "--setup":
+      setup()
     else:
-      quit("--dev|--test|--prod")
+      echoHelp()
+  else:
+    echoHelp()
+
+
