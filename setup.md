@@ -17,14 +17,14 @@ Extract the downloaded tarball on your server. These steps can be done using
 the following commands:
 
 ```
-wget TODO
-tar -xf TODO
+wget https://github.com/nim-lang/nimforum/releases/download/v2.0.0/nimforum_2.0.0_linux.tar.xz
+tar -xf nimforum_2.0.0_linux.tar.xz
 ```
 
 Then ``cd`` into the forum's directory:
 
 ```
-cd TODO
+cd nimforum_2.0.0_linux
 ```
 
 ### Dependencies
