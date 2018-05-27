@@ -26,6 +26,10 @@ language and uses SQLite for its database.
 * Gravatar support.
 * And much more!
 
+## Setup
+
+[See this document.](https://github.com/nim-lang/nimforum/blob/master/setup.md)
+
 ## Dependencies
 
 The following lists the dependencies which you may need to install manually
