@@ -63,11 +63,12 @@ test                 Runs tester
 fasttest             Runs tester without recompiling backend
 ```
 
-Development typically involves running `nimble backend` which compiles
-and runs the forum's backend, and `nimble frontend` separately to build
-the frontend. When making changes to the frontend it should be enough to
-simply run `nimble frontend` again to rebuild. This command will also
-build the SASS ``nimforum.scss`` file in the `public/css` directory.
+Development typically involves running `nimble devdb` which sets up the
+database for development and testing, then `nimble backend`
+which compiles and runs the forum's backend, and `nimble frontend`
+separately to build the frontend. When making changes to the frontend it
+should be enough to simply run `nimble frontend` again to rebuild. This command
+will also build the SASS ``nimforum.scss`` file in the `public/css` directory.
 
 
 # Copyright
