@@ -1,19 +1,6 @@
-import unittest, options, os
+import unittest, options, os, common
 
 import webdriver
-
-proc waitForLoad(session: Session, timeout=20000) =
-  var waitTime = 0
-  sleep(2000)
-
-  while true:
-    let loading = session.findElement(".loading")
-    if loading.isNone: return
-    sleep(1000)
-    waitTime += 1000
-
-    if waitTime > timeout:
-      doAssert false, "Wait for load time exceeded"
 
 proc test*(session: Session, baseUrl: string) =
   session.navigate(baseUrl)
@@ -113,3 +100,5 @@ proc test*(session: Session, baseUrl: string) =
     ).get()
 
     check profileName.getText() == "test"
+
+  logout(session)
