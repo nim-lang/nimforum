@@ -78,7 +78,7 @@ when defined(js):
           button(class="btn btn-link"): text "Categories"
         section(class="navbar-section"):
           if currentUser.isSome():
-            a(href=makeUri("/newthread"), onClick=anchorCB):
+            a(id="new-thread-btn", href=makeUri("/newthread"), onClick=anchorCB):
               button(class="btn btn-secondary"):
                 italic(class="fas fa-plus")
                 text " New Thread"

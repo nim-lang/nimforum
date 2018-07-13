@@ -220,8 +220,11 @@ when defined(js):
   ): VNode =
     let postCopy = post # TODO: Another workaround here, closure capture :(
 
+    let originalPost = thread.author == post.author
+
     result = buildHtml():
-      tdiv(class=class({"highlight": highlight}, "post"), id = $post.id):
+      tdiv(class=class({"highlight": highlight, "original-post": originalPost}, "post"),
+           id = $post.id):
         tdiv(class="post-icon"):
           render(post.author, "post-avatar")
         tdiv(class="post-main"):
@@ -326,7 +329,7 @@ when defined(js):
     let list = state.list.get()
     result = buildHtml():
       section(class="container grid-xl"):
-        tdiv(class="title"):
+        tdiv(id="thread-title", class="title"):
           p(): text list.thread.topic
           if list.thread.isLocked:
             italic(class="fas fa-lock fa-xs",

@@ -49,7 +49,7 @@ when defined(js):
           tdiv(class="title"):
             p(): text "New Thread"
           tdiv(class="content"):
-            input(class="form-input", `type`="text", name="subject",
+            input(id="thread-title", class="form-input", `type`="text", name="subject",
                   placeholder="Type the title here",
                   oninput=(e: Event, n: VNode) => onSubjectChange(e, n, state))
             if state.error.isSome():
@@ -58,9 +58,10 @@ when defined(js):
             renderContent(state.replyBox, none[Thread](), none[Post]())
           tdiv(class="footer"):
 
-            button(class=class(
-                    {"loading": state.loading},
-                    "btn btn-primary"
+            button(id="create-thread-btn",
+                   class=class(
+                     {"loading": state.loading},
+                     "btn btn-primary"
                    ),
                    onClick=(ev: Event, n: VNode) =>
                     (onCreateClick(ev, n, state))):
