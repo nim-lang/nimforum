@@ -94,7 +94,7 @@ when defined(js):
   proc render*(state: DeleteModal): VNode =
     result = buildHtml():
       tdiv(class=class({"active": state.shown}, "modal modal-sm"),
-           id="login-modal"):
+           id="delete-modal"):
         a(href="", class="modal-overlay", "aria-label"="close",
           onClick=(ev: Event, n: VNode) => onClose(ev, n, state))
         tdiv(class="modal-container"):
@@ -122,11 +122,11 @@ when defined(js):
 
             button(class=class(
                     {"loading": state.loading},
-                    "btn btn-primary"
+                    "btn btn-primary delete-btn"
                    ),
                    onClick=(ev: Event, n: VNode) => onDelete(ev, n, state)):
               italic(class="fas fa-trash-alt")
               text " Delete"
-            button(class="btn",
+            button(class="btn cancel-btn",
                    onClick=(ev: Event, n: VNode) => (state.shown = false)):
               text "Cancel"
