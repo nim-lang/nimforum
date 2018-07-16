@@ -24,7 +24,7 @@ when defined(js):
 
   proc render*(state: UserMenu, user: User): VNode =
     result = buildHtml():
-      tdiv():
+      tdiv(id="profile-btn"):
         figure(class="avatar c-hand",
                onClick=(e: Event, n: VNode) => onClick(e, n, state)):
           img(src=user.avatarUrl, title=user.name)
@@ -52,13 +52,15 @@ when defined(js):
               tdiv(class="tile-icon"):
                 img(class="avatar", src=user.avatarUrl,
                     title=user.name)
-              tdiv(class="tile-content"):
+              tdiv(id="profile-name", class="tile-content"):
                 text user.name
           li(class="divider")
           li(class="menu-item"):
-            a(href=makeUri("/profile/" & user.name)):
+            a(id="myprofile-btn",
+              href=makeUri("/profile/" & user.name)):
               text "My profile"
           li(class="menu-item c-hand"):
-            a(onClick = (e: Event, n: VNode) =>
+            a(id="logout-btn",
+              onClick = (e: Event, n: VNode) =>
                 (state.shown=false; state.onLogout())):
               text "Logout"
