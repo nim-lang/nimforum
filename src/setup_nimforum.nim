@@ -22,10 +22,26 @@ proc backup(path: string, contents: Option[string]=none[string]()) =
     echo(path, " already exists. Moving to ", backupPath)
     moveFile(path, backupPath)
 
+proc createUser(db: DbConn, user: tuple[username, password, email: string],
+                rank: Rank) =
+
+  if user.username.len != 0:
+    let salt = makeSalt()
+    let password = makePassword(user.password, salt)
+
+    exec(db, sql"""
+      INSERT INTO person(name, password, email, salt, status, lastOnline)
+      VALUES (?, ?, ?, ?, ?, DATETIME('now'))
+    """, user.username, password, user.email, salt, $rank)
+
 proc initialiseDb(admin: tuple[username, password, email: string],
                   filename="nimforum.db") =
-  let path = getCurrentDir() / filename
-  if "-dev" notin filename and "-test" notin filename:
+  let
+    path = getCurrentDir() / filename
+    isTest = "-test" in filename
+    isDev = "-dev" in filename
+
+  if not isDev and not isTest:
     backup(path)
 
   removeFile(path)
@@ -98,13 +114,16 @@ proc initialiseDb(admin: tuple[username, password, email: string],
   db.exec sql"create index PersonStatusIdx on person(status);"
 
   # Create default user.
-  if admin.username.len != 0:
-    let salt = makeSalt()
-    let password = makePassword(admin.password, salt)
-    db.exec(sql"""
-      insert into person (id, name, password, email, salt, status)
-      values (1, ?, ?, ?, ?, ?);
-    """, admin.username, password, admin.email, salt, $Admin)
+  db.createUser(admin, Admin)
+
+  # Create test users if test or development
+  if isTest or isDev:
+    for rank in Spammer..Moderator:
+      let rankLower = toLowerAscii($rank)
+      let user = (username: $rankLower,
+                  password: $rankLower,
+                  email: $rankLower & "@localhost.local")
+      db.createUser(user, rank)
 
   # -- Post
 
