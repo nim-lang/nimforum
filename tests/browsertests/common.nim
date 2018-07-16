@@ -39,6 +39,11 @@ template check*(session: Session, element: string, function: untyped) =
   let el = session.findElement(element)
   check function(el)
 
+template check*(session: Session, element: string,
+                strategy: LocationStrategy, function: untyped) =
+  let el = session.findElement(element, strategy)
+  check function(el)
+
 template checkText*(session: Session, element, expectedValue: string) =
   let el = session.findElement(element)
   check el.isSome()
@@ -67,13 +72,14 @@ proc logout*(session: Session) =
   with session:
     click "#profile-btn"
     click "#logout-btn"
+    wait(5000)
 
 proc login*(session: Session, user, password: string) =
   with session:
     click "#login-btn"
 
-    sendKeys "#login-form input[name='username']", "admin"
-    sendKeys "#login-form input[name='password']", "admin"
+    sendKeys "#login-form input[name='username']", user
+    sendKeys "#login-form input[name='password']", password
 
     sendKeys "#login-form input[name='password']", Key.Enter
 
