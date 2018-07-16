@@ -9,96 +9,52 @@ proc test*(session: Session, baseUrl: string) =
 
   # Sanity checks
   test "shows sign up":
-    let signUp = session.findElement("#signup-btn")
-    check signUp.get().getText() == "Sign up"
+    with session:
+      checkText "#signup-btn", "Sign up"
 
   test "shows log in":
-    let logIn = session.findElement("#login-btn")
-    check logIn.get().getText() == "Log in"
+    with session:
+      checkText "#login-btn", "Log in"
 
   test "is empty":
-    let thread = session.findElement("tr > td.thread-title")
-    check thread.isNone()
+    with session:
+      check "tr > td.thread-title", isNone
 
   # Logging in
   test "can login/logout":
-    let logIn = session.findElement("#login-btn").get()
-    logIn.click()
+    with session:
+      click "#login-btn"
 
-    let usernameField = session.findElement(
-      "#login-form input[name='username']"
-    )
-    check usernameField.isSome()
-    let passwordField = session.findElement(
-      "#login-form input[name='password']"
-    )
-    check passwordField.isSome()
+      sendKeys "#login-form input[name='username']", "admin"
+      sendKeys "#login-form input[name='password']", "admin"
 
-    usernameField.get().sendKeys("admin")
-    passwordField.get().sendKeys("admin")
-    passwordField.get().click() # Focus field.
-    session.press(Key.Enter)
+      sendKeys "#login-form input[name='password']", Key.Enter
+      wait(5000)
 
-    waitForLoad(session, 5000)
+      # Verify that the user menu has been initialised properly.
+      click "#profile-btn"
+      checkText "#profile-btn #profile-name", "admin"
 
-    # Verify that the user menu has been initialised properly.
-    let profileButton = session.findElement(
-      "#main-navbar figure.avatar"
-    ).get()
-    profileButton.click()
-
-    let profileName = session.findElement(
-      "#main-navbar .menu-right div.tile-content"
-    ).get()
-
-    check profileName.getText() == "admin"
-
-    # Check whether we can log out.
-    let logoutLink = session.findElement(
-      "Logout",
-      LinkTextSelector
-    ).get()
-    logoutLink.click()
-
-    # Verify we have logged out by looking for the log in button.
-    check session.findElement("#login-btn").isSome()
+      # Check whether we can log out.
+      click "#logout-btn"
+      # Verify we have logged out by looking for the log in button.
+      ensureExists "#login-btn"
 
   test "can register":
-    let signup = session.findElement("#signup-btn").get()
-    signup.click()
+    with session:
+      click "#signup-btn"
 
-    let emailField = session.findElement(
-      "#signup-form input[name='email']"
-    ).get()
-    let usernameField = session.findElement(
-      "#signup-form input[name='username']"
-    ).get()
-    let passwordField = session.findElement(
-      "#signup-form input[name='password']"
-    ).get()
+      sendKeys "#signup-form input[name='email']", "test@test.com"
+      sendKeys "#signup-form input[name='username']", "test"
+      sendKeys "#signup-form input[name='password']", "test"
 
-    emailField.sendKeys("test@test.com")
-    usernameField.sendKeys("test")
-    passwordField.sendKeys("test")
+      click "#signup-modal .create-account-btn"
+      wait(5000)
 
-    let createAccount = session.findElement(
-      "#signup-modal .modal-footer .btn-primary"
-    ).get()
-
-    createAccount.click()
-
-    waitForLoad(session, 5000)
-
-    # Verify that the user menu has been initialised properly.
-    let profileButton = session.findElement(
-      "#main-navbar figure.avatar"
-    ).get()
-    profileButton.click()
-
-    let profileName = session.findElement(
-      "#main-navbar .menu-right div.tile-content"
-    ).get()
-
-    check profileName.getText() == "test"
+      # Verify that the user menu has been initialised properly.
+      click "#profile-btn"
+      checkText "#profile-btn #profile-name", "test"
+      # close menu
+      click "#profile-btn"
 
   logout(session)
