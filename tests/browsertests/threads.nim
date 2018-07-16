@@ -3,44 +3,61 @@ import unittest, options, os, common
 import webdriver
 
 proc test*(session: Session, baseUrl: string) =
-  session.navigate(baseUrl)
+  let
+    titleStr = "This is a thread title!"
+    contentStr = "This is content"
 
-  waitForLoad(session)
-
-  login(session, "admin", "admin")
-
-  test "can create thread":
-    let newThreadBtn = session.findElement("#new-thread-btn").get()
-    newThreadBtn.click()
-
+  suite "thread tests":
+    session.navigate(baseUrl)
     waitForLoad(session)
+    login(session, "admin", "admin")
 
-    let newThread = session.findElement("#new-thread")
-    check newThread.isSome()
+    setup:
+      session.navigate(baseUrl)
+      waitForLoad(session)
 
-    let createThreadBtn = session.findElement("#create-thread-btn")
-    check createThreadBtn.isSome()
+    test "can create thread":
+      with session:
+        click "#new-thread-btn"
+        wait()
 
+        sendKeys "#thread-title", titleStr
+        sendKeys "#reply-textarea", contentStr
 
-    let threadTitle = session.findElement("#thread-title")
-    check threadTitle.isSome()
+        click "#create-thread-btn"
+        wait()
 
-    let replyBox = session.findElement("#reply-textarea")
-    check replyBox.isSome()
+        checkText "#thread-title", titleStr
+        checkText ".original-post div.post-content", contentStr
 
-    threadTitle.get().sendKeys("This is a thread title!")
-    replyBox.get().sendKeys("This is content.")
+    test "try create duplicate thread":
+      with session:
+        click "#new-thread-btn"
+        wait()
+        ensureExists "#new-thread"
 
-    createThreadBtn.get().click()
+        sendKeys "#thread-title", titleStr
+        sendKeys "#reply-textarea", contentStr
 
-    waitForLoad(session)
+        click "#create-thread-btn"
 
-    let newThreadTitle = session.findElement("#thread-title")
-    check newThreadTitle.isSome()
+        wait()
 
-    check newThreadTitle.get().getText() == "This is a thread title!"
+        ensureExists "#new-thread p.text-error"
 
-    let content = session.findElement(".original-post div.post-content")
-    check content.isSome()
+    test "can edit post":
+      let modificationText = " and I edited it!"
+      with session:
+        click titleStr, LinkTextSelector
+        wait()
 
-    check content.get().getText() == "This is content."
+        click ".post-buttons .edit-button"
+        wait()
+
+        sendKeys ".original-post #reply-textarea", modificationText
+        click ".edit-buttons .save-button"
+        wait()
+
+        checkText ".original-post div.post-content", contentStr & modificationText
+
+    logout(session)
