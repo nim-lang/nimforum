@@ -9,16 +9,13 @@ proc test*(session: Session, baseUrl: string) =
 
   # Sanity checks
   test "shows sign up":
-    with session:
-      checkText "#signup-btn", "Sign up"
+    session.checkText("#signup-btn", "Sign up")
 
   test "shows log in":
-    with session:
-      checkText "#login-btn", "Log in"
+    session.checkText("#login-btn", "Log in")
 
   test "is empty":
-    with session:
-      check "tr > td.thread-title", isNone
+    session.check("tr > td.thread-title", isNone)
 
   # Logging in
   test "can login/logout":
@@ -29,7 +26,7 @@ proc test*(session: Session, baseUrl: string) =
       sendKeys "#login-form input[name='password']", "admin"
 
       sendKeys "#login-form input[name='password']", Key.Enter
-      wait(5000)
+      wait 5000
 
       # Verify that the user menu has been initialised properly.
       click "#profile-btn"
@@ -49,7 +46,7 @@ proc test*(session: Session, baseUrl: string) =
       sendKeys "#signup-form input[name='password']", "test"
 
       click "#signup-modal .create-account-btn"
-      wait(5000)
+      wait 5000
 
       # Verify that the user menu has been initialised properly.
       click "#profile-btn"
