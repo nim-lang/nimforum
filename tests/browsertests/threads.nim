@@ -60,4 +60,36 @@ proc test*(session: Session, baseUrl: string) =
 
         checkText ".original-post div.post-content", contentStr & modificationText
 
+    test "can like thread":
+      # logout admin and login to regular user
+      logout(session)
+      login(session, "user", "user")
+
+      with session:
+        click titleStr, LinkTextSelector
+        wait()
+
+        click ".post-buttons .like-button"
+
+        checkText ".post-buttons .like-button .like-count", "1"
+
+      logout(session)
+      session.navigate(baseUrl)
+      waitForLoad(session)
+      login(session, "admin", "admin")
+
+    test "can delete thread":
+      with session:
+        click titleStr, LinkTextSelector
+        wait()
+
+        click ".post-buttons .delete-button"
+        wait()
+
+        # click delete confirmation
+        click "#delete-modal .delete-btn"
+
+        # Make sure the forum post is gone
+        check titleStr, LinkTextSelector, isNone
+
     logout(session)
