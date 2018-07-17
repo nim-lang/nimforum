@@ -54,4 +54,6 @@ proc test*(session: Session, baseUrl: string) =
       # close menu
       click "#profile-btn"
 
+  session.navigate(baseUrl)
+  session.wait()
   logout(session)
