@@ -24,15 +24,14 @@ proc backup(path: string, contents: Option[string]=none[string]()) =
 
 proc createUser(db: DbConn, user: tuple[username, password, email: string],
                 rank: Rank) =
+  assert user.username.len != 0
+  let salt = makeSalt()
+  let password = makePassword(user.password, salt)
 
-  if user.username.len != 0:
-    let salt = makeSalt()
-    let password = makePassword(user.password, salt)
-
-    exec(db, sql"""
-      INSERT INTO person(name, password, email, salt, status, lastOnline)
-      VALUES (?, ?, ?, ?, ?, DATETIME('now'))
-    """, user.username, password, user.email, salt, $rank)
+  exec(db, sql"""
+    INSERT INTO person(name, password, email, salt, status, lastOnline)
+    VALUES (?, ?, ?, ?, ?, DATETIME('now'))
+  """, user.username, password, user.email, salt, $rank)
 
 proc initialiseDb(admin: tuple[username, password, email: string],
                   filename="nimforum.db") =
