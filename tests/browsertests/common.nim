@@ -44,6 +44,10 @@ template check*(session: Session, element: string,
   let el = session.findElement(element, strategy)
   check function(el)
 
+template checkIsNone*(session: Session, element: string, strategy=CssSelector) =
+  let el = session.findElement(element, strategy)
+  check el.isNone()
+
 template checkText*(session: Session, element, expectedValue: string) =
   let el = session.findElement(element)
   check el.isSome()
@@ -70,8 +74,9 @@ proc wait*(session: Session, msTimeout: int) =
 
 proc logout*(session: Session) =
   with session:
+    wait(5000)
     click "#profile-btn"
-    click "#logout-btn"
+    click "#profile-btn #logout-btn"
     wait(5000)
 
 proc login*(session: Session, user, password: string) =

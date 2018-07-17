@@ -15,7 +15,7 @@ proc test*(session: Session, baseUrl: string) =
     session.checkText("#login-btn", "Log in")
 
   test "is empty":
-    session.check("tr > td.thread-title", isNone)
+    session.checkIsNone("tr > td.thread-title")
 
   # Logging in
   test "can login/logout":

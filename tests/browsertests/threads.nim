@@ -80,6 +80,7 @@ proc test*(session: Session, baseUrl: string) =
 
     test "can delete thread":
       with session:
+        wait()
         click titleStr, LinkTextSelector
         wait()
 
@@ -90,6 +91,8 @@ proc test*(session: Session, baseUrl: string) =
         click "#delete-modal .delete-btn"
 
         # Make sure the forum post is gone
-        check titleStr, LinkTextSelector, isNone
+        checkIsNone titleStr, LinkTextSelector
 
+    session.navigate(baseUrl)
+    waitForLoad(session)
     logout(session)
