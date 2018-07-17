@@ -3,44 +3,119 @@ import unittest, options, os, common
 import webdriver
 
 proc test*(session: Session, baseUrl: string) =
-  session.navigate(baseUrl)
+  let
+    userTitleStr = "This is a user thread!"
+    userContentStr = "A user has filled this out"
 
-  waitForLoad(session)
+    adminTitleStr = "This is a thread title!"
+    adminContentStr = "This is content"
 
-  login(session, "admin", "admin")
+  suite "user thread tests":
+    session.navigate(baseUrl)
+    session.wait()
+    login(session, "user", "user")
 
-  test "can create thread":
-    let newThreadBtn = session.findElement("#new-thread-btn").get()
-    newThreadBtn.click()
+    setup:
+      session.navigate(baseUrl)
+      session.wait()
 
-    waitForLoad(session)
+    test "can create thread":
+      with session:
+        click "#new-thread-btn"
+        wait()
 
-    let newThread = session.findElement("#new-thread")
-    check newThread.isSome()
+        sendKeys "#thread-title", userTitleStr
+        sendKeys "#reply-textarea", userContentStr
 
-    let createThreadBtn = session.findElement("#create-thread-btn")
-    check createThreadBtn.isSome()
+        click "#create-thread-btn"
+        wait()
 
+        checkText "#thread-title", userTitleStr
+        checkText ".original-post div.post-content", userContentStr
 
-    let threadTitle = session.findElement("#thread-title")
-    check threadTitle.isSome()
+    session.navigate(baseUrl)
+    session.wait()
+    logout(session)
 
-    let replyBox = session.findElement("#reply-textarea")
-    check replyBox.isSome()
+  suite "admin thread tests":
+    session.navigate(baseUrl)
+    session.wait()
+    login(session, "admin", "admin")
 
-    threadTitle.get().sendKeys("This is a thread title!")
-    replyBox.get().sendKeys("This is content.")
+    setup:
+      session.navigate(baseUrl)
+      session.wait()
 
-    createThreadBtn.get().click()
+    test "can create thread":
+      with session:
+        click "#new-thread-btn"
+        wait()
 
-    waitForLoad(session)
+        sendKeys "#thread-title", adminTitleStr
+        sendKeys "#reply-textarea", adminContentStr
 
-    let newThreadTitle = session.findElement("#thread-title")
-    check newThreadTitle.isSome()
+        click "#create-thread-btn"
+        wait()
 
-    check newThreadTitle.get().getText() == "This is a thread title!"
+        checkText "#thread-title", adminTitleStr
+        checkText ".original-post div.post-content", adminContentStr
 
-    let content = session.findElement(".original-post div.post-content")
-    check content.isSome()
+    test "try create duplicate thread":
+      with session:
+        click "#new-thread-btn"
+        wait()
+        ensureExists "#new-thread"
 
-    check content.get().getText() == "This is content."
+        sendKeys "#thread-title", adminTitleStr
+        sendKeys "#reply-textarea", adminContentStr
+
+        click "#create-thread-btn"
+
+        wait()
+
+        ensureExists "#new-thread p.text-error"
+
+    test "can edit post":
+      let modificationText = " and I edited it!"
+      with session:
+        click adminTitleStr, LinkTextSelector
+        wait()
+
+        click ".post-buttons .edit-button"
+        wait()
+
+        sendKeys ".original-post #reply-textarea", modificationText
+        click ".edit-buttons .save-button"
+        wait()
+
+        checkText ".original-post div.post-content", adminContentStr & modificationText
+
+    test "can like thread":
+      # Try to like the user thread above
+
+      with session:
+        click userTitleStr, LinkTextSelector
+        wait()
+
+        click ".post-buttons .like-button"
+
+        checkText ".post-buttons .like-button .like-count", "1"
+
+    test "can delete thread":
+      with session:
+        click adminTitleStr, LinkTextSelector
+        wait()
+
+        click ".post-buttons .delete-button"
+        wait()
+
+        # click delete confirmation
+        click "#delete-modal .delete-btn"
+        wait()
+
+        # Make sure the forum post is gone
+        checkIsNone adminTitleStr, LinkTextSelector
+
+    session.navigate(baseUrl)
+    session.wait()
+    logout(session)

@@ -87,7 +87,7 @@ when defined(js):
             text state.error.get().message
 
         tdiv(class="edit-buttons"):
-          tdiv(class="reply-button"):
+          tdiv(class="cancel-button"):
             button(class="btn btn-link",
                    onClick=(e: Event, n: VNode) => (state.onEditCancel())):
               text " Cancel"

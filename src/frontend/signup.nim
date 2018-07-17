@@ -78,17 +78,18 @@ when defined(js):
                          "data-sitekey"=recaptchaSiteKey.get())
                     script(src="https://www.google.com/recaptcha/api.js")
           tdiv(class="modal-footer"):
-            button(class=class({"loading": state.loading}, "btn btn-primary"),
-                  onClick=(ev: Event, n: VNode) => onSignUpClick(ev, n, state)):
+            button(class=class({"loading": state.loading},
+                               "btn btn-primary create-account-btn"),
+                   onClick=(ev: Event, n: VNode) => onSignUpClick(ev, n, state)):
               text "Create account"
-            button(class="btn",
+            button(class="btn login-btn",
                    onClick=(ev: Event, n: VNode) =>
                     (state.onLogIn(); state.shown = false)):
               text "Log in"
 
             p(class="license-text text-gray"):
               text "By registering, you agree to the "
-              a(href=makeUri("/about/license"),
+              a(id="license", href=makeUri("/about/license"),
                 onClick=(ev: Event, n: VNode) =>
                     (state.shown = false; anchorCB(ev, n))):
                 text "content license"
