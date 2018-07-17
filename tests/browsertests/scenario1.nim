@@ -26,7 +26,7 @@ proc test*(session: Session, baseUrl: string) =
       sendKeys "#login-form input[name='password']", "admin"
 
       sendKeys "#login-form input[name='password']", Key.Enter
-      wait 5000
+      wait()
 
       # Verify that the user menu has been initialised properly.
       click "#profile-btn"
@@ -46,7 +46,7 @@ proc test*(session: Session, baseUrl: string) =
       sendKeys "#signup-form input[name='password']", "test"
 
       click "#signup-modal .create-account-btn"
-      wait 5000
+      wait()
 
       # Verify that the user menu has been initialised properly.
       click "#profile-btn"

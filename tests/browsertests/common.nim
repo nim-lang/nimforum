@@ -66,18 +66,15 @@ proc waitForLoad*(session: Session, timeout=20000) =
     if waitTime > timeout:
       doAssert false, "Wait for load time exceeded"
 
-proc wait*(session: Session) =
-  session.waitForLoad()
-
-proc wait*(session: Session, msTimeout: int) =
+proc wait*(session: Session, msTimeout: int = 5000) =
   session.waitForLoad(msTimeout)
 
 proc logout*(session: Session) =
   with session:
-    wait(5000)
+    wait()
     click "#profile-btn"
     click "#profile-btn #logout-btn"
-    wait(5000)
+    wait()
 
 proc login*(session: Session, user, password: string) =
   with session:
@@ -88,4 +85,4 @@ proc login*(session: Session, user, password: string) =
 
     sendKeys "#login-form input[name='password']", Key.Enter
 
-    wait(5000)
+    wait()
