@@ -89,7 +89,7 @@ when defined(js):
 
             p(class="license-text text-gray"):
               text "By registering, you agree to the "
-              a(href=makeUri("/about/license"),
+              a(id="license", href=makeUri("/about/license"),
                 onClick=(ev: Event, n: VNode) =>
                     (state.shown = false; anchorCB(ev, n))):
                 text "content license"
