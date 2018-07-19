@@ -1023,8 +1023,7 @@ routes:
       let session = executeLogin(c, username, password)
       setCookie("sid", session)
       resp Http200, "{}", "application/json"
-    except ForumError:
-      let exc = (ref ForumError)(getCurrentException())
+    except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
 
   get "/status.json":
@@ -1282,8 +1281,7 @@ routes:
     try:
       await updateProfile(c, username, email, rank)
       resp Http200, "{}", "application/json"
-    except ForumError:
-      let exc = (ref ForumError)(getCurrentException())
+    except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
 
   post "/sendResetPassword":
@@ -1311,8 +1309,7 @@ routes:
         c, formData["email"].body, recaptcha, request.host
       )
       resp Http200, "{}", "application/json"
-    except ForumError:
-      let exc = (ref ForumError)(getCurrentException())
+    except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
 
   post "/resetPassword":
@@ -1350,7 +1347,7 @@ routes:
       )
       resp Http200, "{}", "application/json"
     except ForumError as exc:
-      resp Http400, $(%exc.data),"application/json"
+      resp Http400, $(%exc.data), "application/json"
 
   post "/activateEmail":
     createTFD()
@@ -1371,7 +1368,7 @@ routes:
       )
       resp Http200, "{}", "application/json"
     except ForumError as exc:
-      resp Http400, $(%exc.data),"application/json"
+      resp Http400, $(%exc.data), "application/json"
 
   get "/t/@id":
     cond "id" in request.params
