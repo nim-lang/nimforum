@@ -32,7 +32,8 @@ proc lastEdit*(post: Post): PostInfo =
   post.history[^1]
 
 proc isModerated*(post: Post): bool =
-  ## Determines whether the specified thread is under moderation.
+  ## Determines whether the specified post is under moderation
+  ## (i.e. whether the post is invisible to ordinary users).
   post.author.rank <= Moderated
 
 proc isLikedBy*(post: Post, user: Option[User]): bool =

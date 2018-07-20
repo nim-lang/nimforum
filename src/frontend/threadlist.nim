@@ -22,6 +22,7 @@ type
 
 proc isModerated*(thread: Thread): bool =
   ## Determines whether the specified thread is under moderation.
+  ## (i.e. whether the specified thread is invisible to ordinary users).
   thread.author.rank <= Moderated
 
 when defined(js):
@@ -53,6 +54,8 @@ when defined(js):
     ##
     ## The rules for this are determined by the rank of the user, their
     ## settings (TODO), and whether the thread's creator is moderated or not.
+    ##
+    ## The ``user`` argument refers to the currently logged in user.
     mixin isModerated
     if user.isNone(): return not thread.isModerated
 
@@ -108,20 +111,19 @@ when defined(js):
 
   proc genThread(thread: Thread, isNew: bool, noBorder: bool): VNode =
     let isOld = (getTime() - thread.creation.fromUnix).weeks > 2
-    let isBanned = thread.author.rank < Moderated
+    let isBanned = thread.author.rank.isBanned()
     result = buildHtml():
       tr(class=class({"no-border": noBorder, "banned": isBanned})):
         td(class="thread-title"):
           if thread.isLocked:
             italic(class="fas fa-lock fa-xs",
                    title="Thread cannot be replied to")
+          if isBanned:
+            italic(class="fas fa-ban fa-xs",
+                   title="Thread author is banned")
           if thread.isModerated:
-            if isBanned:
-              italic(class="fas fa-ban fa-xs",
-                     title="Thread author is banned")
-            else:
-              italic(class="fas fa-eye-slash fa-xs",
-                     title="Thread is moderated")
+            italic(class="fas fa-eye-slash fa-xs",
+                   title="Thread is moderated")
           if thread.isSolved:
             italic(class="fas fa-check-square fa-xs",
                    title="Thread has a solution")

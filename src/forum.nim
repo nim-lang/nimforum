@@ -769,7 +769,6 @@ routes:
             from thread t, category c, person u
             where t.isDeleted = 0 and category = c.id and
                   u.status <> 'Spammer' and u.status <> 'Troll' and
-                  u.status <> 'Banned' and
                   u.id in (
                     select u.id from post p, person u
                     where p.author = u.id and p.thread = t.id

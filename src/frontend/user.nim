@@ -4,10 +4,10 @@ type
   # If you add more "Banned" states, be sure to modify forum's threadsQuery too.
   Rank* {.pure.} = enum ## serialized as 'status'
     Spammer          ## spammer: every post is invisible
-    Troll            ## troll: cannot write new posts
-    Banned           ## A non-specific ban
     Moderated        ## new member: posts manually reviewed before everybody
                      ## can see them
+    Troll            ## troll: cannot write new posts
+    Banned           ## A non-specific ban
     EmailUnconfirmed ## member with unconfirmed email address. Their posts
                      ## are visible, but cannot make new posts. This is so that
                      ## when a user with existing posts changes their email,
@@ -33,6 +33,9 @@ proc `==`*(u1, u2: User): bool =
 proc canPost*(rank: Rank): bool =
   ## Determines whether the specified rank can make new posts.
   rank >= Rank.User or rank == Moderated
+
+proc isBanned*(rank: Rank): bool =
+  rank in {Spammer, Troll, Banned}
 
 when defined(js):
   include karax/prelude
