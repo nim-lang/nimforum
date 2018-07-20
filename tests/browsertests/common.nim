@@ -1,4 +1,4 @@
-import os, options, unittest
+import os, options, unittest, strutils
 import webdriver
 import macros
 
@@ -76,6 +76,9 @@ proc logout*(session: Session) =
     click "#profile-btn #logout-btn"
     wait()
 
+    # Verify we have logged out by looking for the log in button.
+    ensureExists "#login-btn"
+
 proc login*(session: Session, user, password: string) =
   with session:
     click "#login-btn"
@@ -86,3 +89,52 @@ proc login*(session: Session, user, password: string) =
     sendKeys "#login-form input[name='password']", Key.Enter
 
     wait()
+
+    # Verify that the user menu has been initialised properly.
+    click "#profile-btn"
+    checkText "#profile-btn #profile-name", user
+    click "#profile-btn"
+
+proc register*(session: Session, user, password: string) =
+  with session:
+    click "#signup-btn"
+
+    sendKeys "#signup-form input[name='email']", user & "@" & user & ".com"
+    sendKeys "#signup-form input[name='username']", user
+    sendKeys "#signup-form input[name='password']", password
+
+    click "#signup-modal .create-account-btn"
+    wait()
+
+    # Verify that the user menu has been initialised properly.
+    click "#profile-btn"
+    checkText "#profile-btn #profile-name", user
+    # close menu
+    click "#profile-btn"
+
+proc createThread*(session: Session, title, content: string) =
+  with session:
+    click "#new-thread-btn"
+    wait()
+
+    sendKeys "#thread-title", title
+    sendKeys "#reply-textarea", content
+
+    click "#create-thread-btn"
+    wait()
+
+    checkText "#thread-title", title
+    checkText ".original-post div.post-content", content
+
+proc changeRank*(session: Session, rank: string) =
+  with session:
+    # Make sure the "Settings" tab is selected.
+    click ".profile-tabs li:nth-child(2)"
+
+    click "#rank-field"
+    click "#rank-field option#rank-" & rank.toLowerAscii()
+
+    wait()
+
+    # TODO: Getting an "element click intercepted" error here.
+    click "#save-btn"

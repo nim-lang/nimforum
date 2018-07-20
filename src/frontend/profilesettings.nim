@@ -88,7 +88,7 @@ when defined(js):
                class="form-select", value = $state.rank,
                onchange=(e: Event, n: VNode) => onRankChange(e, n, state)):
           for r in Rank:
-            option(text $r)
+            option(text $r, id="rank-" & toLowerAscii($r))
         p(class="form-input-hint text-warning"):
           text "You can modify anyone's rank. Remember: with " &
                "great power comes great responsibility."
@@ -185,7 +185,8 @@ when defined(js):
             button(class=class(
                     {"disabled": not needsSave(state)}, "btn btn-primary"
                    ),
-                   onClick=(e: Event, n: VNode) => save(state)):
+                   onClick=(e: Event, n: VNode) => save(state),
+                   id="save-btn"):
               italic(class="fas fa-save")
               text " Save"
 
