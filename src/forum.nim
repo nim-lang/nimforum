@@ -115,21 +115,21 @@ proc sendResetPassword(
   )
 
 proc logout(c: TForumData) =
-  const query = sql"delete from session where ip = ? and key = ?"
+  const query = sql"delete from session where key = ?"
   c.username = ""
   c.userpass = ""
-  exec(db, query, c.req.ip, c.req.cookies["sid"])
+  exec(db, query, c.req.cookies["sid"])
 
 proc checkLoggedIn(c: TForumData) =
   if not c.req.cookies.hasKey("sid"): return
   let sid = c.req.cookies["sid"]
   if execAffectedRows(db,
        sql("update session set lastModified = DATETIME('now') " &
-           "where ip = ? and key = ?"),
-           c.req.ip, sid) > 0:
+           "where key = ?"),
+           sid) > 0:
     c.userid = getValue(db,
-      sql"select userid from session where ip = ? and key = ?",
-      c.req.ip, sid)
+      sql"select userid from session where key = ?",
+      sid)
 
     let row = getRow(db,
       sql"select name, email, status from person where id = ?", c.userid)
