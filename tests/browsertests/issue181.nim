@@ -10,37 +10,29 @@ proc test*(session: Session, baseUrl: string) =
   test "can see banned posts":
     with session:
       register("issue181", "issue181")
-      logout()
+      logout(baseUrl)
 
       # Change rank to `user` so they can post.
-      login("admin", "admin")
+      login(baseUrl, "admin", "admin")
+      setUserRank(baseUrl, "issue181", "user")
+      logout(baseUrl)
 
-      navigate(baseUrl & "profile/user")
-      wait()
-      changeRank("user")
-      logout()
-
-      login("issue181", "issue181")
+      login(baseUrl, "issue181", "issue181")
 
       const title = "Testing issue 181."
       createThread(title, "Test for issue #181")
 
-      logout()
-      wait()
+      logout(baseUrl)
 
-      login("admin", "admin")
+      login(baseUrl, "admin", "admin")
 
       # Ban our user.
-      navigate(baseUrl & "profile/issue181")
-      changeRank("banned")
+      setUserRank(baseUrl, "issue181", "banned")
 
       # Make sure the banned user's thread is still visible.
       navigate(baseUrl)
+      wait()
       ensureExists("tr.banned")
       checkText("tr.banned .thread-title > a", title)
-      logout()
+      logout(baseUrl)
       checkText("tr.banned .thread-title > a", title)
-
-  session.navigate(baseUrl)
-  session.wait()
-  logout(session)

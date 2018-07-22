@@ -69,7 +69,7 @@ proc waitForLoad*(session: Session, timeout=20000) =
 proc wait*(session: Session, msTimeout: int = 5000) =
   session.waitForLoad(msTimeout)
 
-proc setUserRank*(session: Session, user, rank, baseUrl: string) =
+proc setUserRank*(session: Session, baseUrl, user, rank: string) =
   with session:
     navigate(baseUrl & "profile/" & user)
     wait()
@@ -77,7 +77,7 @@ proc setUserRank*(session: Session, user, rank, baseUrl: string) =
     click "#settings-tab"
 
     click "#rank-field"
-    click("#rank-field-" & rank.toLowerAscii)
+    click("#rank-field option#rank-" & rank.toLowerAscii)
 
     click "#save-btn"
     wait()
@@ -141,22 +141,3 @@ proc createThread*(session: Session, title, content: string) =
 
     checkText "#thread-title", title
     checkText ".original-post div.post-content", content
-
-proc changeRank*(session: Session, rank: string) =
-  with session:
-    # Make sure the "Settings" tab is selected.
-    click ".profile-tabs li:nth-child(2)"
-
-    click "#rank-field"
-    click "#rank-field option#rank-" & rank.toLowerAscii()
-
-    wait()
-
-    # TODO: Getting an "element click intercepted" error here.
-    click "#save-btn"
-
-proc banUser*(session: Session, baseUrl: string) =
-  with session:
-    login baseUrl, "admin", "admin"
-    setUserRank "user", "banned", baseUrl
-    logout baseUrl

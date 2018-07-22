@@ -9,6 +9,11 @@ let
   adminTitleStr = "This is a thread title!"
   adminContentStr = "This is content"
 
+proc banUser(session: Session, baseUrl: string) =
+  with session:
+    login baseUrl, "admin", "admin"
+    setUserRank baseUrl, "user", "banned"
+    logout baseUrl
 
 proc userTests(session: Session, baseUrl: string) =
   suite "user thread tests":
@@ -33,6 +38,21 @@ proc userTests(session: Session, baseUrl: string) =
         checkText ".original-post div.post-content", userContentStr
 
     session.logout(baseUrl)
+
+proc anonymousTests(session: Session, baseUrl: string) =
+
+  suite "anonymous user tests":
+    with session:
+      navigate baseUrl
+      wait()
+
+    test "can view banned thread":
+      with session:
+        ensureExists userTitleStr, LinkTextSelector
+
+    with session:
+      navigate baseUrl
+      wait()
 
 proc bannedTests(session: Session, baseUrl: string) =
   suite "banned user thread tests":
@@ -143,4 +163,5 @@ proc test*(session: Session, baseUrl: string) =
   banUser(session, baseUrl)
 
   bannedTests(session, baseUrl)
+  anonymousTests(session, baseUrl)
   adminTests(session, baseUrl)
