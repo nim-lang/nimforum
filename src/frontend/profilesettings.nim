@@ -165,7 +165,8 @@ when defined(js):
                 label(class="form-label"):
                   text "Account"
               tdiv(class="col-9 col-sm-12"):
-                button(class="btn btn-secondary", `type`="button",
+                button(id="delete-account-btn",
+                       class="btn btn-secondary", `type`="button",
                        onClick=(e: Event, n: VNode) =>
                        (state.deleteModal.show(state.profile.user))):
                   italic(class="fas fa-times")
@@ -176,13 +177,15 @@ when defined(js):
               span(class="text-error"):
                 text state.error.get().message
 
-            button(class=class(
+            button(id="cancel-btn",
+                   class=class(
                     {"disabled": not needsSave(state)}, "btn btn-link"
                    ),
                    onClick=(e: Event, n: VNode) => (resetSettings(state))):
               text "Cancel"
 
-            button(class=class(
+            button(id="save-btn",
+                   class=class(
                     {"disabled": not needsSave(state)}, "btn btn-primary"
                    ),
                    onClick=(e: Event, n: VNode) => save(state),

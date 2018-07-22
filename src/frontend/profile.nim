@@ -119,7 +119,7 @@ when defined(js):
                  ),
                  onClick=(e: Event, n: VNode) => (state.currentTab = Overview)
                 ):
-                a(class="c-hand"):
+                a(id="overview-tab", class="c-hand"):
                   text "Overview"
               li(class=class(
                   {"active": state.currentTab == Settings},
@@ -127,7 +127,7 @@ when defined(js):
                  ),
                  onClick=(e: Event, n: VNode) => (state.currentTab = Settings)
                 ):
-                a(class="c-hand"):
+                a(id="settings-tab", class="c-hand"):
                   italic(class="fas fa-cog")
                   text " Settings"
 

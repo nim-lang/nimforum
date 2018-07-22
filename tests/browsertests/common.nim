@@ -31,8 +31,8 @@ template sendKeys*(session: Session, element: string, keys: varargs[Key]) =
   for key in keys:
     session.press(key)
 
-template ensureExists*(session: Session, element: string) =
-  let el = session.findElement(element)
+template ensureExists*(session: Session, element: string, strategy=CssSelector) =
+  let el = session.findElement(element, strategy)
   check el.isSome()
 
 template check*(session: Session, element: string, function: untyped) =
@@ -69,8 +69,22 @@ proc waitForLoad*(session: Session, timeout=20000) =
 proc wait*(session: Session, msTimeout: int = 5000) =
   session.waitForLoad(msTimeout)
 
-proc logout*(session: Session) =
+proc setUserRank*(session: Session, user, rank, baseUrl: string) =
   with session:
+    navigate(baseUrl & "profile/" & user)
+    wait()
+
+    click "#settings-tab"
+
+    click "#rank-field"
+    click("#rank-field-" & rank.toLowerAscii)
+
+    click "#save-btn"
+    wait()
+
+proc logout*(session: Session, baseUrl: string) =
+  with session:
+    navigate baseUrl
     wait()
     click "#profile-btn"
     click "#profile-btn #logout-btn"
@@ -79,8 +93,10 @@ proc logout*(session: Session) =
     # Verify we have logged out by looking for the log in button.
     ensureExists "#login-btn"
 
-proc login*(session: Session, user, password: string) =
+proc login*(session: Session, baseUrl, user, password: string) =
   with session:
+    navigate baseUrl
+    wait()
     click "#login-btn"
 
     sendKeys "#login-form input[name='username']", user
@@ -138,3 +154,9 @@ proc changeRank*(session: Session, rank: string) =
 
     # TODO: Getting an "element click intercepted" error here.
     click "#save-btn"
+
+proc banUser*(session: Session, baseUrl: string) =
+  with session:
+    login baseUrl, "admin", "admin"
+    setUserRank "user", "banned", baseUrl
+    logout baseUrl

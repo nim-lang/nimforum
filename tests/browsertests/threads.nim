@@ -2,18 +2,17 @@ import unittest, options, os, common
 
 import webdriver
 
-proc test*(session: Session, baseUrl: string) =
-  let
-    userTitleStr = "This is a user thread!"
-    userContentStr = "A user has filled this out"
+let
+  userTitleStr = "This is a user thread!"
+  userContentStr = "A user has filled this out"
 
-    adminTitleStr = "This is a thread title!"
-    adminContentStr = "This is content"
+  adminTitleStr = "This is a thread title!"
+  adminContentStr = "This is content"
 
+
+proc userTests(session: Session, baseUrl: string) =
   suite "user thread tests":
-    session.navigate(baseUrl)
-    session.wait()
-    login(session, "user", "user")
+    session.login(baseUrl, "user", "user")
 
     setup:
       session.navigate(baseUrl)
@@ -33,18 +32,38 @@ proc test*(session: Session, baseUrl: string) =
         checkText "#thread-title", userTitleStr
         checkText ".original-post div.post-content", userContentStr
 
-    session.navigate(baseUrl)
-    session.wait()
-    logout(session)
+    session.logout(baseUrl)
 
+proc bannedTests(session: Session, baseUrl: string) =
+  suite "banned user thread tests":
+    session.login(baseUrl, "banned", "banned")
+
+    test "can't start thread":
+      with session:
+        click "#new-thread-btn"
+        wait()
+
+        sendKeys "#thread-title", "test"
+        sendKeys "#reply-textarea", "test"
+
+        click "#create-thread-btn"
+        wait()
+
+        ensureExists "#new-thread p.text-error"
+
+    session.logout(baseUrl)
+
+proc adminTests(session: Session, baseUrl: string) =
   suite "admin thread tests":
-    session.navigate(baseUrl)
-    session.wait()
-    login(session, "admin", "admin")
+    session.login(baseUrl, "admin", "admin")
 
     setup:
       session.navigate(baseUrl)
       session.wait()
+
+    test "can view banned thread":
+      with session:
+        ensureExists userTitleStr, LinkTextSelector
 
     test "can create thread":
       with session:
@@ -116,6 +135,12 @@ proc test*(session: Session, baseUrl: string) =
         # Make sure the forum post is gone
         checkIsNone adminTitleStr, LinkTextSelector
 
-    session.navigate(baseUrl)
-    session.wait()
-    logout(session)
+    session.logout(baseUrl)
+
+proc test*(session: Session, baseUrl: string) =
+  userTests(session, baseUrl)
+
+  banUser(session, baseUrl)
+
+  bannedTests(session, baseUrl)
+  adminTests(session, baseUrl)
