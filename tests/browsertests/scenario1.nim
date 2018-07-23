@@ -20,10 +20,10 @@ proc test*(session: Session, baseUrl: string) =
   # Logging in
   test "can login/logout":
     with session:
-      login(baseUrl, "admin", "admin")
+      login("admin", "admin")
 
       # Check whether we can log out.
-      logout(baseUrl)
+      logout()
       # Verify we have logged out by looking for the log in button.
       ensureExists "#login-btn"
 
@@ -31,4 +31,4 @@ proc test*(session: Session, baseUrl: string) =
     with session:
       register("test", "test")
 
-  session.logout(baseUrl)
+  session.logout()

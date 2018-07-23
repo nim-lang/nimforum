@@ -11,13 +11,13 @@ let
 
 proc banUser(session: Session, baseUrl: string) =
   with session:
-    login baseUrl, "admin", "admin"
+    login "admin", "admin"
     setUserRank baseUrl, "user", "banned"
-    logout baseUrl
+    logout()
 
 proc userTests(session: Session, baseUrl: string) =
   suite "user thread tests":
-    session.login(baseUrl, "user", "user")
+    session.login("user", "user")
 
     setup:
       session.navigate(baseUrl)
@@ -37,7 +37,7 @@ proc userTests(session: Session, baseUrl: string) =
         checkText "#thread-title", userTitleStr
         checkText ".original-post div.post-content", userContentStr
 
-    session.logout(baseUrl)
+    session.logout()
 
 proc anonymousTests(session: Session, baseUrl: string) =
 
@@ -56,7 +56,10 @@ proc anonymousTests(session: Session, baseUrl: string) =
 
 proc bannedTests(session: Session, baseUrl: string) =
   suite "banned user thread tests":
-    session.login(baseUrl, "banned", "banned")
+    with session:
+      navigate baseUrl
+      wait()
+      login "banned", "banned"
 
     test "can't start thread":
       with session:
@@ -71,11 +74,11 @@ proc bannedTests(session: Session, baseUrl: string) =
 
         ensureExists "#new-thread p.text-error"
 
-    session.logout(baseUrl)
+    session.logout()
 
 proc adminTests(session: Session, baseUrl: string) =
   suite "admin thread tests":
-    session.login(baseUrl, "admin", "admin")
+    session.login("admin", "admin")
 
     setup:
       session.navigate(baseUrl)
@@ -155,9 +158,12 @@ proc adminTests(session: Session, baseUrl: string) =
         # Make sure the forum post is gone
         checkIsNone adminTitleStr, LinkTextSelector
 
-    session.logout(baseUrl)
+    session.logout()
 
 proc test*(session: Session, baseUrl: string) =
+  session.navigate(baseUrl)
+  session.wait()
+
   userTests(session, baseUrl)
 
   banUser(session, baseUrl)
@@ -165,3 +171,6 @@ proc test*(session: Session, baseUrl: string) =
   bannedTests(session, baseUrl)
   anonymousTests(session, baseUrl)
   adminTests(session, baseUrl)
+
+  session.navigate(baseUrl)
+  session.wait()

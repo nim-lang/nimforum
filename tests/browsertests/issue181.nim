@@ -10,21 +10,23 @@ proc test*(session: Session, baseUrl: string) =
   test "can see banned posts":
     with session:
       register("issue181", "issue181")
-      logout(baseUrl)
+      logout()
 
       # Change rank to `user` so they can post.
-      login(baseUrl, "admin", "admin")
+      login("admin", "admin")
       setUserRank(baseUrl, "issue181", "user")
-      logout(baseUrl)
+      logout()
 
-      login(baseUrl, "issue181", "issue181")
+      login("issue181", "issue181")
+      navigate(baseUrl)
+      wait()
 
       const title = "Testing issue 181."
       createThread(title, "Test for issue #181")
 
-      logout(baseUrl)
+      logout()
 
-      login(baseUrl, "admin", "admin")
+      login("admin", "admin")
 
       # Ban our user.
       setUserRank(baseUrl, "issue181", "banned")
@@ -34,5 +36,5 @@ proc test*(session: Session, baseUrl: string) =
       wait()
       ensureExists("tr.banned")
       checkText("tr.banned .thread-title > a", title)
-      logout(baseUrl)
+      logout()
       checkText("tr.banned .thread-title > a", title)

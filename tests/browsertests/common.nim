@@ -22,6 +22,11 @@ template sendKeys*(session: Session, element, keys: string) =
   check el.isSome()
   el.get().sendKeys(keys)
 
+template clear*(session: Session, element: string) =
+  let el = session.findElement(element)
+  check el.isSome()
+  el.get().clear()
+
 template sendKeys*(session: Session, element: string, keys: varargs[Key]) =
   let el = session.findElement(element)
   check el.isSome()
@@ -82,10 +87,8 @@ proc setUserRank*(session: Session, baseUrl, user, rank: string) =
     click "#save-btn"
     wait()
 
-proc logout*(session: Session, baseUrl: string) =
+proc logout*(session: Session) =
   with session:
-    navigate baseUrl
-    wait()
     click "#profile-btn"
     click "#profile-btn #logout-btn"
     wait()
@@ -93,11 +96,12 @@ proc logout*(session: Session, baseUrl: string) =
     # Verify we have logged out by looking for the log in button.
     ensureExists "#login-btn"
 
-proc login*(session: Session, baseUrl, user, password: string) =
+proc login*(session: Session, user, password: string) =
   with session:
-    navigate baseUrl
-    wait()
     click "#login-btn"
+
+    clear "#login-form input[name='username']"
+    clear "#login-form input[name='password']"
 
     sendKeys "#login-form input[name='username']", user
     sendKeys "#login-form input[name='password']", password
@@ -114,6 +118,10 @@ proc login*(session: Session, baseUrl, user, password: string) =
 proc register*(session: Session, user, password: string) =
   with session:
     click "#signup-btn"
+
+    clear "#signup-form input[name='email']"
+    clear "#signup-form input[name='username']"
+    clear "#signup-form input[name='password']"
 
     sendKeys "#signup-form input[name='email']", user & "@" & user & ".com"
     sendKeys "#signup-form input[name='username']", user
