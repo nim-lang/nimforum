@@ -31,6 +31,4 @@ proc test*(session: Session, baseUrl: string) =
     with session:
       register("test", "test")
 
-  session.navigate(baseUrl)
-  session.wait()
-  logout(session)
+  session.logout()

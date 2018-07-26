@@ -21,7 +21,7 @@ requires "sass#649e0701fa5c"
 
 requires "karax#d8df257dd"
 
-requires "webdriver#a2be578"
+requires "webdriver#20f3c1b"
 
 # Tasks
 

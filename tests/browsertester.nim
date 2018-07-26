@@ -64,8 +64,7 @@ when isMainModule:
     withBackend:
       scenario1.test(session, baseUrl)
       threads.test(session, baseUrl)
-      # TODO: Fix the issue181 test.
-      # issue181.test(session, baseUrl)
+      issue181.test(session, baseUrl)
 
     session.close()
   except:

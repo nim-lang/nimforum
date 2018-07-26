@@ -22,6 +22,11 @@ template sendKeys*(session: Session, element, keys: string) =
   check el.isSome()
   el.get().sendKeys(keys)
 
+template clear*(session: Session, element: string) =
+  let el = session.findElement(element)
+  check el.isSome()
+  el.get().clear()
+
 template sendKeys*(session: Session, element: string, keys: varargs[Key]) =
   let el = session.findElement(element)
   check el.isSome()
@@ -31,8 +36,8 @@ template sendKeys*(session: Session, element: string, keys: varargs[Key]) =
   for key in keys:
     session.press(key)
 
-template ensureExists*(session: Session, element: string) =
-  let el = session.findElement(element)
+template ensureExists*(session: Session, element: string, strategy=CssSelector) =
+  let el = session.findElement(element, strategy)
   check el.isSome()
 
 template check*(session: Session, element: string, function: untyped) =
@@ -69,9 +74,21 @@ proc waitForLoad*(session: Session, timeout=20000) =
 proc wait*(session: Session, msTimeout: int = 5000) =
   session.waitForLoad(msTimeout)
 
+proc setUserRank*(session: Session, baseUrl, user, rank: string) =
+  with session:
+    navigate(baseUrl & "profile/" & user)
+    wait()
+
+    click "#settings-tab"
+
+    click "#rank-field"
+    click("#rank-field option#rank-" & rank.toLowerAscii)
+
+    click "#save-btn"
+    wait()
+
 proc logout*(session: Session) =
   with session:
-    wait()
     click "#profile-btn"
     click "#profile-btn #logout-btn"
     wait()
@@ -82,6 +99,9 @@ proc logout*(session: Session) =
 proc login*(session: Session, user, password: string) =
   with session:
     click "#login-btn"
+
+    clear "#login-form input[name='username']"
+    clear "#login-form input[name='password']"
 
     sendKeys "#login-form input[name='username']", user
     sendKeys "#login-form input[name='password']", password
@@ -98,6 +118,10 @@ proc login*(session: Session, user, password: string) =
 proc register*(session: Session, user, password: string) =
   with session:
     click "#signup-btn"
+
+    clear "#signup-form input[name='email']"
+    clear "#signup-form input[name='username']"
+    clear "#signup-form input[name='password']"
 
     sendKeys "#signup-form input[name='email']", user & "@" & user & ".com"
     sendKeys "#signup-form input[name='username']", user
@@ -125,16 +149,3 @@ proc createThread*(session: Session, title, content: string) =
 
     checkText "#thread-title", title
     checkText ".original-post div.post-content", content
-
-proc changeRank*(session: Session, rank: string) =
-  with session:
-    # Make sure the "Settings" tab is selected.
-    click ".profile-tabs li:nth-child(2)"
-
-    click "#rank-field"
-    click "#rank-field option#rank-" & rank.toLowerAscii()
-
-    wait()
-
-    # TODO: Getting an "element click intercepted" error here.
-    click "#save-btn"
