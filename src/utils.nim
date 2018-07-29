@@ -21,6 +21,7 @@ type
     smtpPort*: int
     smtpUser*: string
     smtpPassword*: string
+    smtpFromAddr*: string
     mlistAddress*: string
     recaptchaSecretKey*: string
     recaptchaSiteKey*: string
@@ -58,6 +59,7 @@ proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
   result.smtpPort = root{"smtpPort"}.getNum(25).int
   result.smtpUser = root{"smtpUser"}.getStr("")
   result.smtpPassword = root{"smtpPassword"}.getStr("")
+  result.smtpFromAddr = root{"smtpFromAddr"}.getStr("")
   result.mlistAddress = root{"mlistAddress"}.getStr("")
   result.recaptchaSecretKey = root{"recaptchaSecretKey"}.getStr("")
   result.recaptchaSiteKey = root{"recaptchaSiteKey"}.getStr("")

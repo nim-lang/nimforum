@@ -226,7 +226,7 @@ proc initialiseDb(admin: tuple[username, password, email: string],
 proc initialiseConfig(
   name, title, hostname: string,
   recaptcha: tuple[siteKey, secretKey: string],
-  smtp: tuple[address, user, password: string],
+  smtp: tuple[address, user, password, fromAddr: string],
   isDev: bool,
   dbPath: string,
   ga: string=""
@@ -242,6 +242,7 @@ proc initialiseConfig(
     "smtpAddress": %smtp.address,
     "smtpUser": %smtp.user,
     "smtpPassword": %smtp.password,
+    "smtpFromAddr": %smtp.fromAddr,
     "isDev": %isDev,
     "dbPath": %dbPath
   }
@@ -284,6 +285,7 @@ These can be changed later in the generated forum.json file.
   let smtpAddress = question("SMTP address (eg: mail.hostname.com): ")
   let smtpUser = question("SMTP user: ")
   let smtpPassword = readPasswordFromStdin("SMTP pass: ")
+  let smtpFromAddr = question("SMTP sending email address (eg: mail@mail.hostname.com): ")
 
   echo("The following is optional. You can specify your Google Analytics ID " &
        "if you wish. Otherwise just leave it blank.")
@@ -293,7 +295,7 @@ These can be changed later in the generated forum.json file.
   let dbPath = "nimforum.db"
   initialiseConfig(
     name, title, hostname, (recaptchaSiteKey, recaptchaSecretKey),
-    (smtpAddress, smtpUser, smtpPassword), isDev=false,
+    (smtpAddress, smtpUser, smtpPassword, smtpFromAddr), isDev=false,
     dbPath, ga
   )
 
@@ -328,7 +330,7 @@ when isMainModule:
         "Development Forum",
         "localhost",
         recaptcha=("", ""),
-        smtp=("", "", ""),
+        smtp=("", "", "", ""),
         isDev=true,
         dbPath
       )
@@ -345,7 +347,7 @@ when isMainModule:
         "Test Forum",
         "localhost",
         recaptcha=("", ""),
-        smtp=("", "", ""),
+        smtp=("", "", "", ""),
         isDev=true,
         dbPath
       )

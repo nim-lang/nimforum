@@ -30,7 +30,6 @@ proc rateCheck(mailer: Mailer, address: string): bool =
 proc sendMail(
   mailer: Mailer,
   subject, message, recipient: string,
-  fromAddr = "forum@nim-lang.org",
   otherHeaders:seq[(string, string)] = @[]
 ) {.async.} =
   # Ensure we aren't emailing this address too much.
@@ -41,6 +40,9 @@ proc sendMail(
   if mailer.config.smtpAddress.len == 0:
     warn("Cannot send mail: no smtp server configured (smtpAddress).")
     return
+  if mailer.config.smtpFromAddr.len == 0:
+    warn("Cannot send mail: no smtp from address configured (smtpFromAddr).")
+    return
 
   var client = newAsyncSmtp()
   await client.connect(mailer.config.smtpAddress, Port(mailer.config.smtpPort))
@@ -50,12 +52,12 @@ proc sendMail(
   let toList = @[recipient]
 
   var headers = otherHeaders
-  headers.add(("From", fromAddr))
+  headers.add(("From", mailer.config.smtpFromAddr))
 
   let encoded = createMessage(subject, message,
       toList, @[], headers)
 
-  await client.sendMail(fromAddr, toList, $encoded)
+  await client.sendMail(mailer.config.smtpFromAddr, toList, $encoded)
 
 proc sendPassReset(mailer: Mailer, email, user, resetUrl: string) {.async.} =
   let message = """Hello $1,
