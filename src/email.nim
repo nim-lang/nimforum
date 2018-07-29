@@ -40,6 +40,9 @@ proc sendMail(
   if mailer.config.smtpAddress.len == 0:
     warn("Cannot send mail: no smtp server configured (smtpAddress).")
     return
+  if mailer.config.smtpFromAddr.len == 0:
+    warn("Cannot send mail: no smtp from address configured (smtpFromAddr).")
+    return
 
   var client = newAsyncSmtp()
   await client.connect(mailer.config.smtpAddress, Port(mailer.config.smtpPort))
