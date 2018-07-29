@@ -285,7 +285,7 @@ These can be changed later in the generated forum.json file.
   let smtpAddress = question("SMTP address (eg: mail.hostname.com): ")
   let smtpUser = question("SMTP user: ")
   let smtpPassword = readPasswordFromStdin("SMTP pass: ")
-  let smtpFromAddr = question("SMTP send mail from address: ")
+  let smtpFromAddr = question("SMTP sending email address (eg: mail@mail.hostname.com): ")
 
   echo("The following is optional. You can specify your Google Analytics ID " &
        "if you wish. Otherwise just leave it blank.")
