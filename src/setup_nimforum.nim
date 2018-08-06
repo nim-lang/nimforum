@@ -66,7 +66,7 @@ proc initialiseDb(admin: tuple[username, password, email: string],
 
   db.exec(sql"""
     insert into category (id, name, description, color)
-    values (0, 'Default', '', '');
+    values (0, 'Default', 'The default category', '');
   """)
 
   # -- Thread
@@ -115,7 +115,7 @@ proc initialiseDb(admin: tuple[username, password, email: string],
   # Create default user.
   db.createUser(admin, Admin)
 
-  # Create test users if test or development
+  # Create some test data for development
   if isTest or isDev:
     for rank in Spammer..Moderator:
       let rankLower = toLowerAscii($rank)
@@ -123,6 +123,14 @@ proc initialiseDb(admin: tuple[username, password, email: string],
                   password: $rankLower,
                   email: $rankLower & "@localhost.local")
       db.createUser(user, rank)
+
+    db.exec(sql"""
+      insert into category (name, description, color)
+      values ('Libraries', 'Libraries and library development', '0198E1'),
+             ('Announcements', 'Announcements by Nim core devs', 'FFEB3B'),
+             ('Fun', 'Posts that are just for fun', '00897B'),
+             ('Potential Issues', 'Potential Nim compiler issues', 'E53935');
+    """)
 
   # -- Post
 
