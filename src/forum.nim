@@ -520,10 +520,10 @@ proc updatePost(c: TForumData, postId: int, content: string,
     if row[0] == $postId:
       exec(db, crud(crUpdate, "thread", "name"), subject.get(), threadId)
 
-proc executeNewThread(c: TForumData, subject, msg: string): (int64, int64) =
+proc executeNewThread(c: TForumData, subject, msg, categoryID: string): (int64, int64) =
   const
     query = sql"""
-      insert into thread(name, views, modified) values (?, 0, DATETIME('now'))
+      insert into thread(name, views, modified, category) values (?, 0, DATETIME('now'), ?)
     """
 
   assert c.loggedIn()
@@ -543,13 +543,17 @@ proc executeNewThread(c: TForumData, subject, msg: string): (int64, int64) =
   if msg.len == 0:
     raise newForumError("Message is empty", @["msg"])
 
+  let catID = getInt(categoryID, -1)
+  if catID == -1:
+    raise newForumError("CategoryID is invalid", @["categoryId"])
+
   if not validateRst(c, msg):
     raise newForumError("Message needs to be valid RST", @["msg"])
 
   if rateLimitCheck(c):
     raise newForumError("You're posting too fast!")
 
-  result[0] = tryInsertID(db, query, subject).int
+  result[0] = tryInsertID(db, query, subject, categoryID).int
   if result[0] < 0:
     raise newForumError("Subject already exists", @["subject"])
 
@@ -755,6 +759,18 @@ settings:
   port = config.port.Port
 
 routes:
+
+  get "/categories.json":
+    const categoriesQuery = sql"""select * from category;"""
+
+    var list = CategoryList(categories: @[])
+    for data in getAllRows(db, categoriesQuery):
+      let category = Category(
+        id: data[0].getInt, name: data[1], description: data[2], color: data[3]
+      )
+      list.categories.add(category)
+
+    resp $(%list), "application/json"
 
   get "/threads.json":
     var
@@ -1147,13 +1163,14 @@ routes:
     let formData = request.formData
     cond "msg" in formData
     cond "subject" in formData
+    cond "categoryId" in formData
 
     let msg = formData["msg"].body
     let subject = formData["subject"].body
-    # TODO: category
+    let categoryID = formData["categoryId"].body
 
     try:
-      let res = executeNewThread(c, subject, msg)
+      let res = executeNewThread(c, subject, msg, categoryID)
       resp Http200, $(%[res[0], res[1]]), "application/json"
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
