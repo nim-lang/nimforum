@@ -5,8 +5,8 @@ when defined(js):
   include karax/prelude
   import karax / [kajax, kdom]
 
-  import error, replybox, threadlist, post
-  import karaxutils
+  import error, replybox, threadlist, post, category
+  import karaxutils, categorypicker
 
   type
     NewThread* = ref object
@@ -14,11 +14,13 @@ when defined(js):
       error: Option[PostError]
       replyBox: ReplyBox
       subject: kstring
+      categoryPicker: CategoryPicker
 
   proc newNewThread*(): NewThread =
     NewThread(
       replyBox: newReplyBox(nil),
-      subject: ""
+      subject: "",
+      categoryPicker: newCategoryPicker()
     )
 
   proc onSubjectChange(e: Event, n: VNode, state: NewThread) =
@@ -37,8 +39,11 @@ when defined(js):
     let uri = makeUri("newthread")
     # TODO: This is a hack, karax should support this.
     let formData = newFormData()
+    let categoryID = state.categoryPicker.selectedCategoryID
+
     formData.append("subject", state.subject)
     formData.append("msg", state.replyBox.getText())
+    formData.append("categoryId", $categoryID)
     ajaxPost(uri, @[], cast[cstring](formData),
              (s: int, r: kstring) => onCreatePost(s, r, state))
 
@@ -55,6 +60,7 @@ when defined(js):
             if state.error.isSome():
               p(class="text-error"):
                 text state.error.get().message
+            render(state.categoryPicker)
             renderContent(state.replyBox, none[Thread](), none[Post]())
           tdiv(class="footer"):
 
