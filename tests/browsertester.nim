@@ -43,7 +43,7 @@ template withBackend(body: untyped): untyped =
 
   body
 
-import browsertests/[scenario1, threads, issue181]
+import browsertests/[scenario1, threads, issue181, categories]
 
 when isMainModule:
   spawn runProcess("geckodriver -p 4444 --log config")
@@ -64,6 +64,7 @@ when isMainModule:
     withBackend:
       scenario1.test(session, baseUrl)
       threads.test(session, baseUrl)
+      categories.test(session, baseUrl)
       issue181.test(session, baseUrl)
 
     session.close()
