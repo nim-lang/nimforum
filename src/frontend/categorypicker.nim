@@ -1,5 +1,5 @@
 when defined(js):
-  import sugar, httpcore, options, json
+  import sugar, httpcore, options, json, strutils
   import dom except Event
 
   include karax/prelude
@@ -15,10 +15,8 @@ when defined(js):
       loading: bool
       status: HttpCode
 
-  proc getSelectedCategory*(state: CategoryPicker): Option[Category] =
-    if state.list.isSome:
-      return some(state.list.get().categories[state.selectedCategoryID])
-    return none[Category]()
+  proc slug(name: string): string =
+    name.strip().replace(" ", "-").toLowerAscii
 
   proc onCategoryList(state: CategoryPicker): proc (httpStatus: int, response: kstring) =
     return proc (httpStatus: int, response: kstring) =
@@ -81,9 +79,6 @@ when defined(js):
           ul(class="menu"):
             for category in list:
               li(class="menu-item"):
-                a(class="category-" & $category.id,
+                a(class="category-" & $category.id & " " & category.name.slug,
                   onClick=onCategoryClick(state, category)):
                   render(category)
-
-
-  
