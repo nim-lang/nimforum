@@ -44,7 +44,7 @@ when defined(js):
 
   proc onPreviewPost(httpStatus: int, response: kstring, state: ReplyBox) =
     postFinished:
-      kout(response)
+      echo response
       state.rendering = some[kstring](response)
 
   proc onPreviewClick(e: Event, n: VNode, state: ReplyBox) =

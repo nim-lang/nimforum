@@ -86,7 +86,7 @@ when defined(js):
 
         state.error = some(error)
       except:
-        kout(getCurrentExceptionMsg().cstring)
+        echo getCurrentExceptionMsg()
         state.error = some(PostError(
           errorFields: @[],
           message: "Unknown error occurred."
