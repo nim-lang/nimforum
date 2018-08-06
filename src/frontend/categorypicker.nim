@@ -81,7 +81,8 @@ when defined(js):
           ul(class="menu"):
             for category in list:
               li(class="menu-item"):
-                a(onClick=onCategoryClick(state, category)):
+                a(class="category-" & $category.id,
+                  onClick=onCategoryClick(state, category)):
                   render(category)
 
 
