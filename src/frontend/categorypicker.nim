@@ -14,6 +14,7 @@ when defined(js):
       selectedCategoryID*: int
       loading: bool
       status: HttpCode
+      onCategoryChange: proc (oldCategory: Category, newCategory: Category)
 
   proc slug(name: string): string =
     name.strip().replace(" ", "-").toLowerAscii
@@ -40,20 +41,32 @@ when defined(js):
       state.loading = true
       ajaxGet(makeUri("categories.json"), @[], onCategoryList(state))
 
-  proc newCategoryPicker*(): CategoryPicker =
+  proc `[]`*(state: CategoryPicker, id: int): Category =
+    state.list.get().categories[id]
+
+  proc newCategoryPicker*(
+      onCategoryChange: proc (oldCategory: Category, newCategory: Category) =
+        proc (oldCategory: Category, newCategory: Category) = discard
+    ): CategoryPicker =
     result = CategoryPicker(
       list: none[CategoryList](),
       selectedCategoryID: 0,
       loading: false,
-      status: Http200
+      status: Http200,
+      onCategoryChange: onCategoryChange
     )
+
+  proc select*(state: CategoryPicker, id: int) =
+    state.selectedCategoryID = id
+    state.markDirty()
 
   proc onCategoryClick(state: CategoryPicker, category: Category): proc (ev: Event, n: VNode) =
     # this is necessary to capture the right value
     let cat = category
     return proc (ev: Event, n: VNode) =
-      state.selectedCategoryID = cat.id
-      state.markDirty()
+      let oldCategory = state[state.selectedCategoryID]
+      state.select(cat.id)
+      state.onCategoryChange(oldCategory, cat)
 
   proc render*(state: CategoryPicker): VNode =
     if state.status != Http200:

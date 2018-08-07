@@ -20,12 +20,14 @@ when defined(js):
   import karax / [vstyles, kajax, kdom]
 
   import karaxutils, error, replybox, editbox, postbutton, delete
+  import categorypicker
 
   type
     State = ref object
       list: Option[PostList]
       loading: bool
       status: HttpCode
+      error: Option[PostError]
       replyingTo: Option[Post]
       replyBox: ReplyBox
       editing: Option[Post] ## If in edit mode, this contains the post.
@@ -33,8 +35,10 @@ when defined(js):
       likeButton: LikeButton
       deleteModal: DeleteModal
       lockButton: LockButton
+      categoryPicker: CategoryPicker
 
   proc onReplyPosted(id: int)
+  proc onCategoryChanged(oldCategory: Category, newCategory: Category)
   proc onEditPosted(id: int, content: string, subject: Option[string])
   proc onEditCancelled()
   proc onDeletePost(post: Post)
@@ -44,16 +48,36 @@ when defined(js):
       list: none[PostList](),
       loading: false,
       status: Http200,
+      error: none[PostError](),
       replyingTo: none[Post](),
       replyBox: newReplyBox(onReplyPosted),
       editBox: newEditBox(onEditPosted, onEditCancelled),
       likeButton: newLikeButton(),
       deleteModal: newDeleteModal(onDeletePost, onDeleteThread, nil),
-      lockButton: newLockButton()
+      lockButton: newLockButton(),
+      categoryPicker: newCategoryPicker(onCategoryChanged)
     )
 
   var
     state = newState()
+
+  proc onCategoryPost(httpStatus: int, response: kstring, state: State) =
+    state.loading = false
+    postFinished:
+      discard
+      # TODO: show success message
+
+  proc onCategoryChanged(oldCategory: Category, newCategory: Category) =
+    let uri = makeUri("/updateThread")
+
+    let formData = newFormData()
+    formData.append("threadId", $state.list.get().thread.id)
+    formData.append("category", $newCategory.id)
+
+    state.loading = true
+
+    ajaxPost(uri, @[], cast[cstring](formData),
+             (s: int, r: kstring) => onCategoryPost(s, r, state))
 
   proc onPostList(httpStatus: int, response: kstring, postId: Option[int]) =
     state.loading = false
@@ -66,6 +90,7 @@ when defined(js):
     state.list = some(list)
 
     dom.document.title = list.thread.topic & " - " & dom.document.title
+    state.categoryPicker.select(list.thread.category.id)
 
     # The anchor should be jumped to once all the posts have been loaded.
     if postId.isSome():
@@ -178,6 +203,20 @@ when defined(js):
               text "Load more posts "
               span(class="more-post-count"):
                 text "(" & $post.moreBefore.len & ")"
+
+  proc genCategories(thread: Thread, currentUser: Option[User]): VNode =
+    let loggedIn = currentUser.isSome()
+    let authoredByUser =
+      loggedIn and currentUser.get().name == thread.author.name
+    let currentAdmin =
+      currentUser.isSome() and currentUser.get().rank == Admin
+
+    result = buildHtml():
+      tdiv():
+        if authoredByUser or currentAdmin:
+          render(state.categoryPicker)
+        else:
+          render(thread.category)
 
   proc genPostButtons(post: Post, currentUser: Option[User]): Vnode =
     let loggedIn = currentUser.isSome()
@@ -330,6 +369,9 @@ when defined(js):
     result = buildHtml():
       section(class="container grid-xl"):
         tdiv(id="thread-title", class="title"):
+          if state.error.isSome():
+            span(class="text-error"):
+              text state.error.get().message
           p(): text list.thread.topic
           if list.thread.isLocked:
             italic(class="fas fa-lock fa-xs",
@@ -343,7 +385,7 @@ when defined(js):
             italic(class="fas fa-check-square fa-xs",
                    title="Thread has a solution")
             text "Solved"
-          render(list.thread.category)
+          genCategories(list.thread, currentUser)
         tdiv(class="posts"):
           var prevPost: Option[Post] = none[Post]()
           for i, post in list.posts:
