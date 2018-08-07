@@ -1151,6 +1151,41 @@ routes:
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
 
+  post "/updateThread":
+    createTFD()
+    if not c.loggedIn():
+      let err = PostError(
+        errorFields: @[],
+        message: "Not logged in."
+      )
+      resp Http401, $(%err), "application/json"
+
+    let formData = request.formData
+
+    cond "threadId" in formData
+
+    let threadId = formData["threadId"].body
+
+    let keys = ["name", "views", "modified", "category", "isLocked", "solution", "isDeleted"]
+
+    # optional parameters
+    var
+      queryValues: seq[string] = @[]
+      queryKeys: seq[string] = @[]
+
+    for key in keys:
+      if key in formData:
+        queryKeys.add(key)
+        queryValues.add(formData[key].body)
+
+    if queryKeys.len() > 0:
+      queryValues.add(threadId)
+      try:
+        exec(db, crud(crUpdate, "thread", queryKeys), queryValues)
+        resp Http200, "{}", "application/json"
+      except ForumError as exc:
+        resp Http400, $(%exc.data), "application/json"
+
   post "/newthread":
     createTFD()
     if not c.loggedIn():
