@@ -5,7 +5,7 @@ when defined(js):
   include karax/prelude
   import karax / [kajax, kdom]
 
-  import error, replybox, threadlist, post, category
+  import error, replybox, threadlist, post, category, user
   import karaxutils, categorypicker
 
   type
@@ -47,7 +47,15 @@ when defined(js):
     ajaxPost(uri, @[], cast[cstring](formData),
              (s: int, r: kstring) => onCreatePost(s, r, state))
 
-  proc render*(state: NewThread): VNode =
+  proc render*(state: NewThread, currentUser: Option[User]): VNode =
+
+    let loggedIn = currentUser.isSome()
+    let currentAdmin =
+      currentUser.isSome() and currentUser.get().rank == Admin
+
+    if currentAdmin:
+      state.categoryPicker.setAddEnabled(true)
+
     result = buildHtml():
       section(class="container grid-xl"):
         tdiv(id="new-thread"):

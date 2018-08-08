@@ -83,7 +83,7 @@ proc render(): VNode =
     route([
       r("/newthread",
         (params: Params) =>
-          (render(state.newThread))
+          (render(state.newThread, getLoggedInUser()))
       ),
       r("/profile/@username",
         (params: Params) =>
