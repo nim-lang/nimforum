@@ -1,5 +1,5 @@
 when defined(js):
-  import sugar, httpcore, options, json, strutils
+  import sugar, httpcore, options, json, strutils, algorithm
   import dom except Event
 
   include karax/prelude
@@ -13,13 +13,17 @@ when defined(js):
       list: Option[CategoryList]
       selectedCategoryID*: int
       loading: bool
+      modalShown: bool
+      addEnabled: bool
       status: HttpCode
+      error: Option[PostError]
       onCategoryChange: proc (oldCategory: Category, newCategory: Category)
+      onAddCategory: proc (category: Category)
 
   proc slug(name: string): string =
     name.strip().replace(" ", "-").toLowerAscii
 
-  proc onCategoryList(state: CategoryPicker): proc (httpStatus: int, response: kstring) =
+  proc onCategoryLoad(state: CategoryPicker): proc (httpStatus: int, response: kstring) =
     return proc (httpStatus: int, response: kstring) =
       state.loading = false
       state.status = httpStatus.HttpCode
@@ -27,6 +31,7 @@ when defined(js):
 
       let parsed = parseJson($response)
       let list = parsed.to(CategoryList)
+      list.categories.sort(cmpNames)
 
       if state.list.isSome:
         state.list.get().categories.add(list.categories)
@@ -39,22 +44,35 @@ when defined(js):
   proc loadCategories(state: CategoryPicker) =
     if not state.loading:
       state.loading = true
-      ajaxGet(makeUri("categories.json"), @[], onCategoryList(state))
+      ajaxGet(makeUri("categories.json"), @[], onCategoryLoad(state))
 
   proc `[]`*(state: CategoryPicker, id: int): Category =
-    state.list.get().categories[id]
+    for cat in state.list.get().categories:
+      if cat.id == id:
+        return cat
+    raise newException(IndexError, "Category at " & $id & " not found!")
+
+  proc nullAddCategory(category: Category) = discard
+  proc nullCategoryChange(oldCategory: Category, newCategory: Category) = discard
 
   proc newCategoryPicker*(
-      onCategoryChange: proc (oldCategory: Category, newCategory: Category) =
-        proc (oldCategory: Category, newCategory: Category) = discard
+      onCategoryChange: proc(oldCategory: Category, newCategory: Category) = nullCategoryChange,
+      onAddCategory: proc(category: Category) = nullAddCategory
     ): CategoryPicker =
     result = CategoryPicker(
       list: none[CategoryList](),
       selectedCategoryID: 0,
       loading: false,
+      modalShown: false,
+      addEnabled: false,
       status: Http200,
-      onCategoryChange: onCategoryChange
+      error: none[PostError](),
+      onCategoryChange: onCategoryChange,
+      onAddCategory: onAddCategory
     )
+
+  proc setAddEnabled*(state: CategoryPicker, enabled: bool) =
+    state.addEnabled = enabled
 
   proc select*(state: CategoryPicker, id: int) =
     state.selectedCategoryID = id
@@ -68,6 +86,75 @@ when defined(js):
       state.select(cat.id)
       state.onCategoryChange(oldCategory, cat)
 
+  proc onAddCategoryPost(httpStatus: int, response: kstring, state: CategoryPicker) =
+    postFinished:
+      state.modalShown = false
+      let j = parseJson($response)
+      let category = j.to(Category)
+
+      state.list.get().categories.add(category)
+      state.list.get().categories.sort(cmpNames)
+      state.select(category.id)
+
+      state.onAddCategory(category)
+
+  proc onAddCategoryClick(state: CategoryPicker) =
+    state.loading = true
+    state.error = none[PostError]()
+
+    let uri = makeUri("createCategory")
+    let form = dom.document.getElementById("add-category-form")
+    let formData = newFormData(form)
+
+    ajaxPost(uri, @[], cast[cstring](formData),
+             (s: int, r: kstring) => onAddCategoryPost(s, r, state))
+
+  proc onClose(ev: Event, n: VNode, state: CategoryPicker) =
+    state.modalShown = false
+    state.markDirty()
+    ev.preventDefault()
+
+  proc genAddCategory(state: CategoryPicker): VNode =
+    result = buildHtml():
+      tdiv(id="add-category"):
+        button(class="plus-btn btn btn-link",
+               onClick=(ev: Event, n: VNode) => (
+                 state.modalShown = true;
+                 state.markDirty()
+               )):
+          italic(class="fas fa-plus")
+        tdiv(class=class({"active": state.modalShown}, "modal modal-sm")):
+          a(href="", class="modal-overlay", "aria-label"="close",
+            onClick=(ev: Event, n: VNode) => onClose(ev, n, state))
+          tdiv(class="modal-container"):
+            tdiv(class="modal-header"):
+              tdiv(class="card-title h5"):
+                text "Add New Category"
+            tdiv(class="modal-body"):
+              form(id="add-category-form"):
+                genFormField(
+                  state.error, "name", "Name", "text", false,
+                  placeholder="Category Name")
+                genFormField(
+                  state.error, "color", "Color", "color", false,
+                  placeholder="#XXYYZZ"
+                )
+                genFormField(
+                  state.error,
+                  "description",
+                  "Description",
+                  "text",
+                  true,
+                  placeholder="Description"
+                )
+            tdiv(class="modal-footer"):
+              button(
+                id="add-category-btn",
+                class="btn btn-primary",
+                onClick=(ev: Event, n: VNode) =>
+                      state.onAddCategoryClick()):
+                text "Add"
+
   proc render*(state: CategoryPicker): VNode =
     if state.status != Http200:
       return renderError("Couldn't retrieve categories.", state.status)
@@ -77,15 +164,13 @@ when defined(js):
       return buildHtml(tdiv(class="loading loading-lg"))
 
     let list = state.list.get().categories
-    let selectedCategory = list[state.selectedCategoryID]
+    let selectedCategory = state[state.selectedCategoryID]
 
     result = buildHtml():
       tdiv(id="category-selection", class="input-group"):
-        label(class="d-inline-block form-label"):
-          text "Category"
         tdiv(class="dropdown"):
           a(class="btn btn-link dropdown-toggle", tabindex="0"):
-            tdiv(class="d-inline-block"):
+            tdiv(class="selected-category d-inline-block"):
               render(selectedCategory)
             text " "
             italic(class="fas fa-caret-down")
@@ -95,3 +180,5 @@ when defined(js):
                 a(class="category-" & $category.id & " " & category.name.slug,
                   onClick=onCategoryClick(state, category)):
                   render(category)
+        if state.addEnabled:
+          genAddCategory(state)

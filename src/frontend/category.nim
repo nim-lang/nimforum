@@ -9,6 +9,9 @@ type
   CategoryList* = ref object
     categories*: seq[Category]
 
+proc cmpNames*(cat1: Category, cat2: Category): int =
+  cat1.name.cmp(cat2.name)
+
 when defined(js):
   include karax/prelude
   import karax / [vstyles, kajax, kdom]

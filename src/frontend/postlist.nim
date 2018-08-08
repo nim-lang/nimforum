@@ -211,6 +211,9 @@ when defined(js):
     let currentAdmin =
       currentUser.isSome() and currentUser.get().rank == Admin
 
+    if currentAdmin:
+      state.categoryPicker.setAddEnabled(true)
+
     result = buildHtml():
       tdiv():
         if authoredByUser or currentAdmin:

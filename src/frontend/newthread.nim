@@ -60,7 +60,10 @@ when defined(js):
             if state.error.isSome():
               p(class="text-error"):
                 text state.error.get().message
-            render(state.categoryPicker)
+            tdiv():
+              label(class="d-inline-block form-label"):
+                text "Category"
+              render(state.categoryPicker)
             renderContent(state.replyBox, none[Thread](), none[Post]())
           tdiv(class="footer"):
 
