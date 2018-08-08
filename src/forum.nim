@@ -665,6 +665,12 @@ proc executeLike(c: TForumData, postId: int) =
   # Save the like.
   exec(db, crud(crCreate, "like", "author", "post"), c.userid, postId)
 
+proc executeNewCategory(c: TForumData, name, color, description: string): int64 =
+  if name.len == 0:
+    raise newForumError("Category name must not be empty!", @["name"])
+
+  result = insertID(db, crud(crCreate, "category", "name", "color", "description"), name, color, description)
+
 proc executeUnlike(c: TForumData, postId: int) =
   # Verify the post and like exists for the current user.
   const likeQuery = sql"""
@@ -1048,6 +1054,21 @@ routes:
       let session = executeLogin(c, username, password)
       setCookie("sid", session)
       resp Http200, "{}", "application/json"
+    except ForumError as exc:
+      resp Http400, $(%exc.data), "application/json"
+
+  post "/createCategory":
+    createTFD()
+    let formData = request.formData
+
+    let name = formData["name"].body
+    let color = formData["color"].body.replace("#", "")
+    let description = formData["description"].body
+
+    try:
+      let id = executeNewCategory(c, name, color, description)
+      let category = Category(id: id.int, name: name, color: color, description: description)
+      resp Http200, $(%category), "application/json"
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
 
