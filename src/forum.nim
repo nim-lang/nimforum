@@ -666,6 +666,12 @@ proc executeLike(c: TForumData, postId: int) =
   exec(db, crud(crCreate, "like", "author", "post"), c.userid, postId)
 
 proc executeNewCategory(c: TForumData, name, color, description: string): int64 =
+
+  let canAdd = c.rank == Admin
+
+  if not canAdd:
+    raise newForumError("You do not have permissions to add a category.")
+
   if name.len == 0:
     raise newForumError("Category name must not be empty!", @["name"])
 
