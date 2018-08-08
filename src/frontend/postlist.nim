@@ -375,7 +375,7 @@ when defined(js):
           if state.error.isSome():
             span(class="text-error"):
               text state.error.get().message
-          p(): text list.thread.topic
+          p(class="title-text"): text list.thread.topic
           if list.thread.isLocked:
             italic(class="fas fa-lock fa-xs",
                    title="Thread cannot be replied to")

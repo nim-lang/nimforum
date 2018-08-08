@@ -15,6 +15,12 @@ proc banUser(session: Session, baseUrl: string) =
     setUserRank baseUrl, "user", "banned"
     logout()
 
+proc unBanUser(session: Session, baseUrl: string) =
+  with session:
+    login "admin", "admin"
+    setUserRank baseUrl, "user", "user"
+    logout()
+
 proc userTests(session: Session, baseUrl: string) =
   suite "user thread tests":
     session.login("user", "user")
@@ -34,7 +40,7 @@ proc userTests(session: Session, baseUrl: string) =
         click "#create-thread-btn"
         wait()
 
-        checkText "#thread-title", userTitleStr
+        checkText "#thread-title .title-text", userTitleStr
         checkText ".original-post div.post-content", userContentStr
 
     session.logout()
@@ -99,7 +105,7 @@ proc adminTests(session: Session, baseUrl: string) =
         click "#create-thread-btn"
         wait()
 
-        checkText "#thread-title", adminTitleStr
+        checkText "#thread-title .title-text", adminTitleStr
         checkText ".original-post div.post-content", adminContentStr
 
     test "try create duplicate thread":
@@ -171,6 +177,8 @@ proc test*(session: Session, baseUrl: string) =
   bannedTests(session, baseUrl)
   anonymousTests(session, baseUrl)
   adminTests(session, baseUrl)
+
+  unBanUser(session, baseUrl)
 
   session.navigate(baseUrl)
   session.wait()
