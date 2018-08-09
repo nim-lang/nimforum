@@ -147,5 +147,5 @@ proc createThread*(session: Session, title, content: string) =
     click "#create-thread-btn"
     wait()
 
-    checkText "#thread-title", title
+    checkText "#thread-title .title-text", title
     checkText ".original-post div.post-content", content
