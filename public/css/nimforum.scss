@@ -214,17 +214,7 @@ $threads-meta-color: #545d70;
   }
 }
 
-.triangle {
-  // TODO: Abstract this into a "category" class.
-  width: 0;
-  height: 0;
-  border-left: 0.3rem solid transparent;
-  border-right: 0.3rem solid transparent;
-  border-bottom: 0.6rem solid #98c766;
-  display: inline-block;
-}
-
-.square {
+.category-color {
   width: 0;
   height: 0;
   border: 0.3rem solid #98c766;

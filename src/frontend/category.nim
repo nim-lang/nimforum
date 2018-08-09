@@ -24,7 +24,7 @@ when defined(js):
         tdiv(class="category",
              title=category.description,
              "data-color"="#" & category.color):
-          tdiv(class="square",
+          tdiv(class="category-color",
                style=style(
                  (StyleAttr.border,
                   kstring"0.3rem solid #" & category.color)
