@@ -1071,7 +1071,7 @@ routes:
     except EParseError:
       let err = PostError(
         errorFields: @[],
-        message: getCurrentExceptionMsg()
+        message: "Message needs to be valid RST!"
       )
       resp Http400, $(%err), "application/json"
 
