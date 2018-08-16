@@ -30,5 +30,18 @@ proc test*(session: Session, baseUrl: string) =
   test "can register":
     with session:
       register("test", "test")
+      logout()
 
-  session.logout()
+  test "can't register same username with different case":
+    with session:
+      register "test1", "test1", verify = false
+      logout()
+
+      navigate baseUrl
+      wait()
+
+      register "TEst1", "test1", verify = false
+
+      ensureExists "#signup-form .has-error"
+      navigate baseUrl
+      wait()

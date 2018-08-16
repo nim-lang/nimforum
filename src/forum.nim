@@ -608,7 +608,7 @@ proc executeRegister(c: TForumData, name, pass, antibot, userIp,
     raise newForumError("Invalid username", @["username"])
   if getValue(
     db,
-    sql"select name from person where name = ? and isDeleted = 0",
+    sql"select name from person where name = ? collate nocase and isDeleted = 0",
     name
   ).len > 0:
     raise newForumError("Username already exists", @["username"])

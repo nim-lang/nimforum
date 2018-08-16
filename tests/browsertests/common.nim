@@ -115,7 +115,7 @@ proc login*(session: Session, user, password: string) =
     checkText "#profile-btn #profile-name", user
     click "#profile-btn"
 
-proc register*(session: Session, user, password: string) =
+proc register*(session: Session, user, password: string, verify = true) =
   with session:
     click "#signup-btn"
 
@@ -130,11 +130,13 @@ proc register*(session: Session, user, password: string) =
     click "#signup-modal .create-account-btn"
     wait()
 
-    # Verify that the user menu has been initialised properly.
-    click "#profile-btn"
-    checkText "#profile-btn #profile-name", user
-    # close menu
-    click "#profile-btn"
+    if verify:
+      with session:
+        # Verify that the user menu has been initialised properly.
+        click "#profile-btn"
+        checkText "#profile-btn #profile-name", user
+        # close menu
+        click "#profile-btn"
 
 proc createThread*(session: Session, title, content: string) =
   with session:
