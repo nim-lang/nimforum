@@ -22,6 +22,7 @@ table th {
 // Custom styles.
 // - Navigation bar.
 $navbar-height: 60px;
+$default-category-color: #98c766;
 $logo-height: $navbar-height - 20px;
 
 .navbar-button {
@@ -166,6 +167,33 @@ $logo-height: $navbar-height - 20px;
   }
 }
 
+.thread-list {
+  @extend .container;
+  @extend .grid-xl;
+}
+
+.category-list {
+  @extend .thread-list;
+
+
+  .category-title {
+    @extend .thread-title;
+    a, a:hover {
+      color: lighten($body-font-color, 10%);
+      text-decoration: none;
+    }
+  }
+
+  .category-description {
+    opacity: 0.6;
+  }
+}
+
+#categories-list .category {
+  border-left: 6px solid;
+  border-left-color: $default-category-color;
+}
+
 $super-popular-color: #f86713;
 $popular-color: darken($super-popular-color, 25%);
 $threads-meta-color: #545d70;
@@ -217,7 +245,7 @@ $threads-meta-color: #545d70;
 .category-color {
   width: 0;
   height: 0;
-  border: 0.3rem solid #98c766;
+  border: 0.3rem solid $default-category-color;
   display: inline-block;
   margin-right: 5px;
 }
@@ -725,9 +753,4 @@ hr {
   .footer {
     margin-top: $control-padding-y*2;
   }
-}
-
-// - Hide features that have not been implemented yet.
-#main-buttons > section.navbar-section:nth-child(1) {
-  display: none;
 }

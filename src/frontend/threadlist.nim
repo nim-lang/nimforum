@@ -29,7 +29,7 @@ when defined(js):
   include karax/prelude
   import karax / [vstyles, kajax, kdom]
 
-  import karaxutils, error, user
+  import karaxutils, error, user, mainbuttons
 
   type
     State = ref object
@@ -64,27 +64,6 @@ when defined(js):
       return thread.author == user.get()
 
     return true
-
-  proc genTopButtons(currentUser: Option[User]): VNode =
-    result = buildHtml():
-      section(class="navbar container grid-xl", id="main-buttons"):
-        section(class="navbar-section"):
-          tdiv(class="dropdown"):
-            a(href="#", class="btn dropdown-toggle"):
-              text "Filter "
-              italic(class="fas fa-caret-down")
-            ul(class="menu"):
-              li: text "community"
-              li: text "dev"
-          button(class="btn btn-primary"): text "Latest"
-          button(class="btn btn-link"): text "Most Active"
-          button(class="btn btn-link"): text "Categories"
-        section(class="navbar-section"):
-          if currentUser.isSome():
-            a(id="new-thread-btn", href=makeUri("/newthread"), onClick=anchorCB):
-              button(class="btn btn-secondary"):
-                italic(class="fas fa-plus")
-                text " New Thread"
 
   proc genUserAvatars(users: seq[User]): VNode =
     result = buildHtml(td):
@@ -168,10 +147,10 @@ when defined(js):
     else:
       state.list = some(list)
 
-  proc onLoadMore(ev: Event, n: VNode) =
+  proc onLoadMore(ev: Event, n: VNode, categoryId: int) =
     state.loading = true
     let start = state.list.get().threads.len
-    ajaxGet(makeUri("threads.json?start=" & $start), @[], onThreadList)
+    ajaxGet(makeUri("threads.json?start=" & $start & "&categoryId=" & $categoryId), @[], onThreadList)
 
   proc getInfo(
     list: seq[Thread], i: int, currentUser: Option[User]
@@ -196,20 +175,20 @@ when defined(js):
       isNew: thread.creation > previousVisitAt
     )
 
-  proc genThreadList(currentUser: Option[User]): VNode =
+  proc genThreadList(currentUser: Option[User], categoryId: int): VNode =
     if state.status != Http200:
       return renderError("Couldn't retrieve threads.", state.status)
 
     if state.list.isNone:
       if not state.loading:
         state.loading = true
-        ajaxGet(makeUri("threads.json"), @[], onThreadList)
+        ajaxGet(makeUri("threads.json?categoryId=" & $categoryId), @[], onThreadList)
 
       return buildHtml(tdiv(class="loading loading-lg"))
 
     let list = state.list.get()
     result = buildHtml():
-      section(class="container grid-xl"): # TODO: Rename to `.thread-list`.
+      section(class="thread-list"):
         table(class="table", id="threads-list"):
           thead():
             tr:
@@ -239,10 +218,11 @@ when defined(js):
                   td(colspan="6"):
                     tdiv(class="loading loading-lg")
                 else:
-                  td(colspan="6", onClick=onLoadMore):
+                  td(colspan="6",
+                     onClick = (ev: Event, n: VNode) => (onLoadMore(ev, n, categoryId))):
                     span(text "load more threads")
 
-  proc renderThreadList*(currentUser: Option[User]): VNode =
+  proc renderThreadList*(currentUser: Option[User], categoryId = -1): VNode =
     result = buildHtml(tdiv):
-      genTopButtons(currentUser)
-      genThreadList(currentUser)
+      renderMainButtons(currentUser)
+      genThreadList(currentUser, categoryId)

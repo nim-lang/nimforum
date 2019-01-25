@@ -5,6 +5,7 @@ include karax/prelude
 import jester/[patterns]
 
 import threadlist, postlist, header, profile, newthread, error, about
+import categorylist
 import resetpassword, activateemail, search
 import karaxutils
 
@@ -81,6 +82,14 @@ proc render(): VNode =
   result = buildHtml(tdiv()):
     renderHeader()
     route([
+      r("/categories",
+        (params: Params) =>
+          (renderCategoryList(getLoggedInUser()))
+      ),
+      r("/c/@id",
+        (params: Params) =>
+          (renderThreadList(getLoggedInUser(), params["id"].parseInt))
+      ),
       r("/newthread",
         (params: Params) =>
           (render(state.newThread, getLoggedInUser()))
