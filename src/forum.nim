@@ -806,14 +806,28 @@ routes:
     var
       start = getInt(@"start", 0)
       count = getInt(@"count", 30)
+      categoryId = getInt(@"categoryId", -1)
+
+    var
+      categorySection = ""
+      categoryArgs: seq[string] = @[$start, $count]
+      countQuery = sql"select count(*) from thread;"
+      countArgs: seq[string] = @[]
+
+
+    if categoryId != -1:
+      categorySection = "c.id == ? and "
+      countQuery = sql"select count(*) from thread t, category c where category == c.id and c.id == ?;"
+      countArgs.add($categoryId)
+      categoryArgs.insert($categoryId, 0)
 
     const threadsQuery =
-      sql"""select t.id, t.name, views, strftime('%s', modified), isLocked,
+      """select t.id, t.name, views, strftime('%s', modified), isLocked,
                    c.id, c.name, c.description, c.color,
                    u.name, u.email, strftime('%s', u.lastOnline),
                    strftime('%s', u.previousVisitAt), u.status, u.isDeleted
             from thread t, category c, person u
-            where t.isDeleted = 0 and category = c.id and
+            where t.isDeleted = 0 and category = c.id and $#
                   u.status <> 'Spammer' and u.status <> 'Troll' and
                   u.id in (
                     select u.id from post p, person u
@@ -823,11 +837,11 @@ routes:
                   )
             order by modified desc limit ?, ?;"""
 
-    let thrCount = getValue(db, sql"select count(*) from thread;").parseInt()
+    let thrCount = getValue(db, countQuery, countArgs).parseInt()
     let moreCount = max(0, thrCount - (start + count))
 
     var list = ThreadList(threads: @[], moreCount: moreCount)
-    for data in getAllRows(db, threadsQuery, start, count):
+    for data in getAllRows(db, sql(threadsQuery % categorySection), categoryArgs):
       let thread = selectThread(data[0 .. 8], selectUser(data[9 .. ^1]))
       list.threads.add(thread)
 
