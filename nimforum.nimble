@@ -1,5 +1,5 @@
 # Package
-version       = "2.0.1"
+version       = "2.1.0"
 author        = "Dominik Picheta"
 description   = "The Nim forum"
 license       = "MIT"
@@ -13,13 +13,13 @@ skipExt = @["nim"]
 # Dependencies
 
 requires "nim >= 0.18.1"
-requires "jester 0.4.0"
+requires "jester#22f8240"
 requires "bcrypt#head"
 requires "hmac#9c61ebe2fd134cf97"
 requires "recaptcha 1.0.2"
 requires "sass#649e0701fa5c"
 
-requires "karax#d8df257dd"
+requires "karax#c8c7b13"
 
 requires "webdriver#20f3c1b"
 

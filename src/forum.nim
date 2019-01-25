@@ -8,7 +8,7 @@
 import system except Thread
 import
   os, strutils, times, md5, strtabs, math, db_sqlite,
-  scgi, jester, asyncdispatch, asyncnet, sequtils,
+  jester, asyncdispatch, asyncnet, sequtils,
   parseutils, random, rst, recaptcha, json, re, sugar,
   strformat, logging
 import cgi except setCookie
@@ -76,7 +76,6 @@ proc getGravatarUrl(email: string, size = 80): string =
 
 
 # -----------------------------------------------------------------------------
-template `||`(x: untyped): untyped = (if not isNil(x): x else: "")
 
 proc validateCaptcha(recaptchaResp, ip: string) {.async.} =
   # captcha validation:
@@ -133,9 +132,9 @@ proc checkLoggedIn(c: TForumData) =
 
     let row = getRow(db,
       sql"select name, email, status from person where id = ?", c.userid)
-    c.username = ||row[0]
-    c.email = ||row[1]
-    c.rank = parseEnum[Rank](||row[2])
+    c.username = row[0]
+    c.email = row[1]
+    c.rank = parseEnum[Rank](row[2])
 
     # In order to handle the "last visit" line appropriately, i.e.
     # it shouldn't disappear after a refresh, we need to manage a
@@ -463,7 +462,7 @@ proc executeReply(c: TForumData, threadId: int, content: string,
     crud(crCreate, "post", "author", "ip", "content", "thread", "replyingTo"),
     c.userId, c.req.ip, content, $threadId,
     if replyingTo.isSome(): $replyingTo.get()
-    else: nil
+    else: ""
   )
   discard tryExec(
     db,
