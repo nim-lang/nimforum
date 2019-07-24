@@ -49,7 +49,7 @@ when defined(js):
     state.loading = true
     state.error = none[PostError]()
 
-    let formData = newFormData()
+    let formData = karaxutils.newFormData()
     formData.append("msg", state.box.getText())
     formData.append("postId", $state.post.id)
     # TODO: Subject
@@ -72,10 +72,10 @@ when defined(js):
       let uri = makeUri("post.rst", params)
       ajaxGet(uri, @[], (s: int, r: kstring) => onRawContent(s, r, state))
 
-      return buildHtml(tdiv(class="loading"))
+      return buildHtml(tdiv(class = "loading"))
 
     result = buildHtml():
-      tdiv(class="edit-box"):
+      tdiv(class = "edit-box"):
         renderContent(
           state.box,
           none[Thread](),
@@ -83,16 +83,16 @@ when defined(js):
         )
 
         if state.error.isSome():
-          span(class="text-error"):
+          span(class = "text-error"):
             text state.error.get().message
 
-        tdiv(class="edit-buttons"):
-          tdiv(class="cancel-button"):
-            button(class="btn btn-link",
-                   onClick=(e: Event, n: VNode) => (state.onEditCancel())):
+        tdiv(class = "edit-buttons"):
+          tdiv(class = "cancel-button"):
+            button(class = "btn btn-link",
+                   onClick = (e: Event, n: VNode) => (state.onEditCancel())):
               text " Cancel"
-          tdiv(class="save-button"):
-            button(class=class({"loading": state.loading}, "btn btn-primary"),
-                   onClick=(e: Event, n: VNode) => state.save()):
-              italic(class="fas fa-check")
+          tdiv(class = "save-button"):
+            button(class = class({"loading": state.loading}, "btn btn-primary"),
+                   onClick = (e: Event, n: VNode) => state.save()):
+              italic(class = "fas fa-check")
               text " Save"

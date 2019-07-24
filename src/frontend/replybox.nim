@@ -26,7 +26,7 @@ when defined(js):
 
   proc performScroll() =
     let replyBox = dom.document.getElementById("reply-box")
-    replyBox.scrollIntoView(false)
+    replyBox.scrollIntoView()
 
   proc show*(state: ReplyBox) =
     # Scroll to the reply box.
@@ -53,7 +53,7 @@ when defined(js):
     state.error = none[PostError]()
     state.rendering = none[kstring]()
 
-    let formData = newFormData()
+    let formData = karaxutils.newFormData()
     formData.append("msg", state.text)
     let uri = makeUri("/preview")
     ajaxPost(uri, @[], cast[cstring](formData),
@@ -74,7 +74,7 @@ when defined(js):
     state.loading = true
     state.error = none[PostError]()
 
-    let formData = newFormData()
+    let formData = karaxutils.newFormData()
     formData.append("msg", state.text)
     formData.append("threadId", $thread.id)
     if replyingTo.isSome:
@@ -94,73 +94,74 @@ when defined(js):
   proc renderContent*(state: ReplyBox, thread: Option[Thread],
                       post: Option[Post]): VNode =
     result = buildHtml():
-      tdiv(class="panel"):
-        tdiv(class="panel-nav"):
-          ul(class="tab tab-block"):
-            li(class=class({"active": not state.preview}, "tab-item"),
-               onClick=(e: Event, n: VNode) =>
+      tdiv(class = "panel"):
+        tdiv(class = "panel-nav"):
+          ul(class = "tab tab-block"):
+            li(class = class({"active": not state.preview}, "tab-item"),
+               onClick = (e: Event, n: VNode) =>
                   onMessageClick(e, n, state)):
-              a(class="c-hand"):
+              a(class = "c-hand"):
                 text "Message"
-            li(class=class({"active": state.preview}, "tab-item"),
-               onClick=(e: Event, n: VNode) =>
+            li(class = class({"active": state.preview}, "tab-item"),
+               onClick = (e: Event, n: VNode) =>
                   onPreviewClick(e, n, state)):
-              a(class="c-hand"):
+              a(class = "c-hand"):
                 text "Preview"
-        tdiv(class="panel-body"):
+        tdiv(class = "panel-body"):
           if state.preview:
             if state.loading:
-              tdiv(class="loading")
+              tdiv(class = "loading")
             elif state.rendering.isSome():
               verbatim(state.rendering.get())
           else:
-            textarea(id="reply-textarea",
-                     class="form-input post-text-area", rows="5",
-                     onChange=(e: Event, n: VNode) =>
+            textarea(id = "reply-textarea",
+                     class = "form-input post-text-area", rows = "5",
+                     onChange = (e: Event, n: VNode) =>
                         onChange(e, n, state),
-                     value=state.text)
-            a(href=makeUri("/about/rst"), target="blank_"):
+                     value = state.text)
+            a(href = makeUri("/about/rst"), target = "blank_"):
               text "Styling with RST is supported"
 
           if state.error.isSome():
-            span(class="text-error",
-                 style=style(StyleAttr.marginTop, "0.4rem")):
+            span(class = "text-error",
+                 style = style(StyleAttr.marginTop, "0.4rem")):
               text state.error.get().message
 
         if thread.isSome:
-          tdiv(class="panel-footer"):
-            button(class=class(
+          tdiv(class = "panel-footer"):
+            button(class = class(
                      {"loading": state.loading},
                      "btn btn-primary float-right"
-                   ),
-                   onClick=(e: Event, n: VNode) =>
-                      onReplyClick(e, n, state, thread.get(), post)):
+              ),
+              onClick = (e: Event, n: VNode) =>
+                 onReplyClick(e, n, state, thread.get(), post)):
               text "Reply"
-            button(class="btn btn-link float-right",
-                   onClick=(e: Event, n: VNode) =>
+            button(class = "btn btn-link float-right",
+                   onClick = (e: Event, n: VNode) =>
                       onCancelClick(e, n, state)):
               text "Cancel"
 
   proc render*(state: ReplyBox, thread: Thread, post: Option[Post],
                hasMore: bool): VNode =
     if not state.shown:
-      return buildHtml(tdiv(id="reply-box"))
+      return buildHtml(tdiv(id = "reply-box"))
 
     result = buildHtml():
-      tdiv(class=class({"no-border": hasMore}, "information"), id="reply-box"):
-        tdiv(class="information-icon"):
-          italic(class="fas fa-reply")
-        tdiv(class="information-main", style=style(StyleAttr.width, "100%")):
-          tdiv(class="information-title"):
+      tdiv(class = class({"no-border": hasMore}, "information"),
+          id = "reply-box"):
+        tdiv(class = "information-icon"):
+          italic(class = "fas fa-reply")
+        tdiv(class = "information-main", style = style(StyleAttr.width, "100%")):
+          tdiv(class = "information-title"):
             if post.isNone:
               text fmt("Replying to \"{thread.topic}\"")
             else:
               text "Replying to "
               renderUserMention(post.get().author)
-              tdiv(class="post-buttons",
-                   style=style(StyleAttr.marginTop, "-0.3rem")):
-                a(href=renderPostUrl(post.get(), thread)):
-                  button(class="btn"):
-                    italic(class="fas fa-arrow-up")
-          tdiv(class="information-content"):
+              tdiv(class = "post-buttons",
+                   style = style(StyleAttr.marginTop, "-0.3rem")):
+                a(href = renderPostUrl(post.get(), thread)):
+                  button(class = "btn"):
+                    italic(class = "fas fa-arrow-up")
+          tdiv(class = "information-content"):
             renderContent(state, some(thread), post)

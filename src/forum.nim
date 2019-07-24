@@ -8,7 +8,7 @@
 import system except Thread
 import
   os, strutils, times, md5, strtabs, math, db_sqlite,
-  scgi, jester, asyncdispatch, asyncnet, sequtils,
+  jester, asyncdispatch, asyncnet, sequtils,
   parseutils, random, rst, recaptcha, json, re, sugar,
   strformat, logging
 import cgi except setCookie
@@ -76,7 +76,6 @@ proc getGravatarUrl(email: string, size = 80): string =
 
 
 # -----------------------------------------------------------------------------
-template `||`(x: untyped): untyped = (if not isNil(x): x else: "")
 
 proc validateCaptcha(recaptchaResp, ip: string) {.async.} =
   # captcha validation:
@@ -133,9 +132,9 @@ proc checkLoggedIn(c: TForumData) =
 
     let row = getRow(db,
       sql"select name, email, status from person where id = ?", c.userid)
-    c.username = ||row[0]
-    c.email = ||row[1]
-    c.rank = parseEnum[Rank](||row[2])
+    c.username = row[0]
+    c.email = row[1]
+    c.rank = parseEnum[Rank](row[2])
 
     # In order to handle the "last visit" line appropriately, i.e.
     # it shouldn't disappear after a refresh, we need to manage a
@@ -256,8 +255,8 @@ proc initialise() =
 
   mailer = newMailer(config)
 
-  db = open(connection=config.dbPath, user="", password="",
-              database="nimforum")
+  db = open(connection = config.dbPath, user = "", password = "",
+              database = "nimforum")
   isFTSAvailable = db.getAllRows(sql("SELECT name FROM sqlite_master WHERE " &
       "type='table' AND name='post_fts'")).len == 1
 
@@ -282,7 +281,7 @@ template createTFD() =
 
 #[ DB functions. TODO: Move to another module? ]#
 
-proc selectUser(userRow: seq[string], avatarSize: int=80): User =
+proc selectUser(userRow: seq[string], avatarSize: int = 80): User =
   result = User(
     name: userRow[0],
     avatarUrl: userRow[1].getGravatarUrl(avatarSize),
@@ -463,7 +462,7 @@ proc executeReply(c: TForumData, threadId: int, content: string,
     crud(crCreate, "post", "author", "ip", "content", "thread", "replyingTo"),
     c.userId, c.req.ip, content, $threadId,
     if replyingTo.isSome(): $replyingTo.get()
-    else: nil
+    else: ""
   )
   discard tryExec(
     db,
@@ -601,7 +600,7 @@ proc executeRegister(c: TForumData, name, pass, antibot, userIp,
   ## Registers a new user.
 
   # email validation
-  validateEmail(email, checkDuplicated=true)
+  validateEmail(email, checkDuplicated = true)
 
   # Username validation:
   if name.len == 0 or not allCharsInSet(name, UsernameIdent) or name.len > 20:
@@ -739,7 +738,7 @@ proc updateProfile(
       mailer, ActivateEmail, c.req, row[0], row[1], row[2], row[3]
     )
 
-  validateEmail(email, checkDuplicated=wasEmailChanged)
+  validateEmail(email, checkDuplicated = wasEmailChanged)
 
   exec(
     db,
@@ -943,7 +942,7 @@ routes:
     if userID.len == 0:
       halt()
 
-    profile.user = selectUser(userRow, avatarSize=200)
+    profile.user = selectUser(userRow, avatarSize = 200)
     profile.joinTime = userRow[^2].parseInt()
     profile.postCount =
       getValue(db, sql("select count(*) " & postsFrom), username).parseInt()
@@ -1045,10 +1044,10 @@ routes:
     let status = UserStatus(
       user: user,
       recaptchaSiteKey:
-        if not config.isDev:
-          some(config.recaptchaSiteKey)
-        else:
-          none[string]()
+      if not config.isDev:
+        some(config.recaptchaSiteKey)
+      else:
+        none[string]()
     )
     resp $(%status), "application/json"
 

@@ -11,7 +11,7 @@ import strutils, db_sqlite, os, times, json, options, terminal
 
 import auth, frontend/user
 
-proc backup(path: string, contents: Option[string]=none[string]()) =
+proc backup(path: string, contents: Option[string] = none[string]()) =
   if existsFile(path):
     if contents.isSome() and readFile(path) == contents.get():
       # Don't backup if the files are equivalent.
@@ -34,7 +34,7 @@ proc createUser(db: DbConn, user: tuple[username, password, email: string],
   """, user.username, password, user.email, salt, $rank)
 
 proc initialiseDb(admin: tuple[username, password, email: string],
-                  filename="nimforum.db") =
+                  filename = "nimforum.db") =
   let
     path = getCurrentDir() / filename
     isTest = "-test" in filename
@@ -45,8 +45,8 @@ proc initialiseDb(admin: tuple[username, password, email: string],
 
   removeFile(path)
 
-  var db = open(connection=path, user="", password="",
-                database="nimforum")
+  var db = open(connection = path, user = "", password = "",
+                database = "nimforum")
 
   const
     userNameType = "varchar(20)"
@@ -229,7 +229,7 @@ proc initialiseConfig(
   smtp: tuple[address, user, password, fromAddr: string],
   isDev: bool,
   dbPath: string,
-  ga: string=""
+  ga: string = ""
 ) =
   let path = getCurrentDir() / "forum.json"
 
@@ -295,19 +295,19 @@ These can be changed later in the generated forum.json file.
   let dbPath = "nimforum.db"
   initialiseConfig(
     name, title, hostname, (recaptchaSiteKey, recaptchaSecretKey),
-    (smtpAddress, smtpUser, smtpPassword, smtpFromAddr), isDev=false,
+    (smtpAddress, smtpUser, smtpPassword, smtpFromAddr), isDev = false,
     dbPath, ga
   )
 
   initialiseDb(
-    admin=(adminUser, adminPass, adminEmail),
+    admin = (adminUser, adminPass, adminEmail),
     dbPath
   )
 
   echo("Setup complete!")
 
 proc echoHelp() =
-    quit("""
+  quit("""
 Usage: setup_nimforum opts
 
 Options:
@@ -329,14 +329,14 @@ when isMainModule:
         "Development Forum",
         "Development Forum",
         "localhost",
-        recaptcha=("", ""),
-        smtp=("", "", "", ""),
-        isDev=true,
+        recaptcha = ("", ""),
+        smtp = ("", "", "", ""),
+        isDev = true,
         dbPath
       )
 
       initialiseDb(
-        admin=("admin", "admin", "admin@localhost.local"),
+        admin = ("admin", "admin", "admin@localhost.local"),
         dbPath
       )
     of "--test":
@@ -346,21 +346,21 @@ when isMainModule:
         "Test Forum",
         "Test Forum",
         "localhost",
-        recaptcha=("", ""),
-        smtp=("", "", "", ""),
-        isDev=true,
+        recaptcha = ("", ""),
+        smtp = ("", "", "", ""),
+        isDev = true,
         dbPath
       )
 
       initialiseDb(
-        admin=("admin", "admin", "admin@localhost.local"),
+        admin = ("admin", "admin", "admin@localhost.local"),
         dbPath
       )
     of "--blank":
       let dbPath = "nimforum-blank.db"
       echo("Initialising blank DB...")
       initialiseDb(
-        admin=("", "", ""),
+        admin = ("", "", ""),
         dbPath
       )
     of "--setup":

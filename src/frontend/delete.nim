@@ -51,7 +51,7 @@ when defined(js):
       of DeletePost:
         makeUri("/deletePost")
     # TODO: This is a hack, karax should support this.
-    let formData = newFormData()
+    let formData = karaxutils.newFormData()
     case state.kind
     of DeleteUser:
       formData.append("username", state.user.name)
@@ -93,19 +93,19 @@ when defined(js):
 
   proc render*(state: DeleteModal): VNode =
     result = buildHtml():
-      tdiv(class=class({"active": state.shown}, "modal modal-sm"),
-           id="delete-modal"):
-        a(href="", class="modal-overlay", "aria-label"="close",
-          onClick=(ev: Event, n: VNode) => onClose(ev, n, state))
-        tdiv(class="modal-container"):
-          tdiv(class="modal-header"):
-            a(href="", class="btn btn-clear float-right",
-              "aria-label"="close",
-              onClick=(ev: Event, n: VNode) => onClose(ev, n, state))
-            tdiv(class="modal-title h5"):
+      tdiv(class = class({"active": state.shown}, "modal modal-sm"),
+           id = "delete-modal"):
+        a(href = "", class = "modal-overlay", "aria-label" = "close",
+          onClick = (ev: Event, n: VNode) => onClose(ev, n, state))
+        tdiv(class = "modal-container"):
+          tdiv(class = "modal-header"):
+            a(href = "", class = "btn btn-clear float-right",
+              "aria-label" = "close",
+              onClick = (ev: Event, n: VNode) => onClose(ev, n, state))
+            tdiv(class = "modal-title h5"):
               text "Delete"
-          tdiv(class="modal-body"):
-            tdiv(class="content"):
+          tdiv(class = "modal-body"):
+            tdiv(class = "content"):
               p():
                 text "Are you sure you want to delete this "
                 case state.kind
@@ -115,18 +115,18 @@ when defined(js):
                   text "thread?"
                 of DeletePost:
                   text "post?"
-          tdiv(class="modal-footer"):
+          tdiv(class = "modal-footer"):
             if state.error.isSome():
-              p(class="text-error"):
+              p(class = "text-error"):
                 text state.error.get().message
 
-            button(class=class(
+            button(class = class(
                     {"loading": state.loading},
                     "btn btn-primary delete-btn"
-                   ),
-                   onClick=(ev: Event, n: VNode) => onDelete(ev, n, state)):
-              italic(class="fas fa-trash-alt")
+              ),
+              onClick = (ev: Event, n: VNode) => onDelete(ev, n, state)):
+              italic(class = "fas fa-trash-alt")
               text " Delete"
-            button(class="btn cancel-btn",
-                   onClick=(ev: Event, n: VNode) => (state.shown = false)):
+            button(class = "btn cancel-btn",
+                   onClick = (ev: Event, n: VNode) => (state.shown = false)):
               text "Cancel"

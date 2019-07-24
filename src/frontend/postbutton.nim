@@ -13,12 +13,12 @@ when defined(js):
   type
     PostButton* = ref object
       uri, title, icon: string
-      formData: FormData
+      formData: karaxutils.FormData
       error: Option[PostError]
       loading: bool
       posted: bool
 
-  proc newPostButton*(uri: string, formData: FormData,
+  proc newPostButton*(uri: string, formData: karaxutils.FormData,
                       title: string, icon: string): PostButton =
     PostButton(
       uri: uri,
@@ -28,7 +28,7 @@ when defined(js):
     )
 
   proc newResetPasswordButton*(username: string): PostButton =
-    var formData = newFormData()
+    var formData = karaxutils.newFormData()
     formData.append("email", username)
     result = newPostButton(
         makeUri("/sendResetPassword"),
@@ -56,25 +56,25 @@ when defined(js):
 
   proc render*(state: PostButton, disabled: bool): VNode =
     result = buildHtml(tdiv()):
-      button(class=class({
+      button(class = class({
                 "loading": state.loading,
                 "disabled": disabled
-              },
-              "btn btn-secondary"
-             ),
-             `type`="button",
-             onClick=(e: Event, n: VNode) => (onClick(e, n, state))):
+        },
+        "btn btn-secondary"
+      ),
+             `type` = "button",
+             onClick = (e: Event, n: VNode) => (onClick(e, n, state))):
         if state.posted:
           if state.error.isNone():
-            italic(class="fas fa-check")
+            italic(class = "fas fa-check")
           else:
-            italic(class="fas fa-times")
+            italic(class = "fas fa-times")
         else:
-          italic(class=state.icon)
+          italic(class = state.icon)
         text " " & state.title
 
       if state.error.isSome():
-        p(class="text-error"):
+        p(class = "text-error"):
           text state.error.get().message
 
 
@@ -109,7 +109,7 @@ when defined(js):
     state.error = none[PostError]()
 
     # TODO: This is a hack, karax should support this.
-    var formData = newFormData()
+    var formData = karaxutils.newFormData()
     formData.append("id", $post.id)
     let uri =
       if post.isLikedBy(currentUser):
@@ -131,19 +131,19 @@ when defined(js):
       else: ""
 
     result = buildHtml():
-      tdiv(class="like-button"):
-        button(class=class({"tooltip": state.error.isSome()}, "btn"),
-               onClick=(e: Event, n: VNode) =>
+      tdiv(class = "like-button"):
+        button(class = class({"tooltip": state.error.isSome()}, "btn"),
+               onClick = (e: Event, n: VNode) =>
                   (onClick(e, n, state, post, currentUser)),
-               "data-tooltip"=tooltip,
-               onmouseleave=(e: Event, n: VNode) =>
+               "data-tooltip" = tooltip,
+               onmouseleave = (e: Event, n: VNode) =>
                   (state.error = none[PostError]())):
           if post.likes.len > 0:
             let names = post.likes.map(x => x.name).join(", ")
-            span(class="like-count tooltip", "data-tooltip"=names):
+            span(class = "like-count tooltip", "data-tooltip" = names):
               text $post.likes.len
 
-          italic(class=class({"far": not liked, "fas": liked}, "fa-heart"))
+          italic(class = class({"far": not liked, "fas": liked}, "fa-heart"))
 
   type
     LockButton* = ref object
@@ -165,7 +165,7 @@ when defined(js):
     state.error = none[PostError]()
 
     # TODO: This is a hack, karax should support this.
-    var formData = newFormData()
+    var formData = karaxutils.newFormData()
     formData.append("id", $thread.id)
     let uri =
       if thread.isLocked:
@@ -189,15 +189,15 @@ when defined(js):
       else: ""
 
     result = buildHtml():
-      button(class="btn btn-secondary",
-           onClick=(e: Event, n: VNode) =>
+      button(class = "btn btn-secondary",
+           onClick = (e: Event, n: VNode) =>
               onLockClick(e, n, state, thread),
-           "data-tooltip"=tooltip,
-           onmouseleave=(e: Event, n: VNode) =>
+           "data-tooltip" = tooltip,
+           onmouseleave = (e: Event, n: VNode) =>
               (state.error = none[PostError]())):
         if thread.isLocked:
-          italic(class="fas fa-unlock-alt")
+          italic(class = "fas fa-unlock-alt")
           text " Unlock Thread"
         else:
-          italic(class="fas fa-lock")
+          italic(class = "fas fa-lock")
           text " Lock Thread"

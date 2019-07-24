@@ -36,7 +36,7 @@ when defined(js):
 
     let uri = makeUri("newthread")
     # TODO: This is a hack, karax should support this.
-    let formData = newFormData()
+    let formData = karaxutils.newFormData()
     formData.append("subject", state.subject)
     formData.append("msg", state.replyBox.getText())
     ajaxPost(uri, @[], cast[cstring](formData),
@@ -44,25 +44,25 @@ when defined(js):
 
   proc render*(state: NewThread): VNode =
     result = buildHtml():
-      section(class="container grid-xl"):
-        tdiv(id="new-thread"):
-          tdiv(class="title"):
+      section(class = "container grid-xl"):
+        tdiv(id = "new-thread"):
+          tdiv(class = "title"):
             p(): text "New Thread"
-          tdiv(class="content"):
-            input(id="thread-title", class="form-input", `type`="text", name="subject",
-                  placeholder="Type the title here",
-                  oninput=(e: Event, n: VNode) => onSubjectChange(e, n, state))
+          tdiv(class = "content"):
+            input(id = "thread-title", class = "form-input", `type` = "text", name = "subject",
+                  placeholder = "Type the title here",
+                  oninput = (e: Event, n: VNode) => onSubjectChange(e, n, state))
             if state.error.isSome():
-              p(class="text-error"):
+              p(class = "text-error"):
                 text state.error.get().message
             renderContent(state.replyBox, none[Thread](), none[Post]())
-          tdiv(class="footer"):
+          tdiv(class = "footer"):
 
-            button(id="create-thread-btn",
-                   class=class(
+            button(id = "create-thread-btn",
+                   class = class(
                      {"loading": state.loading},
                      "btn btn-primary"
-                   ),
-                   onClick=(ev: Event, n: VNode) =>
-                    (onCreateClick(ev, n, state))):
+              ),
+              onClick = (ev: Event, n: VNode) =>
+               (onCreateClick(ev, n, state))):
               text "Create thread"

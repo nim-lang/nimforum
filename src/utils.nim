@@ -10,11 +10,6 @@ let
 import frontend/[karaxutils, error]
 export parseInt
 
-proc `%`*[T](opt: Option[T]): JsonNode =
-  ## Generic constructor for JSON data. Creates a new ``JNull JsonNode``
-  ## if ``opt`` is empty, otherwise it delegates to the underlying value.
-  if opt.isSome: %opt.get else: newJNull()
-
 type
   Config* = object
     smtpAddress*: string
@@ -145,8 +140,8 @@ proc replaceMentions(node: XmlNode): seq[XmlNode] =
         result.add(newText(current & "@"))
       else:
         let el = <>span(
-          class="user-mention",
-          data-username=username,
+          class = "user-mention",
+          data-username = username,
           newText("@" & username)
         )
 
@@ -183,6 +178,6 @@ proc rstToHtml*(content: string): string =
       node = processQuotes(node)
     node = processMentions(node)
     result = ""
-    add(result, node, indWidth=0, addNewLines=false)
+    add(result, node, indWidth = 0, addNewLines = false)
   except:
     warn("Could not parse rst html.")

@@ -60,36 +60,37 @@ when defined(js):
     if user.isNone(): return not thread.isModerated
 
     let rank = user.get().rank
-    if rank < Moderator and thread.isModerated:
+    if rank < Rank.Moderator and thread.isModerated:
       return thread.author == user.get()
 
     return true
 
   proc genTopButtons(currentUser: Option[User]): VNode =
     result = buildHtml():
-      section(class="navbar container grid-xl", id="main-buttons"):
-        section(class="navbar-section"):
-          tdiv(class="dropdown"):
-            a(href="#", class="btn dropdown-toggle"):
+      section(class = "navbar container grid-xl", id = "main-buttons"):
+        section(class = "navbar-section"):
+          tdiv(class = "dropdown"):
+            a(href = "#", class = "btn dropdown-toggle"):
               text "Filter "
-              italic(class="fas fa-caret-down")
-            ul(class="menu"):
+              italic(class = "fas fa-caret-down")
+            ul(class = "menu"):
               li: text "community"
               li: text "dev"
-          button(class="btn btn-primary"): text "Latest"
-          button(class="btn btn-link"): text "Most Active"
-          button(class="btn btn-link"): text "Categories"
-        section(class="navbar-section"):
+          button(class = "btn btn-primary"): text "Latest"
+          button(class = "btn btn-link"): text "Most Active"
+          button(class = "btn btn-link"): text "Categories"
+        section(class = "navbar-section"):
           if currentUser.isSome():
-            a(id="new-thread-btn", href=makeUri("/newthread"), onClick=anchorCB):
-              button(class="btn btn-secondary"):
-                italic(class="fas fa-plus")
+            a(id = "new-thread-btn", href = makeUri("/newthread"),
+                onClick = anchorCB):
+              button(class = "btn btn-secondary"):
+                italic(class = "fas fa-plus")
                 text " New Thread"
 
   proc genUserAvatars(users: seq[User]): VNode =
     result = buildHtml(td):
       for user in users:
-        render(user, "avatar avatar-sm", showStatus=true)
+        render(user, "avatar avatar-sm", showStatus = true)
         text " "
 
   proc renderActivity*(activity: int64): string =
@@ -113,28 +114,28 @@ when defined(js):
     let isOld = (getTime() - thread.creation.fromUnix).weeks > 2
     let isBanned = thread.author.rank.isBanned()
     result = buildHtml():
-      tr(class=class({"no-border": noBorder, "banned": isBanned})):
-        td(class="thread-title"):
+      tr(class = class({"no-border": noBorder, "banned": isBanned})):
+        td(class = "thread-title"):
           if thread.isLocked:
-            italic(class="fas fa-lock fa-xs",
-                   title="Thread cannot be replied to")
+            italic(class = "fas fa-lock fa-xs",
+                   title = "Thread cannot be replied to")
           if isBanned:
-            italic(class="fas fa-ban fa-xs",
-                   title="Thread author is banned")
+            italic(class = "fas fa-ban fa-xs",
+                   title = "Thread author is banned")
           if thread.isModerated:
-            italic(class="fas fa-eye-slash fa-xs",
-                   title="Thread is moderated")
+            italic(class = "fas fa-eye-slash fa-xs",
+                   title = "Thread is moderated")
           if thread.isSolved:
-            italic(class="fas fa-check-square fa-xs",
-                   title="Thread has a solution")
-          a(href=makeUri("/t/" & $thread.id),
-            onClick=anchorCB):
+            italic(class = "fas fa-check-square fa-xs",
+                   title = "Thread has a solution")
+          a(href = makeUri("/t/" & $thread.id),
+            onClick = anchorCB):
             text thread.topic
         td():
           render(thread.category)
         genUserAvatars(thread.users)
         td(): text $thread.replies
-        td(class=class({
+        td(class = class({
             "views-text": thread.views < 999,
             "popular-text": thread.views > 999 and thread.views < 5000,
             "super-popular-text": thread.views > 5000
@@ -150,8 +151,8 @@ when defined(js):
         let friendlyActivity = thread.activity.fromUnix.local.format(
           "'Last reply:' MMM d, yyyy HH:mm"
         )
-        td(class=class({"is-new": isNew, "is-old": isOld}, "thread-time"),
-           title=friendlyCreation & friendlyActivity):
+        td(class = class({"is-new": isNew, "is-old": isOld}, "thread-time"),
+           title = friendlyCreation & friendlyActivity):
           text renderActivity(thread.activity)
 
   proc onThreadList(httpStatus: int, response: kstring) =
@@ -205,17 +206,17 @@ when defined(js):
         state.loading = true
         ajaxGet(makeUri("threads.json"), @[], onThreadList)
 
-      return buildHtml(tdiv(class="loading loading-lg"))
+      return buildHtml(tdiv(class = "loading loading-lg"))
 
     let list = state.list.get()
     result = buildHtml():
-      section(class="container grid-xl"): # TODO: Rename to `.thread-list`.
-        table(class="table", id="threads-list"):
+      section(class = "container grid-xl"): # TODO: Rename to `.thread-list`.
+        table(class = "table", id = "threads-list"):
           thead():
             tr:
               th(text "Topic")
               th(text "Category")
-              th(style=style((StyleAttr.width, kstring"8rem"))): text "Users"
+              th(style = style((StyleAttr.width, kstring"8rem"))): text "Users"
               th(text "Replies")
               th(text "Views")
               th(text "Activity")
@@ -227,19 +228,19 @@ when defined(js):
               let isLastThread = i+1 == list.threads.len
               let (isLastUnseen, isNew) = getInfo(list.threads, i, currentUser)
               genThread(thread, isNew,
-                        noBorder=isLastUnseen or isLastThread)
+                        noBorder = isLastUnseen or isLastThread)
               if isLastUnseen and (not isLastThread):
-                tr(class="last-visit-separator"):
-                  td(colspan="6"):
+                tr(class = "last-visit-separator"):
+                  td(colspan = "6"):
                     span(text "last visit")
 
             if list.moreCount > 0:
-              tr(class="load-more-separator"):
+              tr(class = "load-more-separator"):
                 if state.loading:
-                  td(colspan="6"):
-                    tdiv(class="loading loading-lg")
+                  td(colspan = "6"):
+                    tdiv(class = "loading loading-lg")
                 else:
-                  td(colspan="6", onClick=onLoadMore):
+                  td(colspan = "6", onClick = onLoadMore):
                     span(text "load more threads")
 
   proc renderThreadList*(currentUser: Option[User]): VNode =
