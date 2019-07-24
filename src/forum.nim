@@ -1044,10 +1044,10 @@ routes:
     let status = UserStatus(
       user: user,
       recaptchaSiteKey:
-      if not config.isDev:
-        some(config.recaptchaSiteKey)
-      else:
-        none[string]()
+        if not config.isDev:
+          some(config.recaptchaSiteKey)
+        else:
+          none[string]()
     )
     resp $(%status), "application/json"
 
