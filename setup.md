@@ -100,7 +100,7 @@ You should then create a symlink to this file inside ``/etc/nginx/sites-enabled/
 ln -s /etc/nginx/sites-available/<forum.hostname.com> /etc/nginx/sites-enabled/<forum.hostname.com>
 ```
 
-Then restart nginx by running ``sudo systemctl restart nginx``.
+Then reload nginx configuration by running ``sudo nginx -s reload``.
 
 ### Supervisor
 
