@@ -457,13 +457,21 @@ proc executeReply(c: TForumData, threadId: int, content: string,
   if isLocked == "1":
     raise newForumError("Cannot reply to a locked thread.")
 
-  let retID = insertID(
-    db,
-    crud(crCreate, "post", "author", "ip", "content", "thread", "replyingTo"),
-    c.userId, c.req.ip, content, $threadId,
-    if replyingTo.isSome(): $replyingTo.get()
-    else: "-1"
-  )
+  var retID: int64
+
+  if replyingTo.isSome():
+    retID = insertID(
+      db,
+      crud(crCreate, "post", "author", "ip", "content", "thread", "replyingTo"),
+      c.userId, c.req.ip, content, $threadId, $replyingTo.get()
+    )
+  else:
+    retID = insertID(
+      db,
+      crud(crCreate, "post", "author", "ip", "content", "thread"),
+      c.userId, c.req.ip, content, $threadId
+    )
+
   discard tryExec(
     db,
     crud(crCreate, "post_fts", "id", "content"),
