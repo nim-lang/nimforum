@@ -12,16 +12,16 @@ skipExt = @["nim"]
 
 # Dependencies
 
-requires "nim >= 0.18.1"
-requires "jester 0.4.0"
+requires "nim >= 1.0.6"
+requires "jester#d8a03aa"
 requires "bcrypt#head"
 requires "hmac#9c61ebe2fd134cf97"
-requires "recaptcha 1.0.2"
+requires "recaptcha#d06488e"
 requires "sass#649e0701fa5c"
 
-requires "karax#d8df257dd"
+requires "karax#f6bda9a"
 
-requires "webdriver#20f3c1b"
+requires "webdriver#c2fee57"
 
 # Tasks
 
@@ -36,7 +36,7 @@ task frontend, "Builds the necessary JS frontend (with CSS)":
   exec "nimble c -r src/buildcss"
   exec "nimble js -d:release src/frontend/forum.nim"
   mkDir "public/js"
-  cpFile "src/frontend/nimcache/forum.js", "public/js/forum.js"
+  cpFile "src/frontend/forum.js", "public/js/forum.js"
 
 task minify, "Minifies the JS using Google's closure compiler":
   exec "closure-compiler public/js/forum.js --js_output_file public/js/forum.js.opt"

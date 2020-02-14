@@ -10,11 +10,6 @@ let
 import frontend/[karaxutils, error]
 export parseInt
 
-proc `%`*[T](opt: Option[T]): JsonNode =
-  ## Generic constructor for JSON data. Creates a new ``JNull JsonNode``
-  ## if ``opt`` is empty, otherwise it delegates to the underlying value.
-  if opt.isSome: %opt.get else: newJNull()
-
 type
   Config* = object
     smtpAddress*: string
@@ -56,7 +51,7 @@ proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
                   smtpPassword: "", mlistAddress: "")
   let root = parseFile(filename)
   result.smtpAddress = root{"smtpAddress"}.getStr("")
-  result.smtpPort = root{"smtpPort"}.getNum(25).int
+  result.smtpPort = root{"smtpPort"}.getInt(25)
   result.smtpUser = root{"smtpUser"}.getStr("")
   result.smtpPassword = root{"smtpPassword"}.getStr("")
   result.smtpFromAddr = root{"smtpFromAddr"}.getStr("")
@@ -69,7 +64,7 @@ proc loadConfig*(filename = getCurrentDir() / "forum.json"): Config =
   result.name = root["name"].getStr()
   result.title = root["title"].getStr()
   result.ga = root{"ga"}.getStr()
-  result.port = root{"port"}.getNum(5000).int
+  result.port = root{"port"}.getInt(5000)
 
 proc processGT(n: XmlNode, tag: string): (int, XmlNode, string) =
   result = (0, newElement(tag), tag)

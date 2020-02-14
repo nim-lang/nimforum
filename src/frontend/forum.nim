@@ -49,7 +49,7 @@ proc onPopState(event: dom.Event) =
   # This event is usually only called when the user moves back in their
   # history. I fire it in karaxutils.anchorCB as well to ensure the URL is
   # always updated. This should be moved into Karax in the future.
-  kout(kstring"New URL: ", window.location.href, " ", state.url.href)
+  echo "New URL: ", window.location.href, " ", state.url.href
   document.title = state.originalTitle
   if state.url.href != window.location.href:
     state = newState() # Reload the state to remove stale data.
