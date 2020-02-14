@@ -71,13 +71,13 @@ when isMainModule:
       "test",
       "$2a$08$bY85AhoD1e9u0IsD9sM7Ee6kFSLeXRLxJ6rMgfb1wDnU9liaymoTG",
       1526908753,
-      "*B2a] IL\"~sh)q-GBd/i$^>.TL]PR~>1IX>Fp-:M3pCm^cFD\um"
+      "*B2a] IL\"~sh)q-GBd/i$^>.TL]PR~>1IX>Fp-:M3pCm^cFD\\um"
     )
     let ident2 = makeIdentHash(
       "test",
       "$2a$08$bY85AhoD1e9u0IsD9sM7Ee6kFSLeXRLxJ6rMgfb1wDnU9liaymoTG",
       1526908753,
-      "*B2a] IL\"~sh)q-GBd/i$^>.TL]PR~>1IX>Fp-:M3pCm^cFD\um"
+      "*B2a] IL\"~sh)q-GBd/i$^>.TL]PR~>1IX>Fp-:M3pCm^cFD\\um"
     )
     doAssert ident == ident2
 
@@ -85,6 +85,6 @@ when isMainModule:
       "test",
       "$2a$08$bY85AhoD1e9u0IsD9sM7Ee6kFSLeXRLxJ6rMgfb1wDnU9liaymoTG",
       1526908754,
-      "*B2a] IL\"~sh)q-GBd/i$^>.TL]PR~>1IX>Fp-:M3pCm^cFD\um"
+      "*B2a] IL\"~sh)q-GBd/i$^>.TL]PR~>1IX>Fp-:M3pCm^cFD\\um"
     )
     doAssert ident != invalid

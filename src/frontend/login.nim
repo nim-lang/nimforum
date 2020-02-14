@@ -1,6 +1,6 @@
 when defined(js):
   import sugar, httpcore, options, json
-  import dom except Event
+  import dom except Event, KeyboardEvent
 
   include karax/prelude
   import karax / [kajax, kdom]

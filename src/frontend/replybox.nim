@@ -26,7 +26,7 @@ when defined(js):
 
   proc performScroll() =
     let replyBox = dom.document.getElementById("reply-box")
-    replyBox.scrollIntoView(false)
+    replyBox.scrollIntoView()
 
   proc show*(state: ReplyBox) =
     # Scroll to the reply box.
@@ -44,7 +44,7 @@ when defined(js):
 
   proc onPreviewPost(httpStatus: int, response: kstring, state: ReplyBox) =
     postFinished:
-      kout(response)
+      echo response
       state.rendering = some[kstring](response)
 
   proc onPreviewClick(e: Event, n: VNode, state: ReplyBox) =

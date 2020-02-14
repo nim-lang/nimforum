@@ -60,7 +60,7 @@ when defined(js):
     if user.isNone(): return not thread.isModerated
 
     let rank = user.get().rank
-    if rank < Moderator and thread.isModerated:
+    if rank < Rank.Moderator and thread.isModerated:
       return thread.author == user.get()
 
     return true

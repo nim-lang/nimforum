@@ -45,7 +45,7 @@ template withBackend(body: untyped): untyped =
 
 import browsertests/[scenario1, threads, issue181]
 
-when isMainModule:
+proc main() =
   spawn runProcess("geckodriver -p 4444 --log config")
   defer:
     discard execCmd("killall geckodriver")
@@ -70,3 +70,6 @@ when isMainModule:
   except:
     sleep(10000) # See if we can grab any more output.
     raise
+
+when isMainModule:
+  main()

@@ -25,7 +25,7 @@ proc getInt64*(s: string, default = 0): int64 =
 
 when defined(js):
   include karax/prelude
-  import karax / [kdom]
+  import karax / [kdom, kajax]
 
   from dom import nil
 
@@ -87,16 +87,10 @@ when defined(js):
 
       navigateTo(url)
 
-  type
-    FormData* = ref object
-  proc newFormData*(): FormData
-    {.importcpp: "new FormData()", constructor.}
   proc newFormData*(form: dom.Element): FormData
     {.importcpp: "new FormData(@)", constructor.}
   proc get*(form: FormData, key: cstring): cstring
     {.importcpp: "#.get(@)".}
-  proc append*(form: FormData, key, val: cstring)
-    {.importcpp: "#.append(@)".}
 
   proc renderProfileUrl*(username: string): string =
     makeUri(fmt"/profile/{username}")
