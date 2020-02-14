@@ -457,13 +457,21 @@ proc executeReply(c: TForumData, threadId: int, content: string,
   if isLocked == "1":
     raise newForumError("Cannot reply to a locked thread.")
 
-  let retID = insertID(
-    db,
-    crud(crCreate, "post", "author", "ip", "content", "thread", "replyingTo"),
-    c.userId, c.req.ip, content, $threadId,
-    if replyingTo.isSome(): $replyingTo.get()
-    else: ""
-  )
+  var retID: int64
+
+  if replyingTo.isSome():
+    retID = insertID(
+      db,
+      crud(crCreate, "post", "author", "ip", "content", "thread", "replyingTo"),
+      c.userId, c.req.ip, content, $threadId, $replyingTo.get()
+    )
+  else:
+    retID = insertID(
+      db,
+      crud(crCreate, "post", "author", "ip", "content", "thread"),
+      c.userId, c.req.ip, content, $threadId
+    )
+
   discard tryExec(
     db,
     crud(crCreate, "post_fts", "id", "content"),
@@ -621,7 +629,7 @@ proc executeRegister(c: TForumData, name, pass, antibot, userIp,
     raise newForumError("Invalid username", @["username"])
   if getValue(
     db,
-    sql"select name from person where name = ? and isDeleted = 0",
+    sql"select name from person where name = ? collate nocase and isDeleted = 0",
     name
   ).len > 0:
     raise newForumError("Username already exists", @["username"])
@@ -1123,7 +1131,8 @@ routes:
     except EParseError:
       let err = PostError(
         errorFields: @[],
-        message: getCurrentExceptionMsg()
+        message: "Message needs to be valid RST! Error: " &
+                 getCurrentExceptionMsg()
       )
       resp Http400, $(%err), "application/json"
 

@@ -26,7 +26,7 @@ when defined(js):
 
   proc performScroll() =
     let replyBox = dom.document.getElementById("reply-box")
-    replyBox.scrollIntoView(false)
+    replyBox.scrollIntoView()
 
   proc show*(state: ReplyBox) =
     # Scroll to the reply box.

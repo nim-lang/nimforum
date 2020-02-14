@@ -269,6 +269,13 @@ $threads-meta-color: #545d70;
 
 }
 
+// Hide all the avatars but the first on small screens.
+@media screen and (max-width: 600px) {
+  #threads-list a:not(:first-child) > .avatar {
+    display: none;
+  }
+}
+
 .posts, .about {
   @extend .grid-md;
   @extend .container;
