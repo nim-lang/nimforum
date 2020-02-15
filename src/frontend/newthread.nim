@@ -1,6 +1,7 @@
 when defined(js):
   import sugar, httpcore, options, json
   import dom except Event
+  import jsffi except `&`
 
   include karax/prelude
   import karax / [kajax, kdom]
@@ -44,7 +45,8 @@ when defined(js):
     formData.append("subject", state.subject)
     formData.append("msg", state.replyBox.getText())
     formData.append("categoryId", $categoryID)
-    ajaxPost(uri, @[], cast[cstring](formData),
+
+    ajaxPost(uri, @[], formData.to(cstring),
              (s: int, r: kstring) => onCreatePost(s, r, state))
 
   proc render*(state: NewThread, currentUser: Option[User]): VNode =

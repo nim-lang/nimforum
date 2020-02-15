@@ -15,6 +15,7 @@ type
 
 when defined(js):
   from dom import document
+  import jsffi except `&`
 
   include karax/prelude
   import karax / [vstyles, kajax, kdom]
@@ -76,7 +77,7 @@ when defined(js):
 
     state.loading = true
 
-    ajaxPost(uri, @[], cast[cstring](formData),
+    ajaxPost(uri, @[], formData.to(cstring),
              (s: int, r: kstring) => onCategoryPost(s, r, state))
 
   proc onPostList(httpStatus: int, response: kstring, postId: Option[int]) =
