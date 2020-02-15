@@ -24,22 +24,23 @@ when defined(js):
     name.strip().replace(" ", "-").toLowerAscii
 
   proc onCategoryLoad(state: CategoryPicker): proc (httpStatus: int, response: kstring) =
-    return proc (httpStatus: int, response: kstring) =
-      state.loading = false
-      state.status = httpStatus.HttpCode
-      if state.status != Http200: return
+    return
+      proc (httpStatus: int, response: kstring) =
+        state.loading = false
+        state.status = httpStatus.HttpCode
+        if state.status != Http200: return
 
-      let parsed = parseJson($response)
-      let list = parsed.to(CategoryList)
-      list.categories.sort(cmpNames)
+        let parsed = parseJson($response)
+        let list = parsed.to(CategoryList)
+        list.categories.sort(cmpNames)
 
-      if state.list.isSome:
-        state.list.get().categories.add(list.categories)
-      else:
-        state.list = some(list)
+        if state.list.isSome:
+          state.list.get().categories.add(list.categories)
+        else:
+          state.list = some(list)
 
-      if state.selectedCategoryID > state.list.get().categories.len():
-        state.selectedCategoryID = 0
+        if state.selectedCategoryID > state.list.get().categories.len():
+          state.selectedCategoryID = 0
 
   proc loadCategories(state: CategoryPicker) =
     if not state.loading:
@@ -81,10 +82,11 @@ when defined(js):
   proc onCategoryClick(state: CategoryPicker, category: Category): proc (ev: Event, n: VNode) =
     # this is necessary to capture the right value
     let cat = category
-    return proc (ev: Event, n: VNode) =
-      let oldCategory = state[state.selectedCategoryID]
-      state.select(cat.id)
-      state.onCategoryChange(oldCategory, cat)
+    return
+      proc (ev: Event, n: VNode) =
+        let oldCategory = state[state.selectedCategoryID]
+        state.select(cat.id)
+        state.onCategoryChange(oldCategory, cat)
 
   proc onAddCategoryPost(httpStatus: int, response: kstring, state: CategoryPicker) =
     postFinished:
