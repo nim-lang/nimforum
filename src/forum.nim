@@ -1197,6 +1197,8 @@ routes:
       resp Http400, $(%exc.data), "application/json"
 
   post "/updateThread":
+    # TODO: Add some way of keeping track of modifications for historical
+    # purposes
     createTFD()
     if not c.loggedIn():
       let err = PostError(
@@ -1211,7 +1213,9 @@ routes:
 
     let threadId = formData["threadId"].body
 
-    let keys = ["name", "views", "modified", "category", "isLocked", "solution", "isDeleted"]
+    # TODO: might want to add more properties here under a tighter permissions
+    # model
+    let keys = ["name", "category", "solution"]
 
     # optional parameters
     var
