@@ -528,14 +528,14 @@ proc updatePost(c: TForumData, postId: int, content: string,
       exec(db, crud(crUpdate, "thread", "name"), subject.get(), threadId)
 
 proc updateThread(c: TForumData, threadId: string, queryKeys: seq[string], queryValues: seq[string]) =
-    let threadAuthor = selectThreadAuthor(threadId.parseInt)
+  let threadAuthor = selectThreadAuthor(threadId.parseInt)
 
-    # Verify that the current user has permissions to edit the specified thread.
-    let canEdit = c.rank == Admin or c.userid == threadAuthor.name
-    if not canEdit:
-      raise newForumError("You cannot edit this thread")
+  # Verify that the current user has permissions to edit the specified thread.
+  let canEdit = c.rank == Admin or c.userid == threadAuthor.name
+  if not canEdit:
+    raise newForumError("You cannot edit this thread")
 
-    exec(db, crud(crUpdate, "thread", queryKeys), queryValues)
+  exec(db, crud(crUpdate, "thread", queryKeys), queryValues)
 
 proc executeNewThread(c: TForumData, subject, msg, categoryID: string): (int64, int64) =
   const
