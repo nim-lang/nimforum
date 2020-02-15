@@ -790,6 +790,7 @@ settings:
 routes:
 
   get "/categories.json":
+    # TODO: Limit this query in the case of many many categories
     const categoriesQuery = sql"""select * from category;"""
 
     var list = CategoryList(categories: @[])
