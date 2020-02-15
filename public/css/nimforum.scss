@@ -107,6 +107,24 @@ $logo-height: $navbar-height - 20px;
   }
 }
 
+#category-selection {
+  .dropdown {
+    .btn {
+      margin-right: 0px;
+    }
+  }
+  .plus-btn {
+    margin-right: 0px;
+    i {
+      margin-right: 0px;
+    }
+  }
+}
+
+.category {
+  white-space: nowrap;
+}
+
 #new-thread {
   .modal-container .modal-body {
     max-height: none;
@@ -196,14 +214,12 @@ $threads-meta-color: #545d70;
   }
 }
 
-.triangle {
-  // TODO: Abstract this into a "category" class.
+.category-color {
   width: 0;
   height: 0;
-  border-left: 0.3rem solid transparent;
-  border-right: 0.3rem solid transparent;
-  border-bottom: 0.6rem solid #98c766;
+  border: 0.3rem solid #98c766;
   display: inline-block;
+  margin-right: 5px;
 }
 
 .load-more-separator {
@@ -713,15 +729,5 @@ hr {
 
 // - Hide features that have not been implemented yet.
 #main-buttons > section.navbar-section:nth-child(1) {
-  display: none;
-}
-
-#threads-list.table {
-  tr > th:nth-child(2), tr > td:nth-child(2) {
-    display: none;
-  }
-}
-
-.category, div.flag-button {
   display: none;
 }

@@ -6,6 +6,11 @@ type
     description*: string
     color*: string
 
+  CategoryList* = ref object
+    categories*: seq[Category]
+
+proc cmpNames*(cat1: Category, cat2: Category): int =
+  cat1.name.cmp(cat2.name)
 
 when defined(js):
   include karax/prelude
@@ -17,11 +22,12 @@ when defined(js):
     result = buildHtml():
       if category.name.len >= 0:
         tdiv(class="category",
+             title=category.description,
              "data-color"="#" & category.color):
-          tdiv(class="triangle",
+          tdiv(class="category-color",
                style=style(
-                 (StyleAttr.borderBottom,
-                  kstring"0.6rem solid #" & category.color)
+                 (StyleAttr.border,
+                  kstring"0.3rem solid #" & category.color)
           ))
           text category.name
       else:

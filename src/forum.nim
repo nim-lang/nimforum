@@ -527,10 +527,20 @@ proc updatePost(c: TForumData, postId: int, content: string,
     if row[0] == $postId:
       exec(db, crud(crUpdate, "thread", "name"), subject.get(), threadId)
 
-proc executeNewThread(c: TForumData, subject, msg: string): (int64, int64) =
+proc updateThread(c: TForumData, threadId: string, queryKeys: seq[string], queryValues: seq[string]) =
+  let threadAuthor = selectThreadAuthor(threadId.parseInt)
+
+  # Verify that the current user has permissions to edit the specified thread.
+  let canEdit = c.rank == Admin or c.userid == threadAuthor.name
+  if not canEdit:
+    raise newForumError("You cannot edit this thread")
+
+  exec(db, crud(crUpdate, "thread", queryKeys), queryValues)
+
+proc executeNewThread(c: TForumData, subject, msg, categoryID: string): (int64, int64) =
   const
     query = sql"""
-      insert into thread(name, views, modified) values (?, 0, DATETIME('now'))
+      insert into thread(name, views, modified, category) values (?, 0, DATETIME('now'), ?)
     """
 
   assert c.loggedIn()
@@ -550,13 +560,17 @@ proc executeNewThread(c: TForumData, subject, msg: string): (int64, int64) =
   if msg.len == 0:
     raise newForumError("Message is empty", @["msg"])
 
+  let catID = getInt(categoryID, -1)
+  if catID == -1:
+    raise newForumError("CategoryID is invalid", @["categoryId"])
+
   if not validateRst(c, msg):
     raise newForumError("Message needs to be valid RST", @["msg"])
 
   if rateLimitCheck(c):
     raise newForumError("You're posting too fast!")
 
-  result[0] = tryInsertID(db, query, subject).int
+  result[0] = tryInsertID(db, query, subject, categoryID).int
   if result[0] < 0:
     raise newForumError("Subject already exists", @["subject"])
 
@@ -657,6 +671,18 @@ proc executeLike(c: TForumData, postId: int) =
 
   # Save the like.
   exec(db, crud(crCreate, "like", "author", "post"), c.userid, postId)
+
+proc executeNewCategory(c: TForumData, name, color, description: string): int64 =
+
+  let canAdd = c.rank == Admin
+
+  if not canAdd:
+    raise newForumError("You do not have permissions to add a category.")
+
+  if name.len == 0:
+    raise newForumError("Category name must not be empty!", @["name"])
+
+  result = insertID(db, crud(crCreate, "category", "name", "color", "description"), name, color, description)
 
 proc executeUnlike(c: TForumData, postId: int) =
   # Verify the post and like exists for the current user.
@@ -762,6 +788,19 @@ settings:
   port = config.port.Port
 
 routes:
+
+  get "/categories.json":
+    # TODO: Limit this query in the case of many many categories
+    const categoriesQuery = sql"""select * from category;"""
+
+    var list = CategoryList(categories: @[])
+    for data in getAllRows(db, categoriesQuery):
+      let category = Category(
+        id: data[0].getInt, name: data[1], description: data[2], color: data[3]
+      )
+      list.categories.add(category)
+
+    resp $(%list), "application/json"
 
   get "/threads.json":
     var
@@ -1032,6 +1071,21 @@ routes:
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
 
+  post "/createCategory":
+    createTFD()
+    let formData = request.formData
+
+    let name = formData["name"].body
+    let color = formData["color"].body.replace("#", "")
+    let description = formData["description"].body
+
+    try:
+      let id = executeNewCategory(c, name, color, description)
+      let category = Category(id: id.int, name: name, color: color, description: description)
+      resp Http200, $(%category), "application/json"
+    except ForumError as exc:
+      resp Http400, $(%exc.data), "application/json"
+
   get "/status.json":
     createTFD()
 
@@ -1143,6 +1197,45 @@ routes:
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
 
+  post "/updateThread":
+    # TODO: Add some way of keeping track of modifications for historical
+    # purposes
+    createTFD()
+    if not c.loggedIn():
+      let err = PostError(
+        errorFields: @[],
+        message: "Not logged in."
+      )
+      resp Http401, $(%err), "application/json"
+
+    let formData = request.formData
+
+    cond "threadId" in formData
+
+    let threadId = formData["threadId"].body
+
+    # TODO: might want to add more properties here under a tighter permissions
+    # model
+    let keys = ["name", "category", "solution"]
+
+    # optional parameters
+    var
+      queryValues: seq[string] = @[]
+      queryKeys: seq[string] = @[]
+
+    for key in keys:
+      if key in formData:
+        queryKeys.add(key)
+        queryValues.add(formData[key].body)
+
+    if queryKeys.len() > 0:
+      queryValues.add(threadId)
+      try:
+        updateThread(c, threadId, queryKeys, queryValues)
+        resp Http200, "{}", "application/json"
+      except ForumError as exc:
+        resp Http400, $(%exc.data), "application/json"
+
   post "/newthread":
     createTFD()
     if not c.loggedIn():
@@ -1155,13 +1248,14 @@ routes:
     let formData = request.formData
     cond "msg" in formData
     cond "subject" in formData
+    cond "categoryId" in formData
 
     let msg = formData["msg"].body
     let subject = formData["subject"].body
-    # TODO: category
+    let categoryID = formData["categoryId"].body
 
     try:
-      let res = executeNewThread(c, subject, msg)
+      let res = executeNewThread(c, subject, msg, categoryID)
       resp Http200, $(%[res[0], res[1]]), "application/json"
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"

@@ -1,12 +1,13 @@
 when defined(js):
   import sugar, httpcore, options, json
   import dom except Event
+  import jsffi except `&`
 
   include karax/prelude
   import karax / [kajax, kdom]
 
-  import error, replybox, threadlist, post
-  import karaxutils
+  import error, replybox, threadlist, post, category, user
+  import karaxutils, categorypicker
 
   type
     NewThread* = ref object
@@ -14,11 +15,13 @@ when defined(js):
       error: Option[PostError]
       replyBox: ReplyBox
       subject: kstring
+      categoryPicker: CategoryPicker
 
   proc newNewThread*(): NewThread =
     NewThread(
       replyBox: newReplyBox(nil),
-      subject: ""
+      subject: "",
+      categoryPicker: newCategoryPicker()
     )
 
   proc onSubjectChange(e: Event, n: VNode, state: NewThread) =
@@ -37,12 +40,16 @@ when defined(js):
     let uri = makeUri("newthread")
     # TODO: This is a hack, karax should support this.
     let formData = newFormData()
+    let categoryID = state.categoryPicker.selectedCategoryID
+
     formData.append("subject", state.subject)
     formData.append("msg", state.replyBox.getText())
-    ajaxPost(uri, @[], cast[cstring](formData),
+    formData.append("categoryId", $categoryID)
+
+    ajaxPost(uri, @[], formData.to(cstring),
              (s: int, r: kstring) => onCreatePost(s, r, state))
 
-  proc render*(state: NewThread): VNode =
+  proc render*(state: NewThread, currentUser: Option[User]): VNode =
     result = buildHtml():
       section(class="container grid-xl"):
         tdiv(id="new-thread"):
@@ -55,6 +62,10 @@ when defined(js):
             if state.error.isSome():
               p(class="text-error"):
                 text state.error.get().message
+            tdiv():
+              label(class="d-inline-block form-label"):
+                text "Category"
+              render(state.categoryPicker, currentUser)
             renderContent(state.replyBox, none[Thread](), none[Post]())
           tdiv(class="footer"):
 

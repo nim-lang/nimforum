@@ -63,6 +63,24 @@ test                 Runs tester
 fasttest             Runs tester without recompiling backend
 ```
 
+To get up and running:
+
+```bash
+git clone https://github.com/nim-lang/nimforum
+cd nimforum
+git submodule update --init --recursive
+
+# Setup the db with user: admin, pass: admin and some other users
+nimble devdb
+
+# Run this again if frontend code changes
+nimble frontend
+
+# Will start a server at localhost:5000
+nimble backend
+```
+
+
 Development typically involves running `nimble devdb` which sets up the
 database for development and testing, then `nimble backend`
 which compiles and runs the forum's backend, and `nimble frontend`
