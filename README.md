@@ -70,8 +70,6 @@ git clone https://github.com/nim-lang/nimforum
 cd nimforum
 git submodule update --init --recursive
 
-nimble install
-
 # Setup the db with user: admin, pass: admin and some other users
 nimble devdb
 
