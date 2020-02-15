@@ -5,7 +5,7 @@ when defined(js):
   include karax/prelude
   import karax / [kajax, kdom, vstyles, vdom]
 
-  import error, replybox, threadlist, post, category
+  import error, replybox, threadlist, post, category, user
   import category, karaxutils
 
   type
@@ -157,7 +157,14 @@ when defined(js):
                       state.onAddCategoryClick()):
                 text "Add"
 
-  proc render*(state: CategoryPicker): VNode =
+  proc render*(state: CategoryPicker, currentUser: Option[User]): VNode =
+    let loggedIn = currentUser.isSome()
+    let currentAdmin =
+      loggedIn and currentUser.get().rank == Admin
+
+    if currentAdmin:
+      state.setAddEnabled(true)
+
     if state.status != Http200:
       return renderError("Couldn't retrieve categories.", state.status)
 

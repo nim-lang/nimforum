@@ -48,14 +48,6 @@ when defined(js):
              (s: int, r: kstring) => onCreatePost(s, r, state))
 
   proc render*(state: NewThread, currentUser: Option[User]): VNode =
-
-    let loggedIn = currentUser.isSome()
-    let currentAdmin =
-      currentUser.isSome() and currentUser.get().rank == Admin
-
-    if currentAdmin:
-      state.categoryPicker.setAddEnabled(true)
-
     result = buildHtml():
       section(class="container grid-xl"):
         tdiv(id="new-thread"):
@@ -71,7 +63,7 @@ when defined(js):
             tdiv():
               label(class="d-inline-block form-label"):
                 text "Category"
-              render(state.categoryPicker)
+              render(state.categoryPicker, currentUser)
             renderContent(state.replyBox, none[Thread](), none[Post]())
           tdiv(class="footer"):
 
