@@ -1,6 +1,7 @@
 when defined(js):
   import sugar, httpcore, options, json
   import dom except Event
+  import jsffi except `&`
 
   include karax/prelude
   import karax / [kajax, kdom]
@@ -28,7 +29,7 @@ when defined(js):
     let form = dom.document.getElementById("signup-form")
     # TODO: This is a hack, karax should support this.
     let formData = newFormData(form)
-    ajaxPost(uri, @[], cast[cstring](formData),
+    ajaxPost(uri, @[], formData.to(cstring),
              (s: int, r: kstring) => onSignUpPost(s, r, state))
 
   proc onClose(ev: Event, n: VNode, state: SignupModal) =

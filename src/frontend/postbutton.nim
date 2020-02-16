@@ -7,6 +7,7 @@ import options, httpcore, json, sugar, sequtils, strutils
 when defined(js):
   include karax/prelude
   import karax/[kajax, kdom]
+  import jsffi except `&`
 
   import error, karaxutils, post, user, threadlist
 
@@ -116,7 +117,7 @@ when defined(js):
         makeUri("/unlike")
       else:
         makeUri("/like")
-    ajaxPost(uri, @[], cast[cstring](formData),
+    ajaxPost(uri, @[], formData.to(cstring),
              (s: int, r: kstring) =>
                 onPost(s, r, state, post, currentUser.get()))
 
@@ -172,7 +173,7 @@ when defined(js):
         makeUri("/unlock")
       else:
         makeUri("/lock")
-    ajaxPost(uri, @[], cast[cstring](formData),
+    ajaxPost(uri, @[], formData.to(cstring),
              (s: int, r: kstring) =>
                 onPost(s, r, state, thread))
 
