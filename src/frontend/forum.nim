@@ -1,4 +1,4 @@
-import strformat, times, options, json, tables, sugar, httpcore, uri
+import options, tables, sugar, httpcore
 from dom import window, Location, document, decodeURI
 
 include karax/prelude

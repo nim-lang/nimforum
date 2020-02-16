@@ -1,4 +1,4 @@
-import strutils, options, strformat, parseutils, tables
+import strutils, strformat, parseutils, tables
 
 proc parseIntSafe*(s: string, value: var int) {.noSideEffect.} =
   ## parses `s` into an integer in the range `validRange`. If successful,

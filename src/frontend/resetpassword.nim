@@ -6,7 +6,7 @@ when defined(js):
   include karax/prelude
   import karax / [kajax, kdom]
 
-  import error, replybox, threadlist, post
+  import error
   import karaxutils
 
   type

@@ -1,6 +1,6 @@
 
 import system except Thread
-import options, json, times, httpcore, strformat, sugar, math, strutils
+import options, json, times, httpcore, sugar, strutils
 import sequtils
 
 import threadlist, category, post, user
@@ -18,7 +18,7 @@ when defined(js):
   import jsffi except `&`
 
   include karax/prelude
-  import karax / [vstyles, kajax, kdom]
+  import karax / [kajax, kdom]
 
   import karaxutils, error, replybox, editbox, postbutton, delete
   import categorypicker
@@ -326,12 +326,12 @@ when defined(js):
         ]
     var diffStr = tmpl[0]
     let diff = latestTime - prevPost.info.creation.fromUnix()
-    if diff.weeks > 48:
-      let years = diff.weeks div 48
+    if diff.inWeeks > 48:
+      let years = diff.inWeeks div 48
       diffStr =
         (if years == 1: tmpl[1] else: tmpl[2]) % $years
-    elif diff.weeks > 4:
-      let months = diff.weeks div 4
+    elif diff.inWeeks > 4:
+      let months = diff.inWeeks div 4
       diffStr =
         (if months == 1: tmpl[3] else: tmpl[4]) % $months
     else:

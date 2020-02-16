@@ -1,6 +1,6 @@
 import options, times, httpcore, json, sugar
 
-import threadlist, user
+import user
 type
   UserStatus* = object
     user*: Option[User]
@@ -63,7 +63,7 @@ when defined(js):
   proc getStatus(logout: bool=false) =
     if state.loading: return
     let diff = getTime() - state.lastUpdate
-    if diff.minutes < 5:
+    if diff.inMinutes < 5:
       return
 
     state.loading = true

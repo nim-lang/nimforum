@@ -14,9 +14,7 @@ proc cmpNames*(cat1: Category, cat2: Category): int =
 
 when defined(js):
   include karax/prelude
-  import karax / [vstyles, kajax, kdom]
-
-  import karaxutils
+  import karax / [vstyles]
 
   proc render*(category: Category): VNode =
     result = buildHtml():

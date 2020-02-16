@@ -4,9 +4,9 @@ when defined(js):
   import jsffi except `&`
 
   include karax/prelude
-  import karax / [kajax, kdom, vstyles, vdom]
+  import karax / [kajax, kdom, vdom]
 
-  import error, replybox, threadlist, post, category, user
+  import error, category, user
   import category, karaxutils
 
   type

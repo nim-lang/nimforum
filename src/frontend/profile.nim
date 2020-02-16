@@ -1,12 +1,12 @@
-import options, httpcore, json, sugar, times, strformat, strutils
+import options, httpcore, json, sugar, times, strutils
 
-import threadlist, post, category, error, user
+import threadlist, post, error, user
 
 when defined(js):
   from dom import document
   include karax/prelude
   import karax/[kajax, kdom]
-  import karaxutils, postbutton, delete, profilesettings
+  import karaxutils, profilesettings
 
   type
     ProfileTab* = enum

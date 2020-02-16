@@ -20,7 +20,7 @@ when defined(js):
   from dom import nil
 
   include karax/prelude
-  import karax / [vstyles, kajax, kdom]
+  import karax / [kajax]
 
   import karaxutils, error, threadlist, sugar
 

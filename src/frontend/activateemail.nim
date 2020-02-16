@@ -5,7 +5,7 @@ when defined(js):
   include karax/prelude
   import karax / [kajax, kdom]
 
-  import error, replybox, threadlist, post
+  import error
   import karaxutils
 
   type
@@ -13,16 +13,11 @@ when defined(js):
       loading: bool
       status: HttpCode
       error: Option[PostError]
-      newPassword: kstring
 
   proc newActivateEmail*(): ActivateEmail =
     ActivateEmail(
-      status: Http200,
-      newPassword: ""
+      status: Http200
     )
-
-  proc onPassChange(e: Event, n: VNode, state: ActivateEmail) =
-    state.newPassword = n.value
 
   proc onPost(httpStatus: int, response: kstring, state: ActivateEmail) =
     postFinished:
