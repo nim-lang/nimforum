@@ -1,6 +1,7 @@
 when defined(js):
   import sugar, httpcore, options, json
   import dom except Event, KeyboardEvent
+  import jsffi except `&`
 
   include karax/prelude
   import karax / [kajax, kdom]
@@ -30,7 +31,7 @@ when defined(js):
     let form = dom.document.getElementById("login-form")
     # TODO: This is a hack, karax should support this.
     let formData = newFormData(form)
-    ajaxPost(uri, @[], cast[cstring](formData),
+    ajaxPost(uri, @[], formData.to(cstring),
              (s: int, r: kstring) => onLogInPost(s, r, state))
 
   proc onClose(ev: Event, n: VNode, state: LoginModal) =

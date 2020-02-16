@@ -1,5 +1,6 @@
 when defined(js):
   import httpcore, options, sugar, json, strutils, strformat
+  import jsffi except `&`
 
   include karax/prelude
   import karax/[kajax, kdom]
@@ -68,7 +69,7 @@ when defined(js):
     formData.append("rank", $state.rank)
     formData.append("username", $state.profile.user.name)
     let uri = makeUri("/saveProfile")
-    ajaxPost(uri, @[], cast[cstring](formData),
+    ajaxPost(uri, @[], formData.to(cstring),
              (s: int, r: kstring) => onProfilePost(s, r, state))
 
   proc needsSave(state: ProfileSettings): bool =

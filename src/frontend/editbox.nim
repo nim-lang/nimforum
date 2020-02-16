@@ -1,5 +1,6 @@
 when defined(js):
   import httpcore, options, sugar, json
+  import jsffi except `&`
 
   include karax/prelude
   import karax/kajax
@@ -54,7 +55,7 @@ when defined(js):
     formData.append("postId", $state.post.id)
     # TODO: Subject
     let uri = makeUri("/updatePost")
-    ajaxPost(uri, @[], cast[cstring](formData),
+    ajaxPost(uri, @[], formData.to(cstring),
              (s: int, r: kstring) => onEditPost(s, r, state))
 
   proc render*(state: EditBox, post: Post): VNode =

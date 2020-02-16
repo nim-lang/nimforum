@@ -1,5 +1,6 @@
 when defined(js):
   import strformat, options, httpcore, json, sugar
+  import jsffi except `&`
 
   from dom import getElementById, scrollIntoView, setTimeout
 
@@ -56,7 +57,7 @@ when defined(js):
     let formData = newFormData()
     formData.append("msg", state.text)
     let uri = makeUri("/preview")
-    ajaxPost(uri, @[], cast[cstring](formData),
+    ajaxPost(uri, @[], formData.to(cstring),
              (s: int, r: kstring) => onPreviewPost(s, r, state))
 
   proc onMessageClick(e: Event, n: VNode, state: ReplyBox) =
@@ -80,7 +81,7 @@ when defined(js):
     if replyingTo.isSome:
       formData.append("replyingTo", $replyingTo.get().id)
     let uri = makeUri("/createPost")
-    ajaxPost(uri, @[], cast[cstring](formData),
+    ajaxPost(uri, @[], formData.to(cstring),
              (s: int, r: kstring) => onReplyPost(s, r, state))
 
   proc onCancelClick(e: Event, n: VNode, state: ReplyBox) =

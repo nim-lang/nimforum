@@ -1,6 +1,7 @@
 when defined(js):
   import sugar, httpcore, options, json
   import dom except Event
+  import jsffi except `&`
 
   include karax/prelude
   import karax / [kajax, kdom]
@@ -59,7 +60,7 @@ when defined(js):
       formData.append("id", $state.post.id)
     of DeleteThread:
       formData.append("id", $state.thread.id)
-    ajaxPost(uri, @[], cast[cstring](formData),
+    ajaxPost(uri, @[], formData.to(cstring),
              (s: int, r: kstring) => onDeletePost(s, r, state))
 
   proc onClose(ev: Event, n: VNode, state: DeleteModal) =
