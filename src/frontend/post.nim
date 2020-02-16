@@ -1,4 +1,4 @@
-import strformat, options
+import options
 
 import user, threadlist
 

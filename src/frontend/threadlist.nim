@@ -1,4 +1,4 @@
-import strformat, times, options, json, httpcore, sugar
+import strformat, times, options, json, httpcore
 
 import category, user
 
@@ -98,19 +98,19 @@ when defined(js):
     let duration = currentTime - activityTime
     if currentTime.local().year != activityTime.local().year:
       return activityTime.local().format("MMM yyyy")
-    elif duration.days > 30 and duration.days < 300:
+    elif duration.inDays > 30 and duration.inDays < 300:
       return activityTime.local().format("MMM dd")
-    elif duration.days != 0:
-      return $duration.days & "d"
-    elif duration.hours != 0:
-      return $duration.hours & "h"
-    elif duration.minutes != 0:
-      return $duration.minutes & "m"
+    elif duration.inDays != 0:
+      return $duration.inDays & "d"
+    elif duration.inHours != 0:
+      return $duration.inHours & "h"
+    elif duration.inMinutes != 0:
+      return $duration.inMinutes & "m"
     else:
-      return $duration.seconds & "s"
+      return $duration.inSeconds & "s"
 
   proc genThread(thread: Thread, isNew: bool, noBorder: bool): VNode =
-    let isOld = (getTime() - thread.creation.fromUnix).weeks > 2
+    let isOld = (getTime() - thread.creation.fromUnix).inWeeks > 2
     let isBanned = thread.author.rank.isBanned()
     result = buildHtml():
       tr(class=class({"no-border": noBorder, "banned": isBanned})):

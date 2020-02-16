@@ -1,11 +1,11 @@
 when defined(js):
-  import sugar, httpcore, options, json
+  import sugar, httpcore
   import dom except Event
 
   include karax/prelude
-  import karax / [kajax, kdom]
+  import karax / [kajax]
 
-  import error, replybox, threadlist, post
+  import error
   import karaxutils
 
   type

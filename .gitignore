@@ -12,3 +12,5 @@ nimcache/
 forum
 createdb
 editdb
+
+.vscode

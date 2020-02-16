@@ -5,7 +5,7 @@ when defined(js):
   include karax/prelude
   import karax/[kajax, kdom]
 
-  import replybox, post, karaxutils, postbutton, error, delete, user
+  import post, karaxutils, postbutton, error, delete, user
 
   type
     ProfileSettings* = ref object
