@@ -18,25 +18,21 @@ proc categoriesUserTests(session: Session, baseUrl: string) =
 
     with session:
       navigate baseUrl
-      wait()
       login "user", "user"
 
     setup:
       with session:
         navigate baseUrl
-        wait()
 
     test "no category add available":
       with session:
         click "#new-thread-btn"
-        wait()
 
         checkIsNone "#add-category"
 
     test "can create category thread":
       with session:
         click "#new-thread-btn"
-        wait()
 
         sendKeys "#thread-title", title
 
@@ -45,12 +41,10 @@ proc categoriesUserTests(session: Session, baseUrl: string) =
         sendKeys "#reply-textarea", content
 
         click "#create-thread-btn"
-        wait()
 
         checkText "#thread-title .category", "Fun"
 
         navigate baseUrl
-        wait()
 
         ensureExists title, LinkTextSelector
 
@@ -65,18 +59,15 @@ proc categoriesAdminTests(session: Session, baseUrl: string) =
   suite "admin tests":
     with session:
       navigate baseUrl
-      wait()
       login "admin", "admin"
 
     test "can create category":
       with session:
         click "#new-thread-btn"
-        wait()
 
         ensureExists "#add-category"
 
         click "#add-category .plus-btn"
-        wait()
 
         clear "#add-category input[name='name']"
         clear "#add-category input[name='color']"
@@ -88,7 +79,6 @@ proc categoriesAdminTests(session: Session, baseUrl: string) =
         sendKeys "#add-category input[name='description']", description
 
         click "#add-category #add-category-btn"
-        wait()
 
         checkText "#category-selection .selected-category", name
 
@@ -96,10 +86,8 @@ proc categoriesAdminTests(session: Session, baseUrl: string) =
 
 proc test*(session: Session, baseUrl: string) =
   session.navigate(baseUrl)
-  session.wait()
 
   categoriesUserTests(session, baseUrl)
   categoriesAdminTests(session, baseUrl)
 
   session.navigate(baseUrl)
-  session.wait()

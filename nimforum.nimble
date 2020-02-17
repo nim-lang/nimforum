@@ -55,7 +55,7 @@ task blankdb, "Creates a blank DB":
 
 task test, "Runs tester":
   exec "nimble c -y src/forum.nim"
-  exec "nimble c -y -r tests/browsertester"
+  exec "nimble c -y -r -d:actionDelayMs=0 tests/browsertester"
 
 task fasttest, "Runs tester without recompiling backend":
-  exec "nimble c -r tests/browsertester"
+  exec "nimble c -r -d:actionDelayMs=0 tests/browsertester"

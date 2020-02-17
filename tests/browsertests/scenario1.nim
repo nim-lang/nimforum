@@ -5,8 +5,6 @@ import webdriver
 proc test*(session: Session, baseUrl: string) =
   session.navigate(baseUrl)
 
-  waitForLoad(session)
-
   # Sanity checks
   test "shows sign up":
     session.checkText("#signup-btn", "Sign up")
@@ -38,10 +36,8 @@ proc test*(session: Session, baseUrl: string) =
       logout()
 
       navigate baseUrl
-      wait()
 
       register "TEst1", "test1", verify = false
 
       ensureExists "#signup-form .has-error"
       navigate baseUrl
-      wait()
