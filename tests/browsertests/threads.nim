@@ -1,4 +1,4 @@
-import unittest, options, os, common
+import unittest, options, common
 
 import webdriver
 
@@ -27,18 +27,15 @@ proc userTests(session: Session, baseUrl: string) =
 
     setup:
       session.navigate(baseUrl)
-      session.wait()
 
     test "can create thread":
       with session:
         click "#new-thread-btn"
-        wait()
 
         sendKeys "#thread-title", userTitleStr
         sendKeys "#reply-textarea", userContentStr
 
         click "#create-thread-btn"
-        wait()
 
         checkText "#thread-title .title-text", userTitleStr
         checkText ".original-post div.post-content", userContentStr
@@ -50,7 +47,6 @@ proc anonymousTests(session: Session, baseUrl: string) =
   suite "anonymous user tests":
     with session:
       navigate baseUrl
-      wait()
 
     test "can view banned thread":
       with session:
@@ -58,25 +54,21 @@ proc anonymousTests(session: Session, baseUrl: string) =
 
     with session:
       navigate baseUrl
-      wait()
 
 proc bannedTests(session: Session, baseUrl: string) =
   suite "banned user thread tests":
     with session:
       navigate baseUrl
-      wait()
       login "banned", "banned"
 
     test "can't start thread":
       with session:
         click "#new-thread-btn"
-        wait()
 
         sendKeys "#thread-title", "test"
         sendKeys "#reply-textarea", "test"
 
         click "#create-thread-btn"
-        wait()
 
         ensureExists "#new-thread p.text-error"
 
@@ -88,7 +80,6 @@ proc adminTests(session: Session, baseUrl: string) =
 
     setup:
       session.navigate(baseUrl)
-      session.wait()
 
     test "can view banned thread":
       with session:
@@ -97,13 +88,11 @@ proc adminTests(session: Session, baseUrl: string) =
     test "can create thread":
       with session:
         click "#new-thread-btn"
-        wait()
 
         sendKeys "#thread-title", adminTitleStr
         sendKeys "#reply-textarea", adminContentStr
 
         click "#create-thread-btn"
-        wait()
 
         checkText "#thread-title .title-text", adminTitleStr
         checkText ".original-post div.post-content", adminContentStr
@@ -111,7 +100,6 @@ proc adminTests(session: Session, baseUrl: string) =
     test "try create duplicate thread":
       with session:
         click "#new-thread-btn"
-        wait()
         ensureExists "#new-thread"
 
         sendKeys "#thread-title", adminTitleStr
@@ -119,22 +107,17 @@ proc adminTests(session: Session, baseUrl: string) =
 
         click "#create-thread-btn"
 
-        wait()
-
         ensureExists "#new-thread p.text-error"
 
     test "can edit post":
       let modificationText = " and I edited it!"
       with session:
         click adminTitleStr, LinkTextSelector
-        wait()
 
         click ".post-buttons .edit-button"
-        wait()
 
         sendKeys ".original-post #reply-textarea", modificationText
         click ".edit-buttons .save-button"
-        wait()
 
         checkText ".original-post div.post-content", adminContentStr & modificationText
 
@@ -143,7 +126,6 @@ proc adminTests(session: Session, baseUrl: string) =
 
       with session:
         click userTitleStr, LinkTextSelector
-        wait()
 
         click ".post-buttons .like-button"
 
@@ -152,14 +134,11 @@ proc adminTests(session: Session, baseUrl: string) =
     test "can delete thread":
       with session:
         click adminTitleStr, LinkTextSelector
-        wait()
 
         click ".post-buttons .delete-button"
-        wait()
 
         # click delete confirmation
         click "#delete-modal .delete-btn"
-        wait()
 
         # Make sure the forum post is gone
         checkIsNone adminTitleStr, LinkTextSelector
@@ -168,7 +147,6 @@ proc adminTests(session: Session, baseUrl: string) =
 
 proc test*(session: Session, baseUrl: string) =
   session.navigate(baseUrl)
-  session.wait()
 
   userTests(session, baseUrl)
 
@@ -181,4 +159,3 @@ proc test*(session: Session, baseUrl: string) =
   unBanUser(session, baseUrl)
 
   session.navigate(baseUrl)
-  session.wait()
