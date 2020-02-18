@@ -1,5 +1,16 @@
 import strutils, strformat, parseutils, tables
 
+proc limit*(str: string, n: int): string =
+  ## Limit the number of characters in a string. Ends with a elipsis
+  if str.len > n:
+    return str[0..<n-3] & "..."
+  else:
+    return str
+
+proc slug*(name: string): string =
+  ## Transforms text into a url slug
+  name.strip().replace(" ", "-").toLowerAscii
+
 proc parseIntSafe*(s: string, value: var int) {.noSideEffect.} =
   ## parses `s` into an integer in the range `validRange`. If successful,
   ## `value` is modified to contain the result. Otherwise no exception is

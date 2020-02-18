@@ -21,9 +21,6 @@ when defined(js):
       onCategoryChange: proc (oldCategory: Category, newCategory: Category)
       onAddCategory: proc (category: Category)
 
-  proc slug(name: string): string =
-    name.strip().replace(" ", "-").toLowerAscii
-
   proc onCategoryLoad(state: CategoryPicker): proc (httpStatus: int, response: kstring) =
     return
       proc (httpStatus: int, response: kstring) =

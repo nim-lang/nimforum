@@ -1,6 +1,6 @@
 import options
 
-import user, threadlist
+import user
 
 type
   PostInfo* = object
@@ -58,7 +58,7 @@ type
     email*: Option[string]
 
 when defined(js):
-  import karaxutils
+  import karaxutils, threadlist
 
   proc renderPostUrl*(post: Post, thread: Thread): string =
     renderPostUrl(thread.id, post.id)

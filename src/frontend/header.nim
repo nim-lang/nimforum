@@ -1,4 +1,4 @@
-import options, times, httpcore, json, sugar
+import options, httpcore
 
 import user
 type
@@ -7,6 +7,7 @@ type
     recaptchaSiteKey*: Option[string]
 
 when defined(js):
+  import times, json, sugar
   include karax/prelude
   import karax / [kajax, kdom]
 

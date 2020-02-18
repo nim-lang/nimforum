@@ -1,10 +1,10 @@
-import strformat, times, options, json, httpcore, sugar, strutils, uri
+import options, json, httpcore
 
 import category
 
 when defined(js):
   include karax/prelude
-  import karax / [vstyles, kajax, kdom]
+  import karax / [vstyles, kajax]
 
   import karaxutils, error, user, mainbuttons
 
