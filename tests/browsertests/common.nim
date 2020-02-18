@@ -8,12 +8,21 @@ const actionDelayMs {.intdefine.} = 0
 macro with*(obj: typed, code: untyped): untyped =
   ## Execute a set of statements with an object
   expectKind code, nnkStmtList
-  result = code
+
+  template checkCompiles(res, default) =
+    when compiles(res):
+      res
+    else:
+      default
+
+  result = code.copy
 
   # Simply inject obj into call
   for i in 0 ..< result.len:
-    if result[i].kind in {nnkCommand, nnkCall}:
+    if result[i].kind in {nnkCommand, nnkCall} and $result[i][0].toStrLit != "assert":
       result[i].insert(1, obj)
+
+  result = getAst(checkCompiles(result, code))
 
 proc elementIsSome(element: Option[Element]): bool =
   return element.isSome
@@ -73,8 +82,31 @@ proc waitForElement*(
     sleep(actionDelayMs)
 
   while true:
-    let loading = session.findElement(selector, strategy)
-    if waitCondition(loading):
+    try:
+      let loading = session.findElement(selector, strategy)
+      if waitCondition(loading):
+        return loading
+    finally:
+      discard
+    sleep(pollTime)
+    waitTime += pollTime
+
+    if waitTime > timeout:
+      doAssert false, "Wait for load time exceeded"
+
+proc waitForElements*(
+  session: Session, selector: string, strategy=CssSelector,
+  timeout=20000, pollTime=50
+): seq[Element] =
+  var waitTime = 0
+
+  when actionDelayMs > 0:
+    sleep(actionDelayMs)
+
+  while true:
+    let loading = session.findElements(selector, strategy)
+    echo loading
+    if loading.len > 0:
       return loading
     sleep(pollTime)
     waitTime += pollTime

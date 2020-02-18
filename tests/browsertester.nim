@@ -23,7 +23,7 @@ const baseUrl = "http://localhost:" & $port & "/"
 template withBackend(body: untyped): untyped =
   ## Starts a new backend instance.
 
-  spawn runProcess("nimble -y runbackend")
+  spawn runProcess("nimble -y testbackend")
   defer:
     discard execCmd("killall " & backend)
 
@@ -46,6 +46,8 @@ template withBackend(body: untyped): untyped =
 import browsertests/[scenario1, threads, issue181, categories]
 
 proc main() =
+  # Kill any already running instances
+  discard execCmd("killall geckodriver")
   spawn runProcess("geckodriver -p 4444 --log config")
   defer:
     discard execCmd("killall geckodriver")

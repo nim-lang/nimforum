@@ -1,4 +1,4 @@
-import unittest, options, common
+import unittest, options, common, os
 
 import webdriver
 
@@ -43,6 +43,65 @@ proc categoriesUserTests(session: Session, baseUrl: string) =
 
         ensureExists title, LinkTextSelector
 
+    test "can navigate to categories page":
+      with session:
+        click "#categories-btn"
+
+        ensureExists "#categories-list"
+
+    test "can view post under category":
+      with session:
+
+        # create a few threads
+        click "#new-thread-btn"
+        sendKeys "#thread-title", "Post 1"
+
+        selectCategory "fun"
+        sendKeys "#reply-textarea", "Post 1"
+
+        click "#create-thread-btn"
+        navigate baseUrl
+
+
+        click "#new-thread-btn"
+        sendKeys "#thread-title", "Post 2"
+
+        selectCategory "announcements"
+        sendKeys "#reply-textarea", "Post 2"
+
+        click "#create-thread-btn"
+        navigate baseUrl
+
+
+        click "#new-thread-btn"
+        sendKeys "#thread-title", "Post 3"
+
+        selectCategory "default"
+        sendKeys "#reply-textarea", "Post 3"
+
+        click "#create-thread-btn"
+        navigate baseUrl
+
+
+        click "#categories-btn"
+        ensureExists "#categories-list"
+
+        click "#category-default"
+        checkText "#threads-list .thread-title", "Post 3"
+        for element in session.waitForElements("#threads-list .category-name"):
+          # Have to user "innerText" because elements are hidden on this page
+          assert element.getProperty("innerText") == "Default"
+
+        selectCategory "announcements"
+        checkText "#threads-list .thread-title", "Post 2"
+        for element in session.waitForElements("#threads-list .category-name"):
+          assert element.getProperty("innerText") == "Announcements"
+
+        selectCategory "fun"
+        checkText "#threads-list .thread-title", "Post 1"
+        for element in session.waitForElements("#threads-list .category-name"):
+          assert element.getProperty("innerText") == "Fun"
+
     session.logout()
 
 proc categoriesAdminTests(session: Session, baseUrl: string) =
@@ -75,6 +134,17 @@ proc categoriesAdminTests(session: Session, baseUrl: string) =
         click "#add-category #add-category-btn"
 
         checkText "#category-selection .selected-category", name
+
+      test "category adding disabled on admin logout":
+        with session:
+          navigate(baseUrl & "c/0")
+          ensureExists "#add-category"
+          logout()
+
+          checkIsNone "#add-category"
+          navigate baseUrl
+
+          login "admin", "admin"
 
     session.logout()
 
