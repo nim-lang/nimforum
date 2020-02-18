@@ -2,6 +2,7 @@ import options, tables, sugar, httpcore
 from dom import window, Location, document, decodeURI
 
 include karax/prelude
+import karax/[kdom]
 import jester/[patterns]
 
 import threadlist, postlist, header, profile, newthread, error, about
@@ -55,6 +56,10 @@ proc onPopState(event: dom.Event) =
   if state.url.href != window.location.href:
     state = newState() # Reload the state to remove stale data.
   state.url = copyLocation(window.location)
+
+  # For some reason this is needed so that the back/forward buttons reload
+  # the post list when different categories are selected
+  window.location.reload()
 
   redraw()
 
