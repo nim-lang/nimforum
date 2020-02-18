@@ -88,7 +88,7 @@ when defined(js):
     else:
       return $duration.inSeconds & "s"
 
-  proc genThread(thread: Thread, isNew: bool, noBorder: bool): VNode =
+  proc genThread(thread: Thread, isNew: bool, noBorder: bool, displayCategory=true): VNode =
     let isOld = (getTime() - thread.creation.fromUnix).inWeeks > 2
     let isBanned = thread.author.rank.isBanned()
     result = buildHtml():
@@ -109,8 +109,9 @@ when defined(js):
           a(href=makeUri("/t/" & $thread.id),
             onClick=anchorCB):
             text thread.topic
-        td():
-          render(thread.category)
+        if displayCategory:
+          td():
+            render(thread.category, compact=true)
         genUserAvatars(thread.users)
         td(): text $thread.replies
         td(class=class({
@@ -193,7 +194,8 @@ when defined(js):
           thead():
             tr:
               th(text "Topic")
-              th(text "Category")
+              if categoryId == -1:
+                th(text "Category")
               th(style=style((StyleAttr.width, kstring"8rem"))): text "Users"
               th(text "Replies")
               th(text "Views")
@@ -206,7 +208,8 @@ when defined(js):
               let isLastThread = i+1 == list.threads.len
               let (isLastUnseen, isNew) = getInfo(list.threads, i, currentUser)
               genThread(thread, isNew,
-                        noBorder=isLastUnseen or isLastThread)
+                        noBorder=isLastUnseen or isLastThread,
+                        displayCategory=categoryId == -1)
               if isLastUnseen and (not isLastThread):
                 tr(class="last-visit-separator"):
                   td(colspan="6"):
@@ -224,5 +227,5 @@ when defined(js):
 
   proc renderThreadList*(currentUser: Option[User], categoryId = -1): VNode =
     result = buildHtml(tdiv):
-      renderMainButtons(currentUser)
+      renderMainButtons(currentUser, categoryId=categoryId)
       genThreadList(currentUser, categoryId)

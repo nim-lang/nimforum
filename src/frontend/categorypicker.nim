@@ -155,7 +155,7 @@ when defined(js):
                       state.onAddCategoryClick()):
                 text "Add"
 
-  proc render*(state: CategoryPicker, currentUser: Option[User]): VNode =
+  proc render*(state: CategoryPicker, currentUser: Option[User], compact=false): VNode =
     let loggedIn = currentUser.isSome()
     let currentAdmin =
       loggedIn and currentUser.get().rank == Admin
@@ -178,7 +178,7 @@ when defined(js):
         tdiv(class="dropdown"):
           a(class="btn btn-link dropdown-toggle", tabindex="0"):
             tdiv(class="selected-category d-inline-block"):
-              render(selectedCategory)
+              render(selectedCategory, compact=true)
             text " "
             italic(class="fas fa-caret-down")
           ul(class="menu"):
@@ -186,6 +186,6 @@ when defined(js):
               li(class="menu-item"):
                 a(class="category-" & $category.id & " " & category.name.slug,
                   onClick=onCategoryClick(state, category)):
-                  render(category)
+                  render(category, compact)
         if state.addEnabled:
           genAddCategory(state)

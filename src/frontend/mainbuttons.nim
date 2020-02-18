@@ -3,16 +3,22 @@ import user
 
 when defined(js):
   include karax/prelude
-  import karax / [vstyles, kajax, kdom]
+  import karax / [kdom]
 
-  import karaxutils, error, user
+  import karaxutils, user, categorypicker, category
 
   let buttons = [
     (name: "Latest", url: makeUri("/"), id: "latest-btn"),
     (name: "Categories", url: makeUri("/categories"), id: "categories-btn"),
   ]
 
-  proc renderMainButtons*(currentUser: Option[User]): VNode =
+  proc onSelectedCategoryChanged(oldCategory: Category, newCategory: Category) =
+    let uri = makeUri("/c/" & $newCategory.id)
+    navigateTo(uri)
+
+  let catPicker = newCategoryPicker(onCategoryChange=onSelectedCategoryChanged)
+
+  proc renderMainButtons*(currentUser: Option[User], categoryId = -1): VNode =
     result = buildHtml():
       section(class="navbar container grid-xl", id="main-buttons"):
         section(class="navbar-section"):
@@ -23,6 +29,9 @@ when defined(js):
             ul(class="menu"):
               li: text "community"
               li: text "dev" ]#
+          if categoryId != -1:
+            catPicker.selectedCategoryID = categoryId
+            render(catPicker, currentUser)
 
           for btn in buttons:
             let active = btn.url == window.location.href
