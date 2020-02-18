@@ -27,8 +27,8 @@ when defined(js):
     result = buildHtml():
       tr(class=class({"no-border": noBorder})):
         td(style=style((StyleAttr.borderLeftColor, kstring("#" & category.color))), class="category"):
-          h4(class="category-title"):
-            a(href=makeUri("/c/" & $category.id), id="category-" & category.name.slug):
+          h4(class="category-title", id="category-" & category.name.slug):
+            a(href=makeUri("/c/" & $category.id)):
               tdiv():
                 tdiv(class="category-name"):
                   text category.name
