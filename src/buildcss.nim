@@ -1,4 +1,4 @@
-import os, strutils
+import os
 
 import sass
 

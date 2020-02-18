@@ -1,11 +1,11 @@
-import options, httpcore
+import httpcore
 type
   PostError* = object
     errorFields*: seq[string] ## IDs of the fields with an error.
     message*: string
 
 when defined(js):
-  import json
+  import json, options
   include karax/prelude
 
   import karaxutils

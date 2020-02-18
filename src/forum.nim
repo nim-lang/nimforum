@@ -814,7 +814,6 @@ routes:
       countQuery = sql"select count(*) from thread;"
       countArgs: seq[string] = @[]
 
-
     if categoryId != -1:
       categorySection = "c.id == ? and "
       countQuery = sql"select count(*) from thread t, category c where category == c.id and c.id == ?;"

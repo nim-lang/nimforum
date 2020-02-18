@@ -20,7 +20,7 @@ proc newMailer*(config: Config): Mailer =
 proc rateCheck(mailer: Mailer, address: string): bool =
   ## Returns true if we've emailed the address too much.
   let diff = getTime() - mailer.lastReset
-  if diff.hours >= 1:
+  if diff.inHours >= 1:
     mailer.lastReset = getTime()
     mailer.emailsSent.clear()
 
