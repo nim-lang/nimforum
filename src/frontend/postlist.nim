@@ -215,7 +215,7 @@ when defined(js):
     result = buildHtml():
       tdiv():
         if authoredByUser or currentAdmin:
-          render(state.categoryPicker, currentUser)
+          render(state.categoryPicker, currentUser, compact=false)
         else:
           render(thread.category)
 

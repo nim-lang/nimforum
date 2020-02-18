@@ -31,7 +31,7 @@ when defined(js):
               li: text "dev" ]#
           if categoryId != -1:
             catPicker.selectedCategoryID = categoryId
-            render(catPicker, currentUser)
+            render(catPicker, currentUser, compact=false)
 
           for btn in buttons:
             let active = btn.url == window.location.href
