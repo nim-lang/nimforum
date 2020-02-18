@@ -1,13 +1,11 @@
-import unittest, options, os, common
+import unittest, options, common
 
 import webdriver
 
 proc selectCategory(session: Session, name: string) =
   with session:
     click "#category-selection .dropdown-toggle"
-
     click "#category-selection ." & name
-
 
 proc categoriesUserTests(session: Session, baseUrl: string) =
   let
@@ -33,15 +31,12 @@ proc categoriesUserTests(session: Session, baseUrl: string) =
     test "can create category thread":
       with session:
         click "#new-thread-btn"
-
         sendKeys "#thread-title", title
 
         selectCategory "fun"
-
         sendKeys "#reply-textarea", content
 
         click "#create-thread-btn"
-
         checkText "#thread-title .category", "Fun"
 
         navigate baseUrl
@@ -72,7 +67,6 @@ proc categoriesAdminTests(session: Session, baseUrl: string) =
         clear "#add-category input[name='name']"
         clear "#add-category input[name='color']"
         clear "#add-category input[name='description']"
-
 
         sendKeys "#add-category input[name='name']", name
         sendKeys "#add-category input[name='color']", color

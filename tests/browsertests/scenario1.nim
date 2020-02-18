@@ -1,4 +1,4 @@
-import unittest, options, os, common
+import unittest, options, common
 
 import webdriver
 
