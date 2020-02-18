@@ -65,7 +65,7 @@ when defined(js):
             tdiv():
               label(class="d-inline-block form-label"):
                 text "Category"
-              render(state.categoryPicker, currentUser)
+              render(state.categoryPicker, currentUser, compact=false)
             renderContent(state.replyBox, none[Thread](), none[Post]())
           tdiv(class="footer"):
 

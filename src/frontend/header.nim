@@ -32,36 +32,41 @@ when defined(js):
   var
     state = newState()
 
-  proc getStatus(logout: bool=false)
+  proc getStatus(logout=false, reload=false)
   proc newState(): State =
     State(
       data: none[UserStatus](),
       loading: false,
       status: Http200,
       loginModal: newLoginModal(
-        () => (state.lastUpdate = fromUnix(0); getStatus(); window.location.reload()),
+        () => (state.lastUpdate = fromUnix(0); getStatus(reload=true)),
         () => state.signupModal.show()
       ),
       signupModal: newSignupModal(
-        () => (state.lastUpdate = fromUnix(0); getStatus(); window.location.reload()),
+        () => (state.lastUpdate = fromUnix(0); getStatus(reload=true)),
         () => state.loginModal.show()
       ),
       userMenu: newUserMenu(
-        () => (state.lastUpdate = fromUnix(0); getStatus(logout=true); window.location.reload())
+        () => (state.lastUpdate = fromUnix(0); getStatus(logout=true, reload=true))
       )
     )
 
-  proc onStatus(httpStatus: int, response: kstring) =
-    state.loading = false
-    state.status = httpStatus.HttpCode
-    if state.status != Http200: return
+  proc onStatus(reload: bool=false): proc (httpStatus: int, response: kstring) =
+    result =
+      proc (httpStatus: int, response: kstring) =
+        state.loading = false
+        state.status = httpStatus.HttpCode
+        if state.status != Http200: return
 
-    let parsed = parseJson($response)
-    state.data = some(to(parsed, UserStatus))
+        let parsed = parseJson($response)
+        state.data = some(to(parsed, UserStatus))
 
-    state.lastUpdate = getTime()
+        state.lastUpdate = getTime()
 
-  proc getStatus(logout: bool=false) =
+        if reload:
+          window.location.reload()
+
+  proc getStatus(logout=false, reload=false) =
     if state.loading: return
     let diff = getTime() - state.lastUpdate
     if diff.inMinutes < 5:
@@ -69,7 +74,7 @@ when defined(js):
 
     state.loading = true
     let uri = makeUri("status.json", [("logout", $logout)])
-    ajaxGet(uri, @[], onStatus)
+    ajaxGet(uri, @[], onStatus(reload))
 
   proc getLoggedInUser*(): Option[User] =
     state.data.map(x => x.user).flatten
