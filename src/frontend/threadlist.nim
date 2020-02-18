@@ -111,7 +111,7 @@ when defined(js):
             text thread.topic
         if displayCategory:
           td():
-            render(thread.category, compact=true)
+            render(thread.category)
         genUserAvatars(thread.users)
         td(): text $thread.replies
         td(class=class({

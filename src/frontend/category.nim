@@ -20,7 +20,7 @@ when defined(js):
   import karax / [vstyles]
   import karaxutils
 
-  proc render*(category: Category, compact=false): VNode =
+  proc render*(category: Category, compact=true): VNode =
     if category.name.len == 0:
       return buildHtml():
         span()
