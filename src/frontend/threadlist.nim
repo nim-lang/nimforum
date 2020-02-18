@@ -109,9 +109,8 @@ when defined(js):
           a(href=makeUri("/t/" & $thread.id),
             onClick=anchorCB):
             text thread.topic
-        if displayCategory:
-          td():
-            render(thread.category)
+        td(class=class({"d-none": not displayCategory})):
+          render(thread.category)
         genUserAvatars(thread.users)
         td(): text $thread.replies
         td(class=class({
@@ -187,6 +186,8 @@ when defined(js):
 
       return buildHtml(tdiv(class="loading loading-lg"))
 
+    let displayCategory = true
+
     let list = state.list.get()
     result = buildHtml():
       section(class="thread-list"):
@@ -194,8 +195,8 @@ when defined(js):
           thead():
             tr:
               th(text "Topic")
-              if categoryId == -1:
-                th(text "Category")
+              th(class=class({"d-none": not displayCategory})):
+                text "Category"
               th(style=style((StyleAttr.width, kstring"8rem"))): text "Users"
               th(text "Replies")
               th(text "Views")
@@ -209,7 +210,7 @@ when defined(js):
               let (isLastUnseen, isNew) = getInfo(list.threads, i, currentUser)
               genThread(thread, isNew,
                         noBorder=isLastUnseen or isLastThread,
-                        displayCategory=categoryId == -1)
+                        displayCategory=displayCategory)
               if isLastUnseen and (not isLastThread):
                 tr(class="last-visit-separator"):
                   td(colspan="6"):
