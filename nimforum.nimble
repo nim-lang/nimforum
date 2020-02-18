@@ -21,7 +21,7 @@ requires "sass#649e0701fa5c"
 
 requires "karax#f6bda9a"
 
-requires "webdriver#c2fee57"
+requires "webdriver#7091895"
 
 # Tasks
 
@@ -31,6 +31,9 @@ task backend, "Compiles and runs the forum backend":
 
 task runbackend, "Runs the forum backend":
   exec "./src/forum"
+
+task testbackend, "Runs the forum backend in test mode":
+  exec "nimble c -r -d:skipRateLimitCheck src/forum.nim"
 
 task frontend, "Builds the necessary JS frontend (with CSS)":
   exec "nimble c -r src/buildcss"
