@@ -434,8 +434,9 @@ proc executeReply(c: TForumData, threadId: int, content: string,
     else:
       raise newForumError("You are not allowed to post")
 
-  if rateLimitCheck(c):
-    raise newForumError("You're posting too fast!")
+  when not defined(skipRateLimitCheck):
+    if rateLimitCheck(c):
+      raise newForumError("You're posting too fast!")
 
   if content.strip().len == 0:
     raise newForumError("Message cannot be empty")
@@ -567,8 +568,9 @@ proc executeNewThread(c: TForumData, subject, msg, categoryID: string): (int64, 
   if not validateRst(c, msg):
     raise newForumError("Message needs to be valid RST", @["msg"])
 
-  if rateLimitCheck(c):
-    raise newForumError("You're posting too fast!")
+  when not defined(skipRateLimitCheck):
+    if rateLimitCheck(c):
+      raise newForumError("You're posting too fast!")
 
   result[0] = tryInsertID(db, query, subject, categoryID).int
   if result[0] < 0:
