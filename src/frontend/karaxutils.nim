@@ -97,6 +97,7 @@ when defined(js):
       let url = n.getAttr("href")
 
       navigateTo(url)
+      window.location.href = url
 
   proc newFormData*(form: dom.Element): FormData
     {.importcpp: "new FormData(@)", constructor.}

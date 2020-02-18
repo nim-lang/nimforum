@@ -39,15 +39,15 @@ when defined(js):
       loading: false,
       status: Http200,
       loginModal: newLoginModal(
-        () => (state.lastUpdate = fromUnix(0); getStatus()),
+        () => (state.lastUpdate = fromUnix(0); getStatus(); window.location.reload()),
         () => state.signupModal.show()
       ),
       signupModal: newSignupModal(
-        () => (state.lastUpdate = fromUnix(0); getStatus()),
+        () => (state.lastUpdate = fromUnix(0); getStatus(); window.location.reload()),
         () => state.loginModal.show()
       ),
       userMenu: newUserMenu(
-        () => (state.lastUpdate = fromUnix(0); getStatus(logout=true))
+        () => (state.lastUpdate = fromUnix(0); getStatus(logout=true); window.location.reload())
       )
     )
 
