@@ -28,14 +28,14 @@ when defined(js):
       tr(class=class({"no-border": noBorder})):
         td(style=style((StyleAttr.borderLeftColor, kstring("#" & category.color))), class="category"):
           h4(class="category-title"):
-            a(href=makeUri("/c/" & $category.id)):
+            a(href=makeUri("/c/" & $category.id), id="category-" & category.name.slug):
               tdiv():
                 tdiv(class="category-name"):
                   text category.name
           tdiv(class="category-description"):
             text category.description
         td(class="topics"):
-          text "Topics"
+          text $category.numTopics
 
   proc onCategoriesRetrieved(httpStatus: int, response: kstring) =
     state.loading = false

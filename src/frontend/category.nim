@@ -5,6 +5,7 @@ type
     name*: string
     description*: string
     color*: string
+    numTopics*: int
 
   CategoryList* = ref object
     categories*: seq[Category]

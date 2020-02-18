@@ -791,12 +791,18 @@ routes:
 
   get "/categories.json":
     # TODO: Limit this query in the case of many many categories
-    const categoriesQuery = sql"""select * from category;"""
+    const categoriesQuery =
+      sql"""
+        select c.*, count(thread.category)
+        from category c
+        left join thread on c.id == thread.category
+        group by c.id;
+      """
 
     var list = CategoryList(categories: @[])
     for data in getAllRows(db, categoriesQuery):
       let category = Category(
-        id: data[0].getInt, name: data[1], description: data[2], color: data[3]
+        id: data[0].getInt, name: data[1], description: data[2], color: data[3], numTopics: data[4].parseInt
       )
       list.categories.add(category)
 
