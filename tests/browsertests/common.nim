@@ -19,7 +19,7 @@ macro with*(obj: typed, code: untyped): untyped =
 
   # Simply inject obj into call
   for i in 0 ..< result.len:
-    if result[i].kind in {nnkCommand, nnkCall} and $result[i][0].toStrLit != "assert":
+    if result[i].kind in {nnkCommand, nnkCall}:
       result[i].insert(1, obj)
 
   result = getAst(checkCompiles(result, code))
