@@ -1,4 +1,4 @@
-import times
+import times, options
 
 type
   # If you add more "Banned" states, be sure to modify forum's threadsQuery too.
@@ -26,6 +26,9 @@ type
 
 proc isOnline*(user: User): bool =
   return getTime().toUnix() - user.lastOnline < (60*5)
+
+proc isAdmin*(user: Option[User]): bool =
+  return user.isSome and user.get().rank == Admin
 
 proc `==`*(u1, u2: User): bool =
   u1.name == u2.name
