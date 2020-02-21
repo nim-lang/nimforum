@@ -1,11 +1,32 @@
 import unittest, options, common, os
-
 import webdriver
+
+import karaxutils
 
 proc selectCategory(session: Session, name: string) =
   with session:
     click "#category-selection .dropdown-toggle"
     click "#category-selection ." & name
+
+proc createCategory(session: Session, baseUrl, name, color, description: string) =
+  with session:
+    navigate baseUrl
+    click "#categories-btn"
+
+    ensureExists "#add-category"
+
+    click "#add-category .plus-btn"
+
+    clear "#add-category input[name='name']"
+    clear "#add-category input[name='description']"
+
+    sendKeys "#add-category input[name='name']", name
+    setColor "#add-category input[name='color']", color
+    sendKeys "#add-category input[name='description']", description
+
+    click "#add-category #add-category-btn"
+
+    checkText "#category-" & name.slug(), name
 
 proc categoriesUserTests(session: Session, baseUrl: string) =
   let
@@ -105,17 +126,17 @@ proc categoriesUserTests(session: Session, baseUrl: string) =
     session.logout()
 
 proc categoriesAdminTests(session: Session, baseUrl: string) =
-  let
-    name = "Category Test"
-    color = "Creating category test"
-    description = "This is a description"
-
   suite "admin tests":
     with session:
       navigate baseUrl
       login "admin", "admin"
 
-    test "can create category":
+    test "can create category via dropdown":
+      let
+        name = "Category Test"
+        color = "#720904"
+        description = "This is a description"
+
       with session:
         click "#new-thread-btn"
 
@@ -124,27 +145,35 @@ proc categoriesAdminTests(session: Session, baseUrl: string) =
         click "#add-category .plus-btn"
 
         clear "#add-category input[name='name']"
-        clear "#add-category input[name='color']"
         clear "#add-category input[name='description']"
 
         sendKeys "#add-category input[name='name']", name
-        sendKeys "#add-category input[name='color']", color
+        setColor "#add-category input[name='color']", color
         sendKeys "#add-category input[name='description']", description
 
         click "#add-category #add-category-btn"
 
         checkText "#category-selection .selected-category", name
 
-      test "category adding disabled on admin logout":
-        with session:
-          navigate(baseUrl & "c/0")
-          ensureExists "#add-category"
-          logout()
+    test "can create category on category page":
+      let
+        name = "Category Test Page"
+        color = "#70B4D4"
+        description = "This is a description on category page"
 
-          checkIsNone "#add-category"
-          navigate baseUrl
+      with session:
+        createCategory baseUrl, name, color, description
 
-          login "admin", "admin"
+    test "category adding disabled on admin logout":
+      with session:
+        navigate(baseUrl & "c/0")
+        ensureExists "#add-category"
+        logout()
+
+        checkIsNone "#add-category"
+        navigate baseUrl
+
+        login "admin", "admin"
 
     session.logout()
 

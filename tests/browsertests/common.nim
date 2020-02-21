@@ -64,6 +64,10 @@ template check*(session: Session, element: string,
   let el = session.waitForElement(element, strategy)
   check function(el)
 
+proc setColor*(session: Session, element, color: string, strategy=CssSelector) =
+  let el = session.waitForElement(element, strategy)
+  discard session.execute("arguments[0].setAttribute('value', '" & color & "')", el.get())
+
 template checkIsNone*(session: Session, element: string, strategy=CssSelector) =
   discard session.waitForElement(element, strategy, waitCondition=elementIsNone)
 
@@ -105,7 +109,6 @@ proc waitForElements*(
 
   while true:
     let loading = session.findElements(selector, strategy)
-    echo loading
     if loading.len > 0:
       return loading
     sleep(pollTime)
