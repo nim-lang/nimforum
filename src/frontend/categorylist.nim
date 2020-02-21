@@ -3,25 +3,33 @@ import options, json, httpcore
 import category
 
 when defined(js):
+  import sugar
   include karax/prelude
   import karax / [vstyles, kajax]
 
-  import karaxutils, error, user, mainbuttons
+  import karaxutils, error, user, mainbuttons, addcategorymodal
 
   type
     State = ref object
       list: Option[CategoryList]
       loading: bool
       status: HttpCode
+      addCategoryModal: AddCategoryModal
+
+  var state: State
 
   proc newState(): State =
     State(
       list: none[CategoryList](),
       loading: false,
-      status: Http200
+      status: Http200,
+      addCategoryModal: newAddCategoryModal(
+        onAddCategory=
+          (category: Category) => state.list.get().categories.add(category)
+      )
     )
-  var
-    state = newState()
+
+  state = newState()
 
   proc genCategory(category: Category, noBorder = false): VNode =
     result = buildHtml():
@@ -50,7 +58,18 @@ when defined(js):
     else:
       state.list = some(list)
 
-  proc renderCategories(): VNode =
+  proc renderCategoryHeader*(currentUser: Option[User]): VNode =
+    result = buildHtml(tdiv(id="add-category")):
+      text "Category"
+      if currentUser.isAdmin():
+        button(class="plus-btn btn btn-link",
+              onClick=(ev: Event, n: VNode) => (
+                state.addCategoryModal.setModalShown(true)
+              )):
+          italic(class="fas fa-plus")
+        render(state.addCategoryModal)
+
+  proc renderCategories(currentUser: Option[User]): VNode =
     if state.status != Http200:
       return renderError("Couldn't retrieve threads.", state.status)
 
@@ -68,7 +87,8 @@ when defined(js):
         table(id="categories-list", class="table"):
           thead():
             tr:
-              th(text "Category")
+              th:
+                renderCategoryHeader(currentUser)
               th(text "Topics")
           tbody():
             for i in 0 ..< list.categories.len:
@@ -80,4 +100,4 @@ when defined(js):
   proc renderCategoryList*(currentUser: Option[User]): VNode =
     result = buildHtml(tdiv):
       renderMainButtons(currentUser)
-      renderCategories()
+      renderCategories(currentUser)

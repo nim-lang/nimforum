@@ -16,7 +16,16 @@ when defined(js):
     let uri = makeUri("/c/" & $newCategory.id)
     navigateTo(uri)
 
-  let catPicker = newCategoryPicker(onCategoryChange=onSelectedCategoryChanged)
+  type
+    State = ref object
+      categoryPicker: CategoryPicker
+
+  proc newState(): State =
+    State(
+      categoryPicker: newCategoryPicker(onCategoryChange=onSelectedCategoryChanged),
+    )
+
+  let state = newState()
 
   proc renderMainButtons*(currentUser: Option[User], categoryId = -1): VNode =
     result = buildHtml():
@@ -30,8 +39,8 @@ when defined(js):
               li: text "community"
               li: text "dev" ]#
           if categoryId != -1:
-            catPicker.selectedCategoryID = categoryId
-            render(catPicker, currentUser, compact=false)
+            state.categoryPicker.selectedCategoryID = categoryId
+            render(state.categoryPicker, currentUser, compact=false)
 
           for btn in buttons:
             let active = btn.url == window.location.href
