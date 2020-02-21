@@ -32,19 +32,19 @@ proc elementIsNone(element: Option[Element]): bool =
 
 proc waitForElement*(session: Session, selector: string, strategy=CssSelector, timeout=20000, pollTime=50, waitCondition=elementIsSome): Option[Element]
 
-template click*(session: Session, element: string, strategy=CssSelector) =
+proc click*(session: Session, element: string, strategy=CssSelector) =
   let el = session.waitForElement(element, strategy)
   el.get().click()
 
-template sendKeys*(session: Session, element, keys: string) =
+proc sendKeys*(session: Session, element, keys: string) =
   let el = session.waitForElement(element)
   el.get().sendKeys(keys)
 
-template clear*(session: Session, element: string) =
+proc clear*(session: Session, element: string) =
   let el = session.waitForElement(element)
   el.get().clear()
 
-template sendKeys*(session: Session, element: string, keys: varargs[Key]) =
+proc sendKeys*(session: Session, element: string, keys: varargs[Key]) =
   let el = session.waitForElement(element)
 
   # focus
@@ -52,7 +52,7 @@ template sendKeys*(session: Session, element: string, keys: varargs[Key]) =
   for key in keys:
     session.press(key)
 
-template ensureExists*(session: Session, element: string, strategy=CssSelector) =
+proc ensureExists*(session: Session, element: string, strategy=CssSelector) =
   discard session.waitForElement(element, strategy)
 
 template check*(session: Session, element: string, function: untyped) =
@@ -68,10 +68,10 @@ proc setColor*(session: Session, element, color: string, strategy=CssSelector) =
   let el = session.waitForElement(element, strategy)
   discard session.execute("arguments[0].setAttribute('value', '" & color & "')", el.get())
 
-template checkIsNone*(session: Session, element: string, strategy=CssSelector) =
+proc checkIsNone*(session: Session, element: string, strategy=CssSelector) =
   discard session.waitForElement(element, strategy, waitCondition=elementIsNone)
 
-template checkText*(session: Session, element, expectedValue: string) =
+proc checkText*(session: Session, element, expectedValue: string) =
   let el = session.waitForElement(element)
   check el.get().getText() == expectedValue
 
