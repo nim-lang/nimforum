@@ -1,1 +1,2 @@
 --threads:on
+--path:"../src/frontend"
