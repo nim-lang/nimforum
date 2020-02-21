@@ -1,4 +1,4 @@
-import unittest, options, common, os
+import unittest, common
 import webdriver
 
 import karaxutils
