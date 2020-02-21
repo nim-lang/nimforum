@@ -10,6 +10,9 @@ type
   CategoryList* = ref object
     categories*: seq[Category]
 
+  CategoryEvent* = proc (category: Category) {.closure.}
+  CategoryChangeEvent* = proc (oldCategory: Category, newCategory: Category) {.closure.}
+
 const categoryDescriptionCharLimit = 250
 
 proc cmpNames*(cat1: Category, cat2: Category): int =
