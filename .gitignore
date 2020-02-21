@@ -14,3 +14,10 @@ createdb
 editdb
 
 .vscode
+forum.json*
+browsertester
+setup_nimforum
+buildcss
+nimforum.css
+
+/src/frontend/forum.js
