@@ -49,6 +49,11 @@ proc categoriesUserTests(session: Session, baseUrl: string) =
 
         checkIsNone "#add-category"
 
+    test "no category add available category page":
+      with session:
+        click "#categories-btn"
+        checkIsNone "#add-category"
+
     test "can create category thread":
       with session:
         click "#new-thread-btn"
