@@ -93,7 +93,7 @@ proc render(): VNode =
       ),
       r("/c/@id",
         (params: Params) =>
-          (renderThreadList(getLoggedInUser(), params["id"].parseInt))
+          (renderThreadList(getLoggedInUser(), some(params["id"].parseInt)))
       ),
       r("/newthread",
         (params: Params) =>
