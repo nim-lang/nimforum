@@ -51,17 +51,15 @@ when defined(js):
       )
     )
 
-  proc onStatus(): proc (httpStatus: int, response: kstring) =
-    result =
-      proc (httpStatus: int, response: kstring) =
-        state.loading = false
-        state.status = httpStatus.HttpCode
-        if state.status != Http200: return
+  proc onStatus(httpStatus: int, response: kstring) =
+    state.loading = false
+    state.status = httpStatus.HttpCode
+    if state.status != Http200: return
 
-        let parsed = parseJson($response)
-        state.data = some(to(parsed, UserStatus))
+    let parsed = parseJson($response)
+    state.data = some(to(parsed, UserStatus))
 
-        state.lastUpdate = getTime()
+    state.lastUpdate = getTime()
 
   proc getStatus(logout=false) =
     if state.loading: return
@@ -71,7 +69,7 @@ when defined(js):
 
     state.loading = true
     let uri = makeUri("status.json", [("logout", $logout)])
-    ajaxGet(uri, @[], onStatus())
+    ajaxGet(uri, @[], onStatus)
 
   proc getLoggedInUser*(): Option[User] =
     state.data.map(x => x.user).flatten
