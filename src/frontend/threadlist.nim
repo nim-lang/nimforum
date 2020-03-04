@@ -26,6 +26,7 @@ proc isModerated*(thread: Thread): bool =
   thread.author.rank <= Moderated
 
 when defined(js):
+  import sugar
   include karax/prelude
   import karax / [vstyles, kajax, kdom]
 
@@ -34,18 +35,25 @@ when defined(js):
   type
     State = ref object
       list: Option[ThreadList]
+      refreshList: bool
       loading: bool
       status: HttpCode
+      mainButtons: MainButtons
+
+  var state: State
 
   proc newState(): State =
     State(
       list: none[ThreadList](),
       loading: false,
-      status: Http200
+      status: Http200,
+      mainButtons: newMainButtons(
+        onCategoryChange =
+          (oldCategory: Category, newCategory: Category) => (state.list = none[ThreadList]())
+      )
     )
 
-  var
-    state = newState()
+  state = newState()
 
   proc visibleTo*[T](thread: T, user: Option[User]): bool =
     ## Determines whether the specified thread (or post) should be
@@ -234,5 +242,5 @@ when defined(js):
 
   proc renderThreadList*(currentUser: Option[User], categoryIdOption = none(int)): VNode =
     result = buildHtml(tdiv):
-      renderMainButtons(currentUser, categoryIdOption=categoryIdOption)
+      state.mainButtons.render(currentUser, categoryIdOption=categoryIdOption)
       genThreadList(currentUser, categoryIdOption)

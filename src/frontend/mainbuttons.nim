@@ -12,22 +12,30 @@ when defined(js):
     (name: "Categories", url: makeUri("/categories"), id: "categories-btn"),
   ]
 
-  proc onSelectedCategoryChanged(oldCategory: Category, newCategory: Category) =
-    let uri = makeUri("/c/" & $newCategory.id)
-    navigateTo(uri)
+  let onSelectedCategoryChanged: CategoryChangeEvent =
+    proc (oldCategory: Category, newCategory: Category) =
+      let uri = makeUri("/c/" & $newCategory.id)
+      navigateTo(uri)
 
   type
-    State = ref object
+    MainButtons* = ref object
       categoryPicker: CategoryPicker
+      onCategoryChange*: CategoryChangeEvent
 
-  proc newState(): State =
-    State(
-      categoryPicker: newCategoryPicker(onCategoryChange=onSelectedCategoryChanged),
+  proc onCategoryChangeWithState(state: MainButtons): CategoryChangeEvent =
+    return
+      proc (oldCategory, newCategory: Category) =
+        onSelectedCategoryChanged(oldCategory, newCategory)
+        state.onCategoryChange(oldCategory, newCategory)
+
+
+  proc newMainButtons*(onCategoryChange=onSelectedCategoryChanged): MainButtons =
+    result = MainButtons(
+      onCategoryChange: onCategoryChange,
     )
+    result.categoryPicker = newCategoryPicker(onCategoryChange=onCategoryChangeWithState(result))
 
-  let state = newState()
-
-  proc renderMainButtons*(currentUser: Option[User], categoryIdOption = none(int)): VNode =
+  proc render*(state: MainButtons, currentUser: Option[User], categoryIdOption = none(int)): VNode =
     result = buildHtml():
       section(class="navbar container grid-xl", id="main-buttons"):
         section(class="navbar-section"):

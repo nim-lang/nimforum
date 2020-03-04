@@ -105,8 +105,7 @@ when defined(js):
         render(state.addCategoryModal)
 
   proc render*(state: CategoryPicker, currentUser: Option[User], compact=true): VNode =
-    if currentUser.isAdmin():
-      state.setAddEnabled(true)
+    state.setAddEnabled(currentUser.isAdmin())
 
     if state.status != Http200:
       return renderError("Couldn't retrieve categories.", state.status)
