@@ -12,10 +12,9 @@ when defined(js):
     (name: "Categories", url: makeUri("/categories"), id: "categories-btn"),
   ]
 
-  let onSelectedCategoryChanged: CategoryChangeEvent =
-    proc (oldCategory: Category, newCategory: Category) =
-      let uri = makeUri("/c/" & $newCategory.id)
-      navigateTo(uri)
+  proc onSelectedCategoryChanged(oldCategory: Category, newCategory: Category) =
+    let uri = makeUri("/c/" & $newCategory.id)
+    navigateTo(uri)
 
   type
     MainButtons* = ref object
@@ -28,12 +27,10 @@ when defined(js):
         onSelectedCategoryChanged(oldCategory, newCategory)
         state.onCategoryChange(oldCategory, newCategory)
 
-
-  proc newMainButtons*(onCategoryChange=onSelectedCategoryChanged): MainButtons =
-    result = MainButtons(
-      onCategoryChange: onCategoryChange,
-    )
-    result.categoryPicker = newCategoryPicker(onCategoryChange=onCategoryChangeWithState(result))
+  proc newMainButtons*(onCategoryChange: CategoryChangeEvent = onSelectedCategoryChanged): MainButtons =
+    new result
+    result.onCategoryChange = onCategoryChange
+    result.categoryPicker = newCategoryPicker(onCategoryChange = onCategoryChangeWithState(result))
 
   proc render*(state: MainButtons, currentUser: Option[User], categoryIdOption = none(int)): VNode =
     result = buildHtml():
