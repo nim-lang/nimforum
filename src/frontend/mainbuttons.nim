@@ -27,7 +27,7 @@ when defined(js):
 
   let state = newState()
 
-  proc renderMainButtons*(currentUser: Option[User], categoryId = -1): VNode =
+  proc renderMainButtons*(currentUser: Option[User], categoryIdOption = none(int)): VNode =
     result = buildHtml():
       section(class="navbar container grid-xl", id="main-buttons"):
         section(class="navbar-section"):
@@ -38,8 +38,8 @@ when defined(js):
             ul(class="menu"):
               li: text "community"
               li: text "dev" ]#
-          if categoryId != -1:
-            state.categoryPicker.selectedCategoryID = categoryId
+          if categoryIdOption.isSome:
+            state.categoryPicker.selectedCategoryID = categoryIdOption.get()
             render(state.categoryPicker, currentUser, compact=false)
 
           for btn in buttons:

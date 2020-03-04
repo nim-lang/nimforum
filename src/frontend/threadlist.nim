@@ -147,10 +147,13 @@ when defined(js):
     else:
       state.list = some(list)
 
-  proc onLoadMore(ev: Event, n: VNode, categoryId: int) =
+  proc onLoadMore(ev: Event, n: VNode, categoryIdOption: Option[int]) =
     state.loading = true
     let start = state.list.get().threads.len
-    ajaxGet(makeUri("threads.json?start=" & $start & "&categoryId=" & $categoryId), @[], onThreadList)
+    if categoryIdOption.isSome:
+      ajaxGet(makeUri("threads.json?start=" & $start & "&categoryId=" & $categoryIdOption.get()), @[], onThreadList)
+    else:
+      ajaxGet(makeUri("threads.json?start=" & $start), @[], onThreadList)
 
   proc getInfo(
     list: seq[Thread], i: int, currentUser: Option[User]
@@ -175,14 +178,17 @@ when defined(js):
       isNew: thread.creation > previousVisitAt
     )
 
-  proc genThreadList(currentUser: Option[User], categoryId: int): VNode =
+  proc genThreadList(currentUser: Option[User], categoryIdOption: Option[int]): VNode =
     if state.status != Http200:
       return renderError("Couldn't retrieve threads.", state.status)
 
     if state.list.isNone:
       if not state.loading:
         state.loading = true
-        ajaxGet(makeUri("threads.json?categoryId=" & $categoryId), @[], onThreadList)
+        if categoryIdOption.isSome:
+          ajaxGet(makeUri("threads.json?categoryId=" & $categoryIdOption.get()), @[], onThreadList)
+        else:
+          ajaxGet(makeUri("threads.json"), @[], onThreadList)
 
       return buildHtml(tdiv(class="loading loading-lg"))
 
@@ -223,10 +229,10 @@ when defined(js):
                     tdiv(class="loading loading-lg")
                 else:
                   td(colspan="6",
-                     onClick = (ev: Event, n: VNode) => (onLoadMore(ev, n, categoryId))):
+                     onClick = (ev: Event, n: VNode) => (onLoadMore(ev, n, categoryIdOption))):
                     span(text "load more threads")
 
-  proc renderThreadList*(currentUser: Option[User], categoryId = -1): VNode =
+  proc renderThreadList*(currentUser: Option[User], categoryIdOption = none(int)): VNode =
     result = buildHtml(tdiv):
-      renderMainButtons(currentUser, categoryId=categoryId)
-      genThreadList(currentUser, categoryId)
+      renderMainButtons(currentUser, categoryIdOption=categoryIdOption)
+      genThreadList(currentUser, categoryIdOption)
