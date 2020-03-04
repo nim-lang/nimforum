@@ -155,11 +155,11 @@ when defined(js):
     else:
       state.list = some(list)
 
-  proc onLoadMore(ev: Event, n: VNode, categoryIdOption: Option[int]) =
+  proc onLoadMore(ev: Event, n: VNode, categoryId: Option[int]) =
     state.loading = true
     let start = state.list.get().threads.len
-    if categoryIdOption.isSome:
-      ajaxGet(makeUri("threads.json?start=" & $start & "&categoryId=" & $categoryIdOption.get()), @[], onThreadList)
+    if categoryId.isSome:
+      ajaxGet(makeUri("threads.json?start=" & $start & "&categoryId=" & $categoryId.get()), @[], onThreadList)
     else:
       ajaxGet(makeUri("threads.json?start=" & $start), @[], onThreadList)
 
@@ -186,15 +186,15 @@ when defined(js):
       isNew: thread.creation > previousVisitAt
     )
 
-  proc genThreadList(currentUser: Option[User], categoryIdOption: Option[int]): VNode =
+  proc genThreadList(currentUser: Option[User], categoryId: Option[int]): VNode =
     if state.status != Http200:
       return renderError("Couldn't retrieve threads.", state.status)
 
     if state.list.isNone:
       if not state.loading:
         state.loading = true
-        if categoryIdOption.isSome:
-          ajaxGet(makeUri("threads.json?categoryId=" & $categoryIdOption.get()), @[], onThreadList)
+        if categoryId.isSome:
+          ajaxGet(makeUri("threads.json?categoryId=" & $categoryId.get()), @[], onThreadList)
         else:
           ajaxGet(makeUri("threads.json"), @[], onThreadList)
 
@@ -237,10 +237,10 @@ when defined(js):
                     tdiv(class="loading loading-lg")
                 else:
                   td(colspan="6",
-                     onClick = (ev: Event, n: VNode) => (onLoadMore(ev, n, categoryIdOption))):
+                     onClick = (ev: Event, n: VNode) => (onLoadMore(ev, n, categoryId))):
                     span(text "load more threads")
 
-  proc renderThreadList*(currentUser: Option[User], categoryIdOption = none(int)): VNode =
+  proc renderThreadList*(currentUser: Option[User], categoryId = none(int)): VNode =
     result = buildHtml(tdiv):
-      state.mainButtons.render(currentUser, categoryIdOption=categoryIdOption)
-      genThreadList(currentUser, categoryIdOption)
+      state.mainButtons.render(currentUser, categoryId=categoryId)
+      genThreadList(currentUser, categoryId)

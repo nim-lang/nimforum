@@ -30,7 +30,7 @@ when defined(js):
         result.onCategoryChange(oldCategory, newCategory)
     )
 
-  proc render*(state: MainButtons, currentUser: Option[User], categoryIdOption = none(int)): VNode =
+  proc render*(state: MainButtons, currentUser: Option[User], categoryId = none(int)): VNode =
     result = buildHtml():
       section(class="navbar container grid-xl", id="main-buttons"):
         section(class="navbar-section"):
@@ -41,8 +41,8 @@ when defined(js):
             ul(class="menu"):
               li: text "community"
               li: text "dev" ]#
-          if categoryIdOption.isSome:
-            state.categoryPicker.selectedCategoryID = categoryIdOption.get()
+          if categoryId.isSome:
+            state.categoryPicker.selectedCategoryID = categoryId.get()
             render(state.categoryPicker, currentUser, compact=false)
 
           for btn in buttons:
