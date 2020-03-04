@@ -21,16 +21,14 @@ when defined(js):
       categoryPicker: CategoryPicker
       onCategoryChange*: CategoryChangeEvent
 
-  proc onCategoryChangeWithState(state: MainButtons): CategoryChangeEvent =
-    return
-      proc (oldCategory, newCategory: Category) =
-        onSelectedCategoryChanged(oldCategory, newCategory)
-        state.onCategoryChange(oldCategory, newCategory)
-
   proc newMainButtons*(onCategoryChange: CategoryChangeEvent = onSelectedCategoryChanged): MainButtons =
     new result
     result.onCategoryChange = onCategoryChange
-    result.categoryPicker = newCategoryPicker(onCategoryChange = onCategoryChangeWithState(result))
+    result.categoryPicker = newCategoryPicker(
+      onCategoryChange = proc (oldCategory, newCategory: Category) =
+        onSelectedCategoryChanged(oldCategory, newCategory)
+        result.onCategoryChange(oldCategory, newCategory)
+    )
 
   proc render*(state: MainButtons, currentUser: Option[User], categoryIdOption = none(int)): VNode =
     result = buildHtml():
