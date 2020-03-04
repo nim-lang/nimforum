@@ -57,10 +57,6 @@ proc onPopState(event: dom.Event) =
     state = newState() # Reload the state to remove stale data.
   state.url = copyLocation(window.location)
 
-  # For some reason this is needed so that the back/forward buttons reload
-  # the post list when different categories are selected
-  window.location.reload()
-
   redraw()
 
 type Params = Table[string, string]

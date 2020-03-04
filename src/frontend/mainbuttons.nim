@@ -17,17 +17,20 @@ when defined(js):
     navigateTo(uri)
 
   type
-    State = ref object
+    MainButtons* = ref object
       categoryPicker: CategoryPicker
+      onCategoryChange*: CategoryChangeEvent
 
-  proc newState(): State =
-    State(
-      categoryPicker: newCategoryPicker(onCategoryChange=onSelectedCategoryChanged),
+  proc newMainButtons*(onCategoryChange: CategoryChangeEvent = onSelectedCategoryChanged): MainButtons =
+    new result
+    result.onCategoryChange = onCategoryChange
+    result.categoryPicker = newCategoryPicker(
+      onCategoryChange = proc (oldCategory, newCategory: Category) =
+        onSelectedCategoryChanged(oldCategory, newCategory)
+        result.onCategoryChange(oldCategory, newCategory)
     )
 
-  let state = newState()
-
-  proc renderMainButtons*(currentUser: Option[User], categoryIdOption = none(int)): VNode =
+  proc render*(state: MainButtons, currentUser: Option[User], categoryId = none(int)): VNode =
     result = buildHtml():
       section(class="navbar container grid-xl", id="main-buttons"):
         section(class="navbar-section"):
@@ -38,8 +41,8 @@ when defined(js):
             ul(class="menu"):
               li: text "community"
               li: text "dev" ]#
-          if categoryIdOption.isSome:
-            state.categoryPicker.selectedCategoryID = categoryIdOption.get()
+          if categoryId.isSome:
+            state.categoryPicker.selectedCategoryID = categoryId.get()
             render(state.categoryPicker, currentUser, compact=false)
 
           for btn in buttons:

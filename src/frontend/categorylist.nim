@@ -13,6 +13,7 @@ when defined(js):
     State = ref object
       list: Option[CategoryList]
       loading: bool
+      mainButtons: MainButtons
       status: HttpCode
       addCategoryModal: AddCategoryModal
 
@@ -22,6 +23,7 @@ when defined(js):
     State(
       list: none[CategoryList](),
       loading: false,
+      mainButtons: newMainButtons(),
       status: Http200,
       addCategoryModal: newAddCategoryModal(
         onAddCategory=
@@ -99,5 +101,5 @@ when defined(js):
 
   proc renderCategoryList*(currentUser: Option[User]): VNode =
     result = buildHtml(tdiv):
-      renderMainButtons(currentUser)
+      state.mainButtons.render(currentUser)
       renderCategories(currentUser)
