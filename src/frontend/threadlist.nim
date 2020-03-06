@@ -74,7 +74,7 @@ when defined(js):
     return true
 
   proc genUserAvatars(users: seq[User]): VNode =
-    result = buildHtml(td):
+    result = buildHtml(td(class="thread-users")):
       for user in users:
         render(user, "avatar avatar-sm", showStatus=true)
         text " "
@@ -114,14 +114,13 @@ when defined(js):
           if thread.isSolved:
             italic(class="fas fa-check-square fa-xs",
                    title="Thread has a solution")
-          a(href=makeUri("/t/" & $thread.id),
-            onClick=anchorCB):
+          a(href=makeUri("/t/" & $thread.id), onClick=anchorCB):
             text thread.topic
-        td(class=class({"d-none": not displayCategory})):
-          render(thread.category)
+          tdiv(class=class({"d-none": not displayCategory})):
+            render(thread.category)
         genUserAvatars(thread.users)
-        td(): text $thread.replies
-        td(class=class({
+        td(class="thread-replies"): text $thread.replies
+        td(class="hide-sm" & class({
             "views-text": thread.views < 999,
             "popular-text": thread.views > 999 and thread.views < 5000,
             "super-popular-text": thread.views > 5000
@@ -209,12 +208,10 @@ when defined(js):
           thead():
             tr:
               th(text "Topic")
-              th(class=class({"d-none": not displayCategory})):
-                text "Category"
-              th(style=style((StyleAttr.width, kstring"8rem"))): text "Users"
-              th(text "Replies")
-              th(text "Views")
-              th(text "Activity")
+              th(class="centered-header"): text "Users"
+              th(class="centered-header"): text "Replies"
+              th(class="hide-sm centered-header"): text "Views"
+              th(class="centered-header"): text "Activity"
           tbody():
             for i in 0 ..< list.threads.len:
               let thread = list.threads[i]

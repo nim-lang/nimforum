@@ -51,6 +51,7 @@ $logo-height: $navbar-height - 20px;
   // Unfortunately we must colour the controls in the navbar manually.
   .search-input {
     @extend .form-input;
+    min-width: 120px;
     border-color: $navbar-border-color-dark;
   }
 
@@ -128,6 +129,9 @@ $logo-height: $navbar-height - 20px;
 }
 
 .category-status {
+  font-size: small;
+  font-weight: bold;
+
   .topic-count {
     margin-left: 5px;
     opacity: 0.7;
@@ -258,7 +262,7 @@ $threads-meta-color: #545d70;
 .category-color {
   width: 0;
   height: 0;
-  border: 0.3rem solid $default-category-color;
+  border: 0.25rem solid $default-category-color;
   display: inline-block;
   margin-right: 5px;
 }
@@ -295,6 +299,10 @@ $threads-meta-color: #545d70;
   i.fas {
     margin-right: $control-padding-x-sm;
   }
+}
+
+.thread-replies, .thread-time, .thread-users, .views-text, .centered-header {
+  text-align: center;
 }
 
 .thread-time {
