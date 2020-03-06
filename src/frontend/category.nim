@@ -36,7 +36,7 @@ when defined(js):
           tdiv(class="category-color",
                style=style(
                  (StyleAttr.border,
-                  kstring"0.3rem solid #" & category.color)
+                  kstring"0.25rem solid #" & category.color)
           ))
           span(class="category-name"):
             text category.name
