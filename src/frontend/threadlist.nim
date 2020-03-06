@@ -116,8 +116,11 @@ when defined(js):
                    title="Thread has a solution")
           a(href=makeUri("/t/" & $thread.id), onClick=anchorCB):
             text thread.topic
-          tdiv(class=class({"d-none": not displayCategory})):
+          tdiv(class="show-sm" & class({"d-none": not displayCategory})):
             render(thread.category)
+
+        td(class="hide-sm" & class({"d-none": not displayCategory})):
+          render(thread.category)
         genUserAvatars(thread.users)
         td(class="thread-replies"): text $thread.replies
         td(class="hide-sm" & class({
@@ -199,7 +202,7 @@ when defined(js):
 
       return buildHtml(tdiv(class="loading loading-lg"))
 
-    let displayCategory = true
+    let displayCategory = categoryId.isNone
 
     let list = state.list.get()
     result = buildHtml():
@@ -208,6 +211,7 @@ when defined(js):
           thead():
             tr:
               th(text "Topic")
+              th(class="hide-sm" & class({"d-none": not displayCategory})): text "Category"
               th(class="centered-header"): text "Users"
               th(class="centered-header"): text "Replies"
               th(class="hide-sm centered-header"): text "Views"
