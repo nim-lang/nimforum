@@ -66,7 +66,7 @@ proc initialiseDb(admin: tuple[username, password, email: string],
 
   db.exec(sql"""
     insert into category (id, name, description, color)
-    values (0, 'Default', 'The default category', '');
+    values (0, 'Unsorted', 'No category has been chosen yet.', '');
   """)
 
   # -- Thread
