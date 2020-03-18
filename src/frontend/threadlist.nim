@@ -212,7 +212,7 @@ when defined(js):
             tr:
               th(text "Topic")
               th(class="hide-sm" & class({"d-none": not displayCategory})): text "Category"
-              th(class="centered-header"): text "Users"
+              th(class="thread-users"): text "Users"
               th(class="centered-header"): text "Replies"
               th(class="hide-sm centered-header"): text "Views"
               th(class="centered-header"): text "Activity"
