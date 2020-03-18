@@ -301,8 +301,12 @@ $threads-meta-color: #545d70;
   }
 }
 
-.thread-replies, .thread-time, .thread-users, .views-text, .centered-header {
+.thread-replies, .thread-time, .views-text, .centered-header {
   text-align: center;
+}
+
+.thread-users {
+  text-align: left;
 }
 
 .thread-time {
