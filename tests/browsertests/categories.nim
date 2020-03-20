@@ -102,7 +102,7 @@ proc categoriesUserTests(session: Session, baseUrl: string) =
         click "#new-thread-btn"
         sendKeys "#thread-title", "Post 3"
 
-        selectCategory "default"
+        selectCategory "unsorted"
         sendKeys "#reply-textarea", "Post 3"
 
         click "#create-thread-btn"
@@ -112,11 +112,11 @@ proc categoriesUserTests(session: Session, baseUrl: string) =
         click "#categories-btn"
         ensureExists "#categories-list"
 
-        click "#category-default"
+        click "#category-unsorted"
         checkText "#threads-list .thread-title a", "Post 3"
         for element in session.waitForElements("#threads-list .category-name"):
           # Have to user "innerText" because elements are hidden on this page
-          assert element.getProperty("innerText") == "Default"
+          assert element.getProperty("innerText") == "Unsorted"
 
         selectCategory "announcements"
         checkText "#threads-list .thread-title a", "Post 2"
