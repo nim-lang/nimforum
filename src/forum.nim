@@ -716,7 +716,7 @@ proc executeDeletePost(c: TForumData, postId: int) =
   """
   let id = getValue(db, postQuery, c.username, postId)
 
-  if id.len == 0 and c.rank < Admin:
+  if id.len == 0 and (c.rank == Admin or c.userid == postRow[0]):
     raise newForumError("You cannot delete this post")
 
   # Set the `isDeleted` flag.
