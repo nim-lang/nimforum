@@ -711,12 +711,12 @@ proc executeLockState(c: TForumData, threadId: int, locked: bool) =
 proc executeDeletePost(c: TForumData, postId: int) =
   # Verify that this post belongs to the user.
   const postQuery = sql"""
-    select p.id from post p
+    select p.author, p.id from post p
     where p.author = ? and p.id = ?
   """
-  let id = getValue(db, postQuery, c.username, postId)
+  let postRow = getValue(db, postQuery, c.username, postId)
 
-  if id.len == 0 and (c.rank == Admin or c.userid == postRow[0]):
+  if postRow[1].len == 0 and not (c.rank == Admin or c.userid == postRow[0]):
     raise newForumError("You cannot delete this post")
 
   # Set the `isDeleted` flag.
