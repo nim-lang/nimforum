@@ -42,7 +42,13 @@ proc userTests(session: Session, baseUrl: string) =
 
     test "can delete thread":
       with session:
-        click userTitleStr, LinkTextSelector
+        # create thread to be deleted
+        click "#new-thread-btn"
+
+        sendKeys "#thread-title", "To be deleted"
+        sendKeys "#reply-textarea", "This thread is to be deleted"
+
+        click "#create-thread-btn"
 
         click ".post-buttons .delete-button"
 
@@ -50,7 +56,7 @@ proc userTests(session: Session, baseUrl: string) =
         click "#delete-modal .delete-btn"
 
         # Make sure the forum post is gone
-        checkIsNone userTitleStr, LinkTextSelector
+        checkIsNone "To be deleted", LinkTextSelector
 
     session.logout()
 
