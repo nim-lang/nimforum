@@ -714,9 +714,12 @@ proc executeDeletePost(c: TForumData, postId: int) =
     select p.author, p.id from post p
     where p.author = ? and p.id = ?
   """
-  let postRow = getRow(db, postQuery, c.username, postId)
+  let
+    row = getRow(db, postQuery, c.username, postId)
+    author = row[0]
+    id = row[1]
 
-  if postRow[1].len == 0 and not (c.rank == Admin or c.userid == postRow[0]):
+  if id.len == 0 and not (c.rank == Admin or c.userid == author):
     raise newForumError("You cannot delete this post")
 
   # Set the `isDeleted` flag.
