@@ -45,6 +45,8 @@ proc sendMail(
     return
 
   var client = newAsyncSmtp()
+  if mailer.config.smtpTls:
+    await client.startTls()
   await client.connect(mailer.config.smtpAddress, Port(mailer.config.smtpPort))
   if mailer.config.smtpUser.len > 0:
     await client.auth(mailer.config.smtpUser, mailer.config.smtpPassword)

@@ -17,6 +17,7 @@ type
     smtpUser*: string
     smtpPassword*: string
     smtpFromAddr*: string
+    smtpTls*: bool
     mlistAddress*: string
     recaptchaSecretKey*: string
     recaptchaSiteKey*: string
