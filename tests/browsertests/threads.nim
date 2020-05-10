@@ -40,6 +40,18 @@ proc userTests(session: Session, baseUrl: string) =
         checkText "#thread-title .title-text", userTitleStr
         checkText ".original-post div.post-content", userContentStr
 
+    test "can delete thread":
+      with session:
+        click userTitleStr, LinkTextSelector
+
+        click ".post-buttons .delete-button"
+
+        # click delete confirmation
+        click "#delete-modal .delete-btn"
+
+        # Make sure the forum post is gone
+        checkIsNone userTitleStr, LinkTextSelector
+
     session.logout()
 
 proc anonymousTests(session: Session, baseUrl: string) =
