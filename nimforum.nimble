@@ -13,13 +13,13 @@ skipExt = @["nim"]
 # Dependencies
 
 requires "nim >= 1.0.6"
-requires "jester#d8a03aa"
+requires "jester#405be2e"
 requires "bcrypt#head"
 requires "hmac#9c61ebe2fd134cf97"
 requires "recaptcha#d06488e"
 requires "sass#649e0701fa5c"
 
-requires "karax#f6bda9a"
+requires "karax#5f21dcd"
 
 requires "webdriver#429933a"
 
