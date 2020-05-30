@@ -41,8 +41,9 @@ task frontend, "Builds the necessary JS frontend (with CSS)":
   mkDir "public/js"
   cpFile "src/frontend/forum.js", "public/js/forum.js"
 
-task minify, "Minifies the JS using Google's closure compiler":
-  exec "closure-compiler public/js/forum.js --js_output_file public/js/forum.js.opt"
+task minify, "Minifies and mangles the JS using esbuild":
+  # https://github.com/evanw/esbuild
+  exec "esbuild public/js/forum.js --minify --sourcemap --outfile=public/js/forum.min.js"
 
 task testdb, "Creates a test DB (with admin account!)":
   exec "nimble c src/setup_nimforum"
