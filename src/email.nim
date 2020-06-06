@@ -44,10 +44,18 @@ proc sendMail(
     warn("Cannot send mail: no smtp from address configured (smtpFromAddr).")
     return
 
-  var client = newAsyncSmtp()
-  await client.connect(mailer.config.smtpAddress, Port(mailer.config.smtpPort))
+  var client: AsyncSmtp
   if mailer.config.smtpTls:
+    client = newAsyncSmtp(useSsl=false)
+    await client.connect(mailer.config.smtpAddress, Port(mailer.config.smtpPort))
     await client.startTls()
+  elif mailer.config.smtpSsl:
+    client = newAsyncSmtp(useSsl=true)
+    await client.connect(mailer.config.smtpAddress, Port(mailer.config.smtpPort))
+  else:
+    client = newAsyncSmtp(useSsl=false)
+    await client.connect(mailer.config.smtpAddress, Port(mailer.config.smtpPort))
+
   if mailer.config.smtpUser.len > 0:
     await client.auth(mailer.config.smtpUser, mailer.config.smtpPassword)
 
