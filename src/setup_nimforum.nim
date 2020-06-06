@@ -283,7 +283,7 @@ These can be changed later in the generated forum.json file.
 
   echo("")
   echo("The following question are related to recaptcha. \nYou must set up a " &
-       "recaptcha for your forum before answering them. \nPlease do so now " &
+       "recaptcha v2 for your forum before answering them. \nPlease do so now " &
        "and then answer these questions: https://www.google.com/recaptcha/admin")
   let recaptchaSiteKey = question("Recaptcha site key: ")
   let recaptchaSecretKey = question("Recaptcha secret key: ")
