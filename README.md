@@ -80,10 +80,6 @@ nimble frontend
 nimble backend
 ```
 
-Note: You might have to run `nimble install karax@#5f21dcd`, if setup
-fails with [this error](https://paste.debian.net/1151756/). The hash
-needs to be replaced with the one specified in output.
-
 Development typically involves running `nimble devdb` which sets up the
 database for development and testing, then `nimble backend`
 which compiles and runs the forum's backend, and `nimble frontend`
@@ -91,6 +87,22 @@ separately to build the frontend. When making changes to the frontend it
 should be enough to simply run `nimble frontend` again to rebuild. This command
 will also build the SASS ``nimforum.scss`` file in the `public/css` directory.
 
+# Troubleshooting
+
+You might have to run `nimble install karax@#5f21dcd`, if setup fails
+with:
+
+```
+andinus@circinus ~/projects/forks/nimforum> nimble --verbose devdb
+[...]
+ Installing karax@#5f21dcd
+       Tip: 24 messages have been suppressed, use --verbose to show them.
+     Error: No binaries built, did you specify a valid binary name?
+[...]
+     Error: Exception raised during nimble script execution
+```
+
+The hash needs to be replaced with the one specified in output.
 
 # Copyright
 
