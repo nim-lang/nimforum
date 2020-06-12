@@ -56,6 +56,9 @@ proc sendMail(
   var headers = otherHeaders
   headers.add(("From", mailer.config.smtpFromAddr))
 
+  let dateHeader = now().utc().format("ddd, dd MMM yyyy hh:mm:ss") & " +0000"
+  headers.add(("Date", dateHeader))
+
   let encoded = createMessage(subject, message,
       toList, @[], headers)
 
