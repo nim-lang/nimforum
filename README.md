@@ -80,6 +80,9 @@ nimble frontend
 nimble backend
 ```
 
+Note: You might have to run `nimble install karax@#5f21dcd`, if setup
+fails with [this error](https://paste.debian.net/1151756/). The hash
+needs to be replaced with the one specified in output.
 
 Development typically involves running `nimble devdb` which sets up the
 database for development and testing, then `nimble backend`
