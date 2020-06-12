@@ -774,7 +774,7 @@ proc updateProfile(
       raise newForumError("Rank needs a change when setting new email.")
 
     await sendSecureEmail(
-      mailer, ActivateEmail, c.req, row[0], row[1], row[2], row[3]
+      mailer, ActivateEmail, c.req, row[0], row[1], email, row[3]
     )
 
   validateEmail(email, checkDuplicated=wasEmailChanged)
