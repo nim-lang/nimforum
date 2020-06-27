@@ -263,13 +263,7 @@ proc initialise() =
   buildCSS(config)
 
   # Read karax.html and set its properties.
-  karaxHtml = readFile("public/karax.html") %
-    {
-      "title": config.title,
-      "timestamp": encodeUrl(CompileDate & CompileTime),
-      "ga": config.ga
-    }.newStringTable()
-
+  karaxHtml = readFile("public/karax.html")
 
 template createTFD() =
   var c {.inject.}: TForumData
@@ -1577,5 +1571,33 @@ routes:
     resp Http200, $(%results), "application/json"
 
   get re"/(.*)":
-    cond request.matches[0].splitFile.ext == ""
-    resp karaxHtml
+    let fmatch = request.matches[0]
+    cond fmatch.splitFile.ext == ""
+    var inThread = false
+    var threadId = ""
+    if fmatch.startsWith "t/":
+      inThread = true
+      threadId = fmatch.split("t/")[1]
+
+    var params = newStringTable({
+      "timestamp": encodeUrl(CompileDate & CompileTime),
+      "ga": config.ga
+    })
+
+    if inThread:
+      const getDataQuery =
+        sql"""select t.name, substr(p.content, 0, 300) as content
+              from thread t, post p
+              where p.thread = ? and t.id = ? and p.isDeleted = 0
+              order by p.id
+              limit 1"""
+      let data = db.getRow(getDataQuery, threadId, threadId)
+      params["title"] = data[0].xmlEncode() 
+      params["ogType"] = "article"
+      params["ogDescription"] = data[1].replace("\n", " ").xmlEncode() 
+    else:
+      params["title"] = config.title.xmlEncode()
+      params["ogType"] = "website"
+      params["ogDescription"] = "The Nim forum"
+
+    resp karaxHtml % params
