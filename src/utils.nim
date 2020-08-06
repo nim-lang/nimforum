@@ -1,6 +1,6 @@
 import asyncdispatch, smtp, strutils, json, os, rst, rstgen, xmltree, strtabs,
   htmlparser, streams, parseutils, options, logging
-from times import getTime, getGMTime, format
+from times import getTime, utc, format
 
 # Used to be:
 # {'A'..'Z', 'a'..'z', '0'..'9', '_', '\128'..'\255'}
