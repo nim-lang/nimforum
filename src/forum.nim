@@ -676,7 +676,7 @@ proc executeLike(c: TForumData, postId: int) =
 
 proc executeNewCategory(c: TForumData, name, color, description: string): int64 =
 
-  let canAdd = c.rank in {Admin, Moderator}
+  let canAdd = c.rank == Admin
 
   if not canAdd:
     raise newForumError("You do not have permissions to add a category.")

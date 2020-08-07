@@ -63,7 +63,7 @@ when defined(js):
   proc renderCategoryHeader*(currentUser: Option[User]): VNode =
     result = buildHtml(tdiv(id="add-category")):
       text "Category"
-      if currentUser.isAdmin() or currentUser.isModerator():
+      if currentUser.isAdmin():
         button(class="plus-btn btn btn-link",
               onClick=(ev: Event, n: VNode) => (
                 state.addCategoryModal.setModalShown(true)

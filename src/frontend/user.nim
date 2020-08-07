@@ -30,9 +30,6 @@ proc isOnline*(user: User): bool =
 proc isAdmin*(user: Option[User]): bool =
   return user.isSome and user.get().rank == Admin
 
-proc isModerator*(user: Option[User]): bool =
-  return user.isSome and user.get().rank == Moderator
-
 proc `==`*(u1, u2: User): bool =
   u1.name == u2.name
 
