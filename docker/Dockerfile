@@ -11,5 +11,4 @@ WORKDIR /app
 COPY . /app
 
 # install dependencies
-RUN git submodule update --init --recursive \
-    && nimble install -Y
+RUN nimble install -Y

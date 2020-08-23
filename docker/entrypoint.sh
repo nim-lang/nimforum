@@ -2,6 +2,8 @@
 
 set -eu
 
+git submodule update --init --recursive
+
 # setup
 nimble c -d:release src/setup_nimforum.nim
 ./src/setup_nimforum --dev
