@@ -95,6 +95,7 @@ You don't have to setup dependencies (libsass, sglite, pcre, etc...) on you host
 To get up and running:
 
 ```bash
+cd docker
 docker-compose build
 docker-compose up
 ```
