@@ -87,6 +87,21 @@ separately to build the frontend. When making changes to the frontend it
 should be enough to simply run `nimble frontend` again to rebuild. This command
 will also build the SASS ``nimforum.scss`` file in the `public/css` directory.
 
+### With docker
+
+You can easily launch site on localhost if you have `docker` and `docker-compose`.
+You don't have to setup dependencies (libsass, sglite, pcre, etc...) on you host PC.
+
+To get up and running:
+
+```bash
+docker-compose build
+docker-compose up
+```
+
+And you can access local NimForum site.
+Open http://localhost:5000 .
+
 # Troubleshooting
 
 You might have to run `nimble install karax@#5f21dcd`, if setup fails
