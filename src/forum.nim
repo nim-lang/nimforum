@@ -839,10 +839,10 @@ routes:
             from thread t, category c, person u
             where t.isDeleted = 0 and category = c.id and $#
                   u.status <> 'Spammer' and u.status <> 'Troll' and
-                  u.id in (
-                    select u.id from post p, person u
-                    where p.author = u.id and p.thread = t.id
-                    order by u.id
+                  u.id = (
+                    select p.author from post p
+                    where p.thread = t.id
+                    order by p.author
                     limit 1
                   )
             order by modified desc limit ?, ?;"""
