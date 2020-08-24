@@ -532,7 +532,7 @@ proc updateThread(c: TForumData, threadId: string, queryKeys: seq[string], query
   let threadAuthor = selectThreadAuthor(threadId.parseInt)
 
   # Verify that the current user has permissions to edit the specified thread.
-  let canEdit = c.rank == Admin or c.userid == threadAuthor.name
+  let canEdit = c.rank in {Admin, Moderator} or c.userid == threadAuthor.name
   if not canEdit:
     raise newForumError("You cannot edit this thread")
 
