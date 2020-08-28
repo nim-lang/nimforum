@@ -498,10 +498,10 @@ proc updatePost(c: TForumData, postId: int, content: string,
 
   # Verify that the current user has permissions to edit the specified post.
   let creation = fromUnix(postRow[1].parseInt)
-  let isArchived = (getTime() - creation).inWeeks > 8
+  let isArchived = (getTime() - creation).inHours >= 2
   let canEdit = c.rank == Admin or c.userid == postRow[0]
-  if isArchived:
-    raise newForumError("This post is archived and can no longer be edited")
+  if isArchived and c.rank < Admin:
+    raise newForumError("This post is too old and can no longer be edited")
   if not canEdit:
     raise newForumError("You cannot edit this post")
 
