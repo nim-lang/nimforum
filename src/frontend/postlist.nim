@@ -209,12 +209,12 @@ when defined(js):
     let loggedIn = currentUser.isSome()
     let authoredByUser =
       loggedIn and currentUser.get().name == thread.author.name
-    let currentAdmin =
-      currentUser.isSome() and currentUser.get().rank == Admin
+    let canChangeCategory =
+      loggedIn and currentUser.get().rank in {Admin, Moderator}
 
     result = buildHtml():
       tdiv():
-        if authoredByUser or currentAdmin:
+        if authoredByUser or canChangeCategory:
           render(state.categoryPicker, currentUser, compact=false)
         else:
           render(thread.category)
