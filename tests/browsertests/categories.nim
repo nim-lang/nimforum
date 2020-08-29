@@ -69,6 +69,29 @@ proc categoriesUserTests(session: Session, baseUrl: string) =
 
         ensureExists title, LinkTextSelector
 
+    test "can create category thread and change category":
+      with session:
+        let newTitle = title & " Selection"
+        click "#new-thread-btn"
+        sendKeys "#thread-title", newTitle
+
+        selectCategory "fun"
+        sendKeys "#reply-textarea", content
+
+        click "#create-thread-btn"
+        checkText "#thread-title .category", "Fun"
+
+        selectCategory "announcements"
+
+        checkText "#thread-title .category", "Announcements"
+
+        # Make sure there is no error
+        checkIsNone "#thread-title .text-error"
+
+        navigate baseUrl
+
+        ensureExists newTitle, LinkTextSelector
+
     test "can navigate to categories page":
       with session:
         click "#categories-btn"
