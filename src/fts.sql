@@ -46,6 +46,7 @@ SELECT
             THEN snippet(post_fts, '**', '**', '...', what, -45)
             ELSE SUBSTR(post_fts.content, 1, 200) END AS content,
         cdate,
+        person.id,
         person.name AS author,
         person.email AS email,
         strftime('%s', person.lastOnline) AS lastOnline,
