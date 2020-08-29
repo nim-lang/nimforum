@@ -295,7 +295,7 @@ proc selectUser(userRow: seq[string], avatarSize: int=80): User =
   # Don't give data about a deleted user.
   if result.isDeleted:
     result.name = "DeletedUser"
-    result.avatarUrl = getGravatarUrl(result.name & userRow[1], avatarSize)
+    result.avatarUrl = getGravatarUrl(result.name & userRow[2], avatarSize)
 
 proc selectPost(postRow: seq[string], skippedPosts: seq[int],
                 replyingTo: Option[PostLink], history: seq[PostInfo],
@@ -1022,7 +1022,7 @@ routes:
       getValue(db, sql("select count(*) " & threadsFrom), userID).parseInt()
 
     if c.rank >= Admin or c.username == username:
-      profile.email = some(userRow[1])
+      profile.email = some(userRow[2])
 
     for row in db.getAllRows(postsQuery, username):
       profile.posts.add(
