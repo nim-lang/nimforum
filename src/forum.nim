@@ -369,9 +369,9 @@ proc selectLikes(postId: int): seq[User] =
 proc selectThreadAuthor(threadId: int): User =
   const authorQuery =
     sql"""
-      select u.id, name, email, strftime('%s', lastOnline),
+      select id, name, email, strftime('%s', lastOnline),
              strftime('%s', previousVisitAt), status, isDeleted
-      from person u where id in (
+      from person where id in (
         select author from post
         where thread = ?
         order by id
