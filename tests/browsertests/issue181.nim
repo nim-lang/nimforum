@@ -1,6 +1,6 @@
 import unittest, common
 
-import webdriver
+import halonium
 
 proc test*(session: Session, baseUrl: string) =
   session.navigate(baseUrl)

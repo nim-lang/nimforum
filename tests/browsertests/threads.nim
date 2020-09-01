@@ -1,6 +1,6 @@
 import unittest, common
 
-import webdriver
+import halonium
 
 let
   userTitleStr = "This is a user thread!"
