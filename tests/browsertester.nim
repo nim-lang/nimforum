@@ -1,6 +1,6 @@
 import options, osproc, streams, threadpool, os, strformat, httpclient
 
-import halonium
+import webdriver
 
 proc runProcess(cmd: string) =
   let p = startProcess(
@@ -46,13 +46,22 @@ template withBackend(body: untyped): untyped =
 import browsertests/[scenario1, threads, issue181, categories]
 
 proc main() =
+  # Kill any already running instances
+  discard execCmd("killall geckodriver")
+  spawn runProcess("geckodriver -p 4444 --log config")
+  defer:
+    discard execCmd("killall geckodriver")
+
   # Create a fresh DB for the tester.
   doAssert(execCmd("nimble testdb") == QuitSuccess)
 
   doAssert(execCmd("nimble -y frontend") == QuitSuccess)
+  echo("Waiting for geckodriver to startup...")
+  sleep(5000)
 
   try:
-    let session = createSession(Firefox)
+    let driver = newWebDriver()
+    let session = driver.createSession()
 
     withBackend:
       scenario1.test(session, baseUrl)
