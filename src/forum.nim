@@ -283,18 +283,19 @@ template createTFD() =
 
 proc selectUser(userRow: seq[string], avatarSize: int=80): User =
   result = User(
-    name: userRow[0],
-    avatarUrl: userRow[1].getGravatarUrl(avatarSize),
-    lastOnline: userRow[2].parseInt,
-    previousVisitAt: userRow[3].parseInt,
-    rank: parseEnum[Rank](userRow[4]),
-    isDeleted: userRow[5] == "1"
+    id: userRow[0],
+    name: userRow[1],
+    avatarUrl: userRow[2].getGravatarUrl(avatarSize),
+    lastOnline: userRow[3].parseInt,
+    previousVisitAt: userRow[4].parseInt,
+    rank: parseEnum[Rank](userRow[5]),
+    isDeleted: userRow[6] == "1"
   )
 
   # Don't give data about a deleted user.
   if result.isDeleted:
     result.name = "DeletedUser"
-    result.avatarUrl = getGravatarUrl(result.name & userRow[1], avatarSize)
+    result.avatarUrl = getGravatarUrl(result.name & userRow[2], avatarSize)
 
 proc selectPost(postRow: seq[string], skippedPosts: seq[int],
                 replyingTo: Option[PostLink], history: seq[PostInfo],
@@ -302,7 +303,7 @@ proc selectPost(postRow: seq[string], skippedPosts: seq[int],
   return Post(
     id: postRow[0].parseInt,
     replyingTo: replyingTo,
-    author: selectUser(postRow[5..10]),
+    author: selectUser(postRow[5..11]),
     likes: likes,
     seen: false, # TODO:
     history: history,
@@ -318,7 +319,7 @@ proc selectReplyingTo(replyingTo: string): Option[PostLink] =
 
   const replyingToQuery = sql"""
     select p.id, strftime('%s', p.creation), p.thread,
-           u.name, u.email, strftime('%s', u.lastOnline),
+           u.id, u.name, u.email, strftime('%s', u.lastOnline),
            strftime('%s', u.previousVisitAt), u.status,
            u.isDeleted,
            t.name
@@ -334,7 +335,7 @@ proc selectReplyingTo(replyingTo: string): Option[PostLink] =
     topic: row[^1],
     threadId: row[2].parseInt(),
     postId: row[0].parseInt(),
-    author: some(selectUser(row[3..8]))
+    author: some(selectUser(row[3..9]))
   ))
 
 proc selectHistory(postId: int): seq[PostInfo] =
@@ -353,7 +354,7 @@ proc selectHistory(postId: int): seq[PostInfo] =
 
 proc selectLikes(postId: int): seq[User] =
   const likeQuery = sql"""
-    select u.name, u.email, strftime('%s', u.lastOnline),
+    select u.id, u.name, u.email, strftime('%s', u.lastOnline),
            strftime('%s', u.previousVisitAt), u.status,
            u.isDeleted
     from like h, person u
@@ -368,7 +369,7 @@ proc selectLikes(postId: int): seq[User] =
 proc selectThreadAuthor(threadId: int): User =
   const authorQuery =
     sql"""
-      select name, email, strftime('%s', lastOnline),
+      select id, name, email, strftime('%s', lastOnline),
              strftime('%s', previousVisitAt), status, isDeleted
       from person where id in (
         select author from post
@@ -386,7 +387,7 @@ proc selectThread(threadRow: seq[string], author: User): Thread =
           where thread = ?;"""
   const usersListQuery =
     sql"""
-      select name, email, strftime('%s', lastOnline),
+      select u.id, name, email, strftime('%s', lastOnline),
              strftime('%s', previousVisitAt), status, u.isDeleted,
              count(*)
       from person u, post p where p.author = u.id and p.thread = ?
@@ -532,7 +533,7 @@ proc updateThread(c: TForumData, threadId: string, queryKeys: seq[string], query
   let threadAuthor = selectThreadAuthor(threadId.parseInt)
 
   # Verify that the current user has permissions to edit the specified thread.
-  let canEdit = c.rank in {Admin, Moderator} or c.userid == threadAuthor.name
+  let canEdit = c.rank in {Admin, Moderator} or c.userid == threadAuthor.id
   if not canEdit:
     raise newForumError("You cannot edit this thread")
 
@@ -834,7 +835,7 @@ routes:
     const threadsQuery =
       """select t.id, t.name, views, strftime('%s', modified), isLocked,
                    c.id, c.name, c.description, c.color,
-                   u.name, u.email, strftime('%s', u.lastOnline),
+                   u.id, u.name, u.email, strftime('%s', u.lastOnline),
                    strftime('%s', u.previousVisitAt), u.status, u.isDeleted
             from thread t, category c, person u
             where t.isDeleted = 0 and category = c.id and $#
@@ -879,7 +880,7 @@ routes:
       sql(
         """select p.id, p.content, strftime('%s', p.creation), p.author,
                   p.replyingTo,
-                  u.name, u.email, strftime('%s', u.lastOnline),
+                  u.id, u.name, u.email, strftime('%s', u.lastOnline),
                   strftime('%s', u.previousVisitAt), u.status,
                   u.isDeleted
            from post p, person u
@@ -926,7 +927,7 @@ routes:
     let postsQuery = sql("""
       select p.id, p.content, strftime('%s', p.creation), p.author,
              p.replyingTo,
-             u.name, u.email, strftime('%s', u.lastOnline),
+             u.id, u.name, u.email, strftime('%s', u.lastOnline),
              strftime('%s', u.previousVisitAt), u.status,
              u.isDeleted
       from post p, person u
@@ -995,7 +996,7 @@ routes:
     """ % postsFrom)
 
     let userQuery = sql("""
-      select name, email, strftime('%s', lastOnline),
+      select id, name, email, strftime('%s', lastOnline),
              strftime('%s', previousVisitAt), status, isDeleted,
              strftime('%s', creation), id
       from person
@@ -1021,7 +1022,7 @@ routes:
       getValue(db, sql("select count(*) " & threadsFrom), userID).parseInt()
 
     if c.rank >= Admin or c.username == username:
-      profile.email = some(userRow[1])
+      profile.email = some(userRow[2])
 
     for row in db.getAllRows(postsQuery, username):
       profile.posts.add(
@@ -1570,7 +1571,7 @@ routes:
           postId: rowFT[2].parseInt(),
           postContent: content,
           creation: rowFT[4].parseInt(),
-          author: selectUser(rowFT[5 .. 10]),
+          author: selectUser(rowFT[5 .. 11]),
         )
       )
 

@@ -17,6 +17,7 @@ type
     Admin            ## Admin: can do everything
 
   User* = object
+    id*: string
     name*: string
     avatarUrl*: string
     lastOnline*: int64
