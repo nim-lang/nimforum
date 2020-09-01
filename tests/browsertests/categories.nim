@@ -1,5 +1,5 @@
 import unittest, common
-import halonium
+import webdriver
 
 import karaxutils
 
@@ -47,12 +47,12 @@ proc categoriesUserTests(session: Session, baseUrl: string) =
       with session:
         click "#new-thread-btn"
 
-        checkIsNone "#add-category .plus-btn"
+        checkIsNone "#add-category"
 
     test "no category add available category page":
       with session:
         click "#categories-btn"
-        checkIsNone "#add-category .plus-btn"
+        checkIsNone "#add-category"
 
     test "can create category thread":
       with session:
@@ -139,17 +139,17 @@ proc categoriesUserTests(session: Session, baseUrl: string) =
         checkText "#threads-list .thread-title a", "Post 3"
         for element in session.waitForElements("#threads-list .category-name"):
           # Have to user "innerText" because elements are hidden on this page
-          assert element.text == "Unsorted"
+          assert element.getProperty("innerText") == "Unsorted"
 
         selectCategory "announcements"
         checkText "#threads-list .thread-title a", "Post 2"
         for element in session.waitForElements("#threads-list .category-name"):
-          assert element.text == "Announcements"
+          assert element.getProperty("innerText") == "Announcements"
 
         selectCategory "fun"
         checkText "#threads-list .thread-title a", "Post 1"
         for element in session.waitForElements("#threads-list .category-name"):
-          assert element.text == "Fun"
+          assert element.getProperty("innerText") == "Fun"
 
     session.logout()
 
@@ -168,7 +168,7 @@ proc categoriesAdminTests(session: Session, baseUrl: string) =
       with session:
         click "#new-thread-btn"
 
-        ensureExists "#add-category .plus-btn"
+        ensureExists "#add-category"
 
         click "#add-category .plus-btn"
 
@@ -195,10 +195,10 @@ proc categoriesAdminTests(session: Session, baseUrl: string) =
     test "category adding disabled on admin logout":
       with session:
         navigate(baseUrl & "c/0")
-        ensureExists "#add-category .plus-btn"
+        ensureExists "#add-category"
         logout()
 
-        checkIsNone "#add-category .plus-btn"
+        checkIsNone "#add-category"
         navigate baseUrl
 
         login "admin", "admin"

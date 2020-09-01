@@ -1,9 +1,9 @@
 import os, options, unittest, strutils
-import halonium
+import webdriver
 import macros
 
-export waitForElement
-export waitForElements
+const actionDelayMs {.intdefine.} = 0
+## Inserts a delay in milliseconds between automated actions. Useful for debugging tests
 
 macro with*(obj: typed, code: untyped): untyped =
   ## Execute a set of statements with an object
@@ -24,6 +24,14 @@ macro with*(obj: typed, code: untyped): untyped =
 
   result = getAst(checkCompiles(result, code))
 
+proc elementIsSome(element: Option[Element]): bool =
+  return element.isSome
+
+proc elementIsNone(element: Option[Element]): bool =
+  return element.isNone
+
+proc waitForElement*(session: Session, selector: string, strategy=CssSelector, timeout=20000, pollTime=50, waitCondition=elementIsSome): Option[Element]
+
 proc click*(session: Session, element: string, strategy=CssSelector) =
   let el = session.waitForElement(element, strategy)
   el.get().click()
@@ -36,33 +44,78 @@ proc clear*(session: Session, element: string) =
   let el = session.waitForElement(element)
   el.get().clear()
 
-proc sendKeys*(session: Session, element: string, keys: varargs[string, convertKeyRuneString]) =
+proc sendKeys*(session: Session, element: string, keys: varargs[Key]) =
   let el = session.waitForElement(element)
 
-  el.get().sendKeys(keys)
+  # focus
+  el.get().click()
+  for key in keys:
+    session.press(key)
 
 proc ensureExists*(session: Session, element: string, strategy=CssSelector) =
   discard session.waitForElement(element, strategy)
 
 template check*(session: Session, element: string, function: untyped) =
   let el = session.waitForElement(element)
-  doAssert function(el)
+  check function(el)
 
 template check*(session: Session, element: string,
                 strategy: LocationStrategy, function: untyped) =
   let el = session.waitForElement(element, strategy)
-  doAssert function(el)
+  check function(el)
 
 proc setColor*(session: Session, element, color: string, strategy=CssSelector) =
   let el = session.waitForElement(element, strategy)
-  discard session.executeScript("arguments[0].setAttribute('value', '" & color & "')", el.get())
+  discard session.execute("arguments[0].setAttribute('value', '" & color & "')", el.get())
 
 proc checkIsNone*(session: Session, element: string, strategy=CssSelector) =
   discard session.waitForElement(element, strategy, waitCondition=elementIsNone)
 
 proc checkText*(session: Session, element, expectedValue: string) =
   let el = session.waitForElement(element)
-  doAssert el.get().text.strip() == expectedValue
+  check el.get().getText() == expectedValue
+
+proc waitForElement*(
+  session: Session, selector: string, strategy=CssSelector,
+  timeout=20000, pollTime=50,
+  waitCondition=elementIsSome
+): Option[Element] =
+  var waitTime = 0
+
+  when actionDelayMs > 0:
+    sleep(actionDelayMs)
+
+  while true:
+    try:
+      let loading = session.findElement(selector, strategy)
+      if waitCondition(loading):
+        return loading
+    finally:
+      discard
+    sleep(pollTime)
+    waitTime += pollTime
+
+    if waitTime > timeout:
+      doAssert false, "Wait for load time exceeded"
+
+proc waitForElements*(
+  session: Session, selector: string, strategy=CssSelector,
+  timeout=20000, pollTime=50
+): seq[Element] =
+  var waitTime = 0
+
+  when actionDelayMs > 0:
+    sleep(actionDelayMs)
+
+  while true:
+    let loading = session.findElements(selector, strategy)
+    if loading.len > 0:
+      return loading
+    sleep(pollTime)
+    waitTime += pollTime
+
+    if waitTime > timeout:
+      doAssert false, "Wait for load time exceeded"
 
 proc setUserRank*(session: Session, baseUrl, user, rank: string) =
   with session:
