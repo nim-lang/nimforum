@@ -5,7 +5,7 @@ from times import getTime, utc, format
 # Used to be:
 # {'A'..'Z', 'a'..'z', '0'..'9', '_', '\128'..'\255'}
 let
-  UsernameIdent* = IdentChars # TODO: Double check that everyone follows this.
+  UsernameIdent* = IdentChars + {'-'} # TODO: Double check that everyone follows this.
 
 import frontend/[karaxutils, error]
 export parseInt
