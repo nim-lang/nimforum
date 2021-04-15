@@ -1347,7 +1347,7 @@ routes:
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
 
-  post re"/(sticky/unsticky)":
+  post re"/(sticky|unsticky)":
     createTFD()
     if not c.loggedIn():
       let err = PostError(
