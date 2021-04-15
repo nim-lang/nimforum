@@ -202,3 +202,61 @@ when defined(js):
         else:
           italic(class="fas fa-lock")
           text " Lock Thread"
+
+  type
+    StickyButton* = ref object
+      error: Option[PostError]
+      loading: bool
+
+  proc newStickyButton*(): StickyButton =
+    StickyButton()
+
+  proc onPost(httpStatus: int, response: kstring, state: StickyButton,
+              thread: var Thread) =
+    postFinished:
+      thread.isSticky = not thread.isSticky
+
+  proc onStickyClick(ev: Event, n: VNode, state: StickyButton, thread: var Thread) =
+    if state.loading: return
+
+    state.loading = true
+    state.error = none[PostError]()
+
+    # Same as LockButton so the following is still a hack and karax should support this.
+    var formData = newFormData()
+    formData.append("id", $thread.id)
+    let uri =
+      if thread.isSticky:
+        makeUri("/unsticky")
+      else:
+        makeUri("/sticky")
+    ajaxPost(uri, @[], formData.to(cstring),
+              (s: int, r: kstring) => onPost(s, r, state, thread))
+ 
+    ev.preventDefault()
+
+  proc render*(state: StickyButton, thread: var Thread,
+              currentUser: Option[User]): VNode =
+    if currentUser.isNone() or
+       currentUser.get().rank < Moderator:
+      return buildHtml(tdiv())
+
+    let tooltip =
+      if state.error.isSome(): state.error.get().message
+      else: ""
+
+    result = buildHtml():
+      button(class="btn btn-secondary",
+           onClick=(e: Event, n: VNode) =>
+              onStickyClick(e, n, state, thread),
+           "data-tooltip"=tooltip,
+           onmouseleave=(e: Event, n: VNode) =>
+            (state.error = none[PostError]())):
+        if thread.isSticky:
+          # TODO: give their own icons
+          italic(class="fas fa-unlock-alt")
+          text " Unsticky Thread"
+        else:
+          italic(class="fas fa-lock")
+          text " Sticky Thread"
+

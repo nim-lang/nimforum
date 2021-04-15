@@ -36,6 +36,7 @@ when defined(js):
       likeButton: LikeButton
       deleteModal: DeleteModal
       lockButton: LockButton
+      stickyButton: StickyButton
       categoryPicker: CategoryPicker
 
   proc onReplyPosted(id: int)
@@ -56,6 +57,7 @@ when defined(js):
       likeButton: newLikeButton(),
       deleteModal: newDeleteModal(onDeletePost, onDeleteThread, nil),
       lockButton: newLockButton(),
+      stickyButton: newStickyButton(),
       categoryPicker: newCategoryPicker(onCategoryChanged)
     )
 
@@ -411,6 +413,7 @@ when defined(js):
               text " Reply"
 
             render(state.lockButton, list.thread, currentUser)
+            render(state.stickyButton, list.thread, currentUser)
 
           render(state.replyBox, list.thread, state.replyingTo, false)
 
