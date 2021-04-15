@@ -106,6 +106,9 @@ when defined(js):
           if thread.isLocked:
             italic(class="fas fa-lock fa-xs",
                    title="Thread cannot be replied to")
+          if thread.isSticky:
+            italic(class="fas fa-thumbtack fa-xs", 
+                   title="Stickied Post")
           if isBanned:
             italic(class="fas fa-ban fa-xs",
                    title="Thread author is banned")

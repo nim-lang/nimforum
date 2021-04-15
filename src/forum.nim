@@ -854,7 +854,7 @@ routes:
                     order by p.author
                     limit 1
                   )
-            order by isSticky, modified desc limit ?, ?;"""
+            order by isSticky desc, modified desc limit ?, ?;"""
 
     let thrCount = getValue(db, countQuery, countArgs).parseInt()
     let moreCount = max(0, thrCount - (start + count))

@@ -253,10 +253,9 @@ when defined(js):
            onmouseleave=(e: Event, n: VNode) =>
             (state.error = none[PostError]())):
         if thread.isSticky:
-          # TODO: give their own icons
-          italic(class="fas fa-unlock-alt")
+          italic(class="fas fa-thumbtack")
           text " Unsticky Thread"
         else:
-          italic(class="fas fa-lock")
+          italic(class="fas fa-thumbtack")
           text " Sticky Thread"
 
