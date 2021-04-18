@@ -101,7 +101,7 @@ when defined(js):
     let isOld = (getTime() - thread.creation.fromUnix).inWeeks > 2
     let isBanned = thread.author.rank.isBanned()
     result = buildHtml():
-      tr(class=class({"no-border": noBorder, "banned": isBanned})):
+      tr(class=class({"no-border": noBorder, "banned": isBanned, "stickied": thread.isSticky})):
         td(class="thread-title"):
           if thread.isLocked:
             italic(class="fas fa-lock fa-xs",
