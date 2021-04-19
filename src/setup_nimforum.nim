@@ -81,7 +81,7 @@ proc initialiseDb(admin: tuple[username, password, email: string],
     isLocked boolean not null default 0,
     solution integer,
     isDeleted boolean not null default 0,
-    isSticky boolean not null default 0,
+    isPinned boolean not null default 0,
 
     foreign key (category) references category(id),
     foreign key (solution) references post(id)

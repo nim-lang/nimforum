@@ -15,7 +15,7 @@ type
     creation*: int64 ## Unix timestamp
     isLocked*: bool
     isSolved*: bool
-    isSticky*: bool
+    isPinned*: bool
 
   ThreadList* = ref object
     threads*: seq[Thread]
@@ -101,14 +101,14 @@ when defined(js):
     let isOld = (getTime() - thread.creation.fromUnix).inWeeks > 2
     let isBanned = thread.author.rank.isBanned()
     result = buildHtml():
-      tr(class=class({"no-border": noBorder, "banned": isBanned, "stickied": thread.isSticky})):
+      tr(class=class({"no-border": noBorder, "banned": isBanned, "pinned": thread.isPinned})):
         td(class="thread-title"):
           if thread.isLocked:
             italic(class="fas fa-lock fa-xs",
                    title="Thread cannot be replied to")
-          if thread.isSticky:
+          if thread.isPinned:
             italic(class="fas fa-thumbtack fa-xs", 
-                   title="Stickied Post")
+                   title="Pinned post")
           if isBanned:
             italic(class="fas fa-ban fa-xs",
                    title="Thread author is banned")

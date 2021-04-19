@@ -204,19 +204,19 @@ when defined(js):
           text " Lock Thread"
 
   type
-    StickyButton* = ref object
+    PinButton* = ref object
       error: Option[PostError]
       loading: bool
 
-  proc newStickyButton*(): StickyButton =
-    StickyButton()
+  proc newPinButton*(): PinButton =
+    PinButton()
 
-  proc onPost(httpStatus: int, response: kstring, state: StickyButton,
+  proc onPost(httpStatus: int, response: kstring, state: PinButton,
               thread: var Thread) =
     postFinished:
-      thread.isSticky = not thread.isSticky
+      thread.isPinned = not thread.isPinned
 
-  proc onStickyClick(ev: Event, n: VNode, state: StickyButton, thread: var Thread) =
+  proc onPinClick(ev: Event, n: VNode, state: PinButton, thread: var Thread) =
     if state.loading: return
 
     state.loading = true
@@ -226,16 +226,16 @@ when defined(js):
     var formData = newFormData()
     formData.append("id", $thread.id)
     let uri =
-      if thread.isSticky:
-        makeUri("/unsticky")
+      if thread.isPinned:
+        makeUri("/unpin")
       else:
-        makeUri("/sticky")
+        makeUri("/pin")
     ajaxPost(uri, @[], formData.to(cstring),
               (s: int, r: kstring) => onPost(s, r, state, thread))
  
     ev.preventDefault()
 
-  proc render*(state: StickyButton, thread: var Thread,
+  proc render*(state: PinButton, thread: var Thread,
               currentUser: Option[User]): VNode =
     if currentUser.isNone() or
        currentUser.get().rank < Moderator:
@@ -248,14 +248,14 @@ when defined(js):
     result = buildHtml():
       button(class="btn btn-secondary",
            onClick=(e: Event, n: VNode) =>
-              onStickyClick(e, n, state, thread),
+              onPinClick(e, n, state, thread),
            "data-tooltip"=tooltip,
            onmouseleave=(e: Event, n: VNode) =>
             (state.error = none[PostError]())):
-        if thread.isSticky:
+        if thread.isPinned:
           italic(class="fas fa-thumbtack")
-          text " Unsticky Thread"
+          text " Unpin Thread"
         else:
           italic(class="fas fa-thumbtack")
-          text " Sticky Thread"
+          text " Pin Thread"
 

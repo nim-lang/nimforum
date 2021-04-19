@@ -412,7 +412,7 @@ proc selectThread(threadRow: seq[string], author: User): Thread =
     creation: posts[1].parseInt,
     isLocked: threadRow[4] == "1",
     isSolved: false, # TODO: Add a field to `post` to identify the solution.
-    isSticky: threadRow[5] == "1"
+    isPinned: threadRow[5] == "1"
   )
 
   # Gather the users list.
@@ -710,12 +710,12 @@ proc executeLockState(c: TForumData, threadId: int, locked: bool) =
   # Save the like.
   exec(db, crud(crUpdate, "thread", "isLocked"), locked.int, threadId)
 
-proc executeStickyState(c: TForumData, threadId: int, stickied: bool) =
+proc executePinState(c: TForumData, threadId: int, pinned: bool) =
   if c.rank < Moderator:
-    raise newForumError("You do not have permission to sticky this thread.")
+    raise newForumError("You do not have permission to pin this thread.")
 
-  # (Un)sticky this thread
-  exec(db, crud(crUpdate, "thread", "isSticky"), stickied.int, threadId)
+  # (Un)pin this thread
+  exec(db, crud(crUpdate, "thread", "isPinned"), pinned.int, threadId)
 
 proc executeDeletePost(c: TForumData, postId: int) =
   # Verify that this post belongs to the user.
@@ -841,7 +841,7 @@ routes:
       categoryArgs.insert($categoryId, 0)
 
     const threadsQuery =
-      """select t.id, t.name, views, strftime('%s', modified), isLocked, isSticky,
+      """select t.id, t.name, views, strftime('%s', modified), isLocked, isPinned,
                    c.id, c.name, c.description, c.color,
                    u.id, u.name, u.email, strftime('%s', u.lastOnline),
                    strftime('%s', u.previousVisitAt), u.status, u.isDeleted
@@ -854,7 +854,7 @@ routes:
                     order by p.author
                     limit 1
                   )
-            order by isSticky desc, modified desc limit ?, ?;"""
+            order by isPinned desc, modified desc limit ?, ?;"""
 
     let thrCount = getValue(db, countQuery, countArgs).parseInt()
     let moreCount = max(0, thrCount - (start + count))
@@ -876,7 +876,7 @@ routes:
       count = 10
 
     const threadsQuery =
-      sql"""select t.id, t.name, views, strftime('%s', modified), isLocked, isSticky,
+      sql"""select t.id, t.name, views, strftime('%s', modified), isLocked, isPinned,
                    c.id, c.name, c.description, c.color
             from thread t, category c
             where t.id = ? and isDeleted = 0 and category = c.id;"""
@@ -1347,7 +1347,7 @@ routes:
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
 
-  post re"/(sticky|unsticky)":
+  post re"/(pin|unpin)":
     createTFD()
     if not c.loggedIn():
       let err = PostError(
@@ -1364,10 +1364,10 @@ routes:
 
     try:
       case request.path
-      of "/sticky":
-        executeStickyState(c, threadId, true)
-      of "/unsticky":
-        executeStickyState(c, threadId, false)
+      of "/pin":
+        executePinState(c, threadId, true)
+      of "/unpin":
+        executePinState(c, threadId, false)
       else:
         assert false
       resp Http200, "{}", "application/json"
