@@ -246,7 +246,7 @@ when defined(js):
       else: ""
 
     result = buildHtml():
-      button(class="btn btn-secondary",
+      button(class="btn btn-secondary", id="pin-btn",
            onClick=(e: Event, n: VNode) =>
               onPinClick(e, n, state, thread),
            "data-tooltip"=tooltip,
