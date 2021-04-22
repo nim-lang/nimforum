@@ -55,17 +55,7 @@ jobs:
       - name: Install geckodriver
         run: |
           sudo apt-get -qq update
-          sudo apt-get install autoconf libtool
-          git clone -b 3.5.4 https://github.com/sass/libsass.git
-          cd libsass
-          autoreconf --force --install
-          ./configure \
-            --disable-tests \
-            --disable-static \
-            --enable-shared \
-            --prefix=/usr
-          sudo make -j5 install
-          cd ..
+          sudo apt-get install autoconf libtool libsass-dev
 
           wget https://github.com/mozilla/geckodriver/releases/download/v0.29.1/geckodriver-v0.29.1-linux64.tar.gz
           mkdir geckodriver
