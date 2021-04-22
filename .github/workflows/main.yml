@@ -1,0 +1,87 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  test_devel:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        firefox: [ '73.0' ]
+        include:
+          - nim-version: 'stable'
+            cache-key: 'stable'
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Setup firefox
+        uses: browser-actions/setup-firefox@latest
+        with:
+          firefox-version: ${{ matrix.firefox }}
+
+      - name: Get Date
+        id: get-date
+        run: echo "::set-output name=date::$(date "+%Y-%m-%d")"
+        shell: bash
+        
+      - name: Cache choosenim
+        uses: actions/cache@v2
+        with:
+          path: ~/.choosenim
+          key: ${{ runner.os }}-choosenim-${{ matrix.cache-key }}
+        
+      - name: Cache nimble
+        uses: actions/cache@v2
+        with:
+          path: ~/.nimble
+          key: ${{ runner.os }}-nimble-${{ hashFiles('*.nimble') }}
+
+      - uses: jiro4989/setup-nim-action@v1
+        with:
+          nim-version: "${{ matrix.nim-version }}"
+
+      - name: Install geckodriver
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get install autoconf libtool
+          git clone -b 3.5.4 https://github.com/sass/libsass.git
+          cd libsass
+          autoreconf --force --install
+          ./configure \
+            --disable-tests \
+            --disable-static \
+            --enable-shared \
+            --prefix=/usr
+          sudo make -j5 install
+          cd ..
+
+          wget https://github.com/mozilla/geckodriver/releases/download/v0.29.1/geckodriver-v0.29.1-linux64.tar.gz
+          tar -xzf geckodriver-v0.29.1-linux64.tar.gz -C geckodriver
+          export PATH=$PATH:$PWD/geckodriver
+          
+      - name: Install choosenim
+        run: |
+          export CHOOSENIM_CHOOSE_VERSION="stable"
+          curl https://nim-lang.org/choosenim/init.sh -sSf > init.sh
+          sh init.sh -y
+          export PATH=$HOME/.nimble/bin:$PATH
+          nimble refresh -y
+          
+      - name: Run tests
+        run: |
+          export MOZ_HEADLESS=1
+          nimble -y install
+          nimble -y test
+      
