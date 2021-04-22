@@ -25,6 +25,8 @@ jobs:
             cache-key: 'stable'
     steps:
       - uses: actions/checkout@v2
+      - name: Checkout submodules
+        run: git submodule update --init --recursive
       
       - name: Setup firefox
         uses: browser-actions/setup-firefox@latest
