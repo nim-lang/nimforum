@@ -21,8 +21,7 @@ jobs:
       matrix:
         firefox: [ '73.0' ]
         include:
-          - nim-version: 'stable'
-            cache-key: 'stable'
+          - cache-key: 'stable'
     steps:
       - uses: actions/checkout@v2
       - name: Checkout submodules
@@ -50,10 +49,6 @@ jobs:
           path: ~/.nimble
           key: ${{ runner.os }}-nimble-${{ hashFiles('*.nimble') }}
 
-      - uses: jiro4989/setup-nim-action@v1
-        with:
-          nim-version: "${{ matrix.nim-version }}"
-
       - name: Install geckodriver
         run: |
           sudo apt-get -qq update
@@ -73,6 +68,7 @@ jobs:
           
       - name: Run tests
         run: |
+          export PATH=$HOME/.nimble/bin:$PATH
           export MOZ_HEADLESS=1
           nimble -y install
           nimble -y test
