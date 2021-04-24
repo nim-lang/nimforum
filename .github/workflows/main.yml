@@ -21,7 +21,8 @@ jobs:
       matrix:
         firefox: [ '73.0' ]
         include:
-          - cache-key: 'stable'
+          - nim-version: 'stable'
+            cache-key: 'stable'
     steps:
       - uses: actions/checkout@v2
       - name: Checkout submodules
@@ -60,7 +61,7 @@ jobs:
           
       - name: Install choosenim
         run: |
-          export CHOOSENIM_CHOOSE_VERSION="stable"
+          export CHOOSENIM_CHOOSE_VERSION="${{ matrix.nim-version }}"
           curl https://nim-lang.org/choosenim/init.sh -sSf > init.sh
           sh init.sh -y
           export PATH=$HOME/.nimble/bin:$PATH
