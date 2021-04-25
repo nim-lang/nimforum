@@ -189,19 +189,28 @@ proc adminTests(session: Session, baseUrl: string) =
         navigate(baseUrl)
         click "Pinned post", LinkTextSelector
         click "#pin-btn"
+        checkText "#pin-btn", "Unpin Thread"
 
         navigate(baseUrl)
-        checkText "#threads-list tr:nth-child(1) .thread-title a", "Pinned post"
-        checkText "#threads-list tr:nth-child(2) .thread-title a", "Normal post"
+
+        # Make sure pin exists
+        ensureExists "#threads-list .thread-1 .thread-title i"
+
+        checkText "#threads-list .thread-1 .thread-title a", "Pinned post"
+        checkText "#threads-list .thread-2 .thread-title a", "Normal post"
 
     test "Can unpin a thread":
       with session:
         click "Pinned post", LinkTextSelector
         click "#pin-btn"
+        checkText "#pin-btn", "Pin Thread"
 
         navigate(baseUrl)
-        checkText "#threads-list tr:nth-child(1) .thread-title a", "Normal post"
-        checkText "#threads-list tr:nth-child(2) .thread-title a", "Pinned post"
+
+        checkIsNone "#threads-list .thread-2 .thread-title i"
+
+        checkText "#threads-list .thread-1 .thread-title a", "Normal post"
+        checkText "#threads-list .thread-2 .thread-title a", "Pinned post"
 
     session.logout()
 

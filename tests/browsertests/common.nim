@@ -30,7 +30,8 @@ proc elementIsSome(element: Option[Element]): bool =
 proc elementIsNone(element: Option[Element]): bool =
   return element.isNone
 
-proc waitForElement*(session: Session, selector: string, strategy=CssSelector, timeout=20000, pollTime=50, waitCondition=elementIsSome): Option[Element]
+proc waitForElement*(session: Session, selector: string, strategy=CssSelector, timeout=20000, pollTime=50,
+  waitCondition: proc(element: Option[Element]): bool = elementIsSome): Option[Element]
 
 proc click*(session: Session, element: string, strategy=CssSelector) =
   let el = session.waitForElement(element, strategy)
@@ -71,14 +72,14 @@ proc setColor*(session: Session, element, color: string, strategy=CssSelector) =
 proc checkIsNone*(session: Session, element: string, strategy=CssSelector) =
   discard session.waitForElement(element, strategy, waitCondition=elementIsNone)
 
-proc checkText*(session: Session, element, expectedValue: string) =
+template checkText*(session: Session, element, expectedValue: string) =
   let el = session.waitForElement(element)
   check el.get().getText() == expectedValue
 
 proc waitForElement*(
   session: Session, selector: string, strategy=CssSelector,
   timeout=20000, pollTime=50,
-  waitCondition=elementIsSome
+  waitCondition: proc(element: Option[Element]): bool = elementIsSome
 ): Option[Element] =
   var waitTime = 0
 
