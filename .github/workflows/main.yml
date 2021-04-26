@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        firefox: [ '73.0' ]
+        firefox: [ '88.0' ]
         include:
           - nim-version: 'stable'
             cache-key: 'stable'
