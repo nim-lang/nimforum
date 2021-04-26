@@ -187,7 +187,7 @@ proc adminTests(session: Session, baseUrl: string) =
         # Make sure the forum post is gone
         checkIsNone adminTitleStr, LinkTextSelector
 
-    test "Can pin a thread":
+    test "can pin a thread":
       with session:
         click "#new-thread-btn"
         sendKeys "#thread-title", "Pinned post"
@@ -213,7 +213,7 @@ proc adminTests(session: Session, baseUrl: string) =
         checkText "#threads-list .thread-1 .thread-title a", "Pinned post"
         checkText "#threads-list .thread-2 .thread-title a", "Normal post"
 
-    test "Can unpin a thread":
+    test "can unpin a thread":
       with session:
         click "Pinned post", LinkTextSelector
         click "#pin-btn"
@@ -226,14 +226,14 @@ proc adminTests(session: Session, baseUrl: string) =
         checkText "#threads-list .thread-1 .thread-title a", "Normal post"
         checkText "#threads-list .thread-2 .thread-title a", "Pinned post"
 
-    test "Can lock a thread":
+    test "can lock a thread":
       with session:
         click "Locking", LinkTextSelector
         click "#lock-btn"
 
         ensureExists "i .fas .fa-lock .fa-xs"
 
-    test "Can unlock a thread":
+    test "can unlock a thread":
       with session:
         click "Locking", LinkTextSelector       
         click "#lock-btn"
