@@ -1,5 +1,4 @@
 import unittest, common
-
 import webdriver
 
 let
@@ -231,14 +230,14 @@ proc adminTests(session: Session, baseUrl: string) =
         click "Locking", LinkTextSelector
         click "#lock-btn"
 
-        ensureExists "i .fas .fa-lock .fa-xs"
+        ensureExists "#thread-title i.fas.fa-lock.fa-xs"
 
     test "can unlock a thread":
       with session:
         click "Locking", LinkTextSelector       
         click "#lock-btn"
 
-        checkIsNone "#thread-title i .fas .fa-lock fa-xs"
+        checkIsNone "#thread-title i.fas.fa-lock.fa-xs"
 
     session.logout()
 
