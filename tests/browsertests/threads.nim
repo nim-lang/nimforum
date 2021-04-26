@@ -71,6 +71,20 @@ proc userTests(session: Session, baseUrl: string) =
 
         checkIsNone "#pin-btn"
 
+    test "cannot lock threads":
+      with session:
+        navigate(baseUrl)
+
+        click "#new-thread-btn"
+
+        sendKeys "#thread-title", "Locking"
+        sendkeys "#reply-textarea", "Cannot lock as an user"
+
+        click "#create-thread-btn"
+
+        checkIsNone "#lock-btn"
+        navigate(baseUrl)
+
     session.logout()
 
 proc anonymousTests(session: Session, baseUrl: string) =
@@ -212,6 +226,20 @@ proc adminTests(session: Session, baseUrl: string) =
         checkText "#threads-list .thread-1 .thread-title a", "Normal post"
         checkText "#threads-list .thread-2 .thread-title a", "Pinned post"
 
+    test "Can lock a thread":
+      with session:
+        click "Locking", LinkTextSelector
+        click "#lock-btn"
+
+        ensureExists "i .fas .fa-lock .fa-xs"
+
+    test "Can unlock a thread":
+      with session:
+        click "Locking", LinkTextSelector       
+        click "#lock-btn"
+
+        checkIsNone "#thread-title i .fas .fa-lock fa-xs"
+
     session.logout()
 
 proc test*(session: Session, baseUrl: string) =
@@ -219,12 +247,12 @@ proc test*(session: Session, baseUrl: string) =
 
   userTests(session, baseUrl)
 
-  banUser(session, baseUrl)
+  # banUser(session, baseUrl)
 
-  bannedTests(session, baseUrl)
-  anonymousTests(session, baseUrl)
+  # bannedTests(session, baseUrl)
+  # anonymousTests(session, baseUrl)
   adminTests(session, baseUrl)
 
-  unBanUser(session, baseUrl)
+  # unBanUser(session, baseUrl)
 
   session.navigate(baseUrl)

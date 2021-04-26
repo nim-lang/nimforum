@@ -190,7 +190,7 @@ when defined(js):
       else: ""
 
     result = buildHtml():
-      button(class="btn btn-secondary",
+      button(class="btn btn-secondary", id="lock-btn",
            onClick=(e: Event, n: VNode) =>
               onLockClick(e, n, state, thread),
            "data-tooltip"=tooltip,
