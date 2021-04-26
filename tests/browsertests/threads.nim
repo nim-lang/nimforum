@@ -58,10 +58,22 @@ proc userTests(session: Session, baseUrl: string) =
         # Make sure the forum post is gone
         checkIsNone "To be deleted", LinkTextSelector
 
+    test "cannot (un)pin thread":
+      with session:
+        navigate(baseUrl)
+
+        click "#new-thread-btn"
+
+        sendKeys "#thread-title", "Unpinnable"
+        sendKeys "#reply-textarea", "Cannot (un)pin as an user"
+
+        click "#create-thread-btn"
+
+        checkIsNone "#pin-btn"
+
     session.logout()
 
 proc anonymousTests(session: Session, baseUrl: string) =
-
   suite "anonymous user tests":
     with session:
       navigate baseUrl
@@ -160,6 +172,45 @@ proc adminTests(session: Session, baseUrl: string) =
 
         # Make sure the forum post is gone
         checkIsNone adminTitleStr, LinkTextSelector
+
+    test "Can pin a thread":
+      with session:
+        click "#new-thread-btn"
+        sendKeys "#thread-title", "Pinned post"
+        sendKeys "#reply-textarea", "A pinned post"
+        click "#create-thread-btn"
+
+        navigate(baseUrl)
+        click "#new-thread-btn"
+        sendKeys "#thread-title", "Normal post"
+        sendKeys "#reply-textarea", "A normal post"
+        click "#create-thread-btn"
+
+        navigate(baseUrl)
+        click "Pinned post", LinkTextSelector
+        click "#pin-btn"
+        checkText "#pin-btn", "Unpin Thread"
+
+        navigate(baseUrl)
+
+        # Make sure pin exists
+        ensureExists "#threads-list .thread-1 .thread-title i"
+
+        checkText "#threads-list .thread-1 .thread-title a", "Pinned post"
+        checkText "#threads-list .thread-2 .thread-title a", "Normal post"
+
+    test "Can unpin a thread":
+      with session:
+        click "Pinned post", LinkTextSelector
+        click "#pin-btn"
+        checkText "#pin-btn", "Pin Thread"
+
+        navigate(baseUrl)
+
+        checkIsNone "#threads-list .thread-2 .thread-title i"
+
+        checkText "#threads-list .thread-1 .thread-title a", "Normal post"
+        checkText "#threads-list .thread-2 .thread-title a", "Pinned post"
 
     session.logout()
 

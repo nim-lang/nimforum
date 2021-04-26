@@ -400,10 +400,10 @@ proc selectThread(threadRow: seq[string], author: User): Thread =
     id: threadRow[0].parseInt,
     topic: threadRow[1],
     category: Category(
-      id: threadRow[5].parseInt,
-      name: threadRow[6],
-      description: threadRow[7],
-      color: threadRow[8]
+      id: threadRow[6].parseInt,
+      name: threadRow[7],
+      description: threadRow[8],
+      color: threadRow[9]
     ),
     users: @[],
     replies: posts[0].parseInt-1,
@@ -412,6 +412,7 @@ proc selectThread(threadRow: seq[string], author: User): Thread =
     creation: posts[1].parseInt,
     isLocked: threadRow[4] == "1",
     isSolved: false, # TODO: Add a field to `post` to identify the solution.
+    isPinned: threadRow[5] == "1"
   )
 
   # Gather the users list.
@@ -709,6 +710,13 @@ proc executeLockState(c: TForumData, threadId: int, locked: bool) =
   # Save the like.
   exec(db, crud(crUpdate, "thread", "isLocked"), locked.int, threadId)
 
+proc executePinState(c: TForumData, threadId: int, pinned: bool) =
+  if c.rank < Moderator:
+    raise newForumError("You do not have permission to pin this thread.")
+
+  # (Un)pin this thread
+  exec(db, crud(crUpdate, "thread", "isPinned"), pinned.int, threadId)
+
 proc executeDeletePost(c: TForumData, postId: int) =
   # Verify that this post belongs to the user.
   const postQuery = sql"""
@@ -833,7 +841,7 @@ routes:
       categoryArgs.insert($categoryId, 0)
 
     const threadsQuery =
-      """select t.id, t.name, views, strftime('%s', modified), isLocked,
+      """select t.id, t.name, views, strftime('%s', modified), isLocked, isPinned,
                    c.id, c.name, c.description, c.color,
                    u.id, u.name, u.email, strftime('%s', u.lastOnline),
                    strftime('%s', u.previousVisitAt), u.status, u.isDeleted
@@ -846,14 +854,14 @@ routes:
                     order by p.author
                     limit 1
                   )
-            order by modified desc limit ?, ?;"""
+            order by isPinned desc, modified desc limit ?, ?;"""
 
     let thrCount = getValue(db, countQuery, countArgs).parseInt()
     let moreCount = max(0, thrCount - (start + count))
 
     var list = ThreadList(threads: @[], moreCount: moreCount)
     for data in getAllRows(db, sql(threadsQuery % categorySection), categoryArgs):
-      let thread = selectThread(data[0 .. 8], selectUser(data[9 .. ^1]))
+      let thread = selectThread(data[0 .. 9], selectUser(data[10 .. ^1]))
       list.threads.add(thread)
 
     resp $(%list), "application/json"
@@ -868,7 +876,7 @@ routes:
       count = 10
 
     const threadsQuery =
-      sql"""select t.id, t.name, views, strftime('%s', modified), isLocked,
+      sql"""select t.id, t.name, views, strftime('%s', modified), isLocked, isPinned,
                    c.id, c.name, c.description, c.color
             from thread t, category c
             where t.id = ? and isDeleted = 0 and category = c.id;"""
@@ -1333,6 +1341,33 @@ routes:
         executeLockState(c, threadId, true)
       of "/unlock":
         executeLockState(c, threadId, false)
+      else:
+        assert false
+      resp Http200, "{}", "application/json"
+    except ForumError as exc:
+      resp Http400, $(%exc.data), "application/json"
+
+  post re"/(pin|unpin)":
+    createTFD()
+    if not c.loggedIn():
+      let err = PostError(
+        errorFields: @[],
+        message: "Not logged in."
+      )
+      resp Http401, $(%err), "application/json"
+
+    let formData = request.formData
+    cond "id" in formData
+
+    let threadId = getInt(formData["id"].body, -1)
+    cond threadId != -1
+
+    try:
+      case request.path
+      of "/pin":
+        executePinState(c, threadId, true)
+      of "/unpin":
+        executePinState(c, threadId, false)
       else:
         assert false
       resp Http200, "{}", "application/json"

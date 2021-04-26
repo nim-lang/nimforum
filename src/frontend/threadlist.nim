@@ -15,6 +15,7 @@ type
     creation*: int64 ## Unix timestamp
     isLocked*: bool
     isSolved*: bool
+    isPinned*: bool
 
   ThreadList* = ref object
     threads*: seq[Thread]
@@ -96,15 +97,18 @@ when defined(js):
     else:
       return $duration.inSeconds & "s"
 
-  proc genThread(thread: Thread, isNew: bool, noBorder: bool, displayCategory=true): VNode =
+  proc genThread(pos: int, thread: Thread, isNew: bool, noBorder: bool, displayCategory=true): VNode =
     let isOld = (getTime() - thread.creation.fromUnix).inWeeks > 2
     let isBanned = thread.author.rank.isBanned()
     result = buildHtml():
-      tr(class=class({"no-border": noBorder, "banned": isBanned})):
+      tr(class=class({"no-border": noBorder, "banned": isBanned, "pinned": thread.isPinned, "thread-" & $pos: true})):
         td(class="thread-title"):
           if thread.isLocked:
             italic(class="fas fa-lock fa-xs",
                    title="Thread cannot be replied to")
+          if thread.isPinned:
+            italic(class="fas fa-thumbtack fa-xs", 
+                   title="Pinned post")
           if isBanned:
             italic(class="fas fa-ban fa-xs",
                    title="Thread author is banned")
@@ -223,7 +227,7 @@ when defined(js):
 
               let isLastThread = i+1 == list.threads.len
               let (isLastUnseen, isNew) = getInfo(list.threads, i, currentUser)
-              genThread(thread, isNew,
+              genThread(i+1, thread, isNew,
                         noBorder=isLastUnseen or isLastThread,
                         displayCategory=displayCategory)
               if isLastUnseen and (not isLastThread):

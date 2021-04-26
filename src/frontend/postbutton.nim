@@ -202,3 +202,60 @@ when defined(js):
         else:
           italic(class="fas fa-lock")
           text " Lock Thread"
+
+  type
+    PinButton* = ref object
+      error: Option[PostError]
+      loading: bool
+
+  proc newPinButton*(): PinButton =
+    PinButton()
+
+  proc onPost(httpStatus: int, response: kstring, state: PinButton,
+              thread: var Thread) =
+    postFinished:
+      thread.isPinned = not thread.isPinned
+
+  proc onPinClick(ev: Event, n: VNode, state: PinButton, thread: var Thread) =
+    if state.loading: return
+
+    state.loading = true
+    state.error = none[PostError]()
+
+    # Same as LockButton so the following is still a hack and karax should support this.
+    var formData = newFormData()
+    formData.append("id", $thread.id)
+    let uri =
+      if thread.isPinned:
+        makeUri("/unpin")
+      else:
+        makeUri("/pin")
+    ajaxPost(uri, @[], formData.to(cstring),
+              (s: int, r: kstring) => onPost(s, r, state, thread))
+ 
+    ev.preventDefault()
+
+  proc render*(state: PinButton, thread: var Thread,
+              currentUser: Option[User]): VNode =
+    if currentUser.isNone() or
+       currentUser.get().rank < Moderator:
+      return buildHtml(tdiv())
+
+    let tooltip =
+      if state.error.isSome(): state.error.get().message
+      else: ""
+
+    result = buildHtml():
+      button(class="btn btn-secondary", id="pin-btn",
+           onClick=(e: Event, n: VNode) =>
+              onPinClick(e, n, state, thread),
+           "data-tooltip"=tooltip,
+           onmouseleave=(e: Event, n: VNode) =>
+            (state.error = none[PostError]())):
+        if thread.isPinned:
+          italic(class="fas fa-thumbtack")
+          text " Unpin Thread"
+        else:
+          italic(class="fas fa-thumbtack")
+          text " Pin Thread"
+
