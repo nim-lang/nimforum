@@ -82,7 +82,6 @@ proc userTests(session: Session, baseUrl: string) =
         click "#create-thread-btn"
 
         checkIsNone "#lock-btn"
-        navigate(baseUrl)
 
     session.logout()
 
@@ -231,6 +230,11 @@ proc adminTests(session: Session, baseUrl: string) =
         click "#lock-btn"
 
         ensureExists "#thread-title i.fas.fa-lock.fa-xs"
+
+        # Our locked thread has to appear locked on the frontpage too
+        navigate(baseUrl)
+
+        ensureExists "#threads-list .thread-3 .thread-title i.fas.fa-lock.fa-xs"
 
     test "can unlock a thread":
       with session:
