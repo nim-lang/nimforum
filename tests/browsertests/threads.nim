@@ -247,12 +247,12 @@ proc test*(session: Session, baseUrl: string) =
 
   userTests(session, baseUrl)
 
-  # banUser(session, baseUrl)
+  banUser(session, baseUrl)
 
-  # bannedTests(session, baseUrl)
-  # anonymousTests(session, baseUrl)
+  bannedTests(session, baseUrl)
+  anonymousTests(session, baseUrl)
   adminTests(session, baseUrl)
 
-  # unBanUser(session, baseUrl)
+  unBanUser(session, baseUrl)
 
   session.navigate(baseUrl)
