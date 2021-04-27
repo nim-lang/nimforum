@@ -1,5 +1,4 @@
 import unittest, common
-
 import webdriver
 
 let
@@ -70,6 +69,19 @@ proc userTests(session: Session, baseUrl: string) =
         click "#create-thread-btn"
 
         checkIsNone "#pin-btn"
+
+    test "cannot lock threads":
+      with session:
+        navigate(baseUrl)
+
+        click "#new-thread-btn"
+
+        sendKeys "#thread-title", "Locking"
+        sendkeys "#reply-textarea", "Cannot lock as an user"
+
+        click "#create-thread-btn"
+
+        checkIsNone "#lock-btn"
 
     session.logout()
 
@@ -173,7 +185,7 @@ proc adminTests(session: Session, baseUrl: string) =
         # Make sure the forum post is gone
         checkIsNone adminTitleStr, LinkTextSelector
 
-    test "Can pin a thread":
+    test "can pin a thread":
       with session:
         click "#new-thread-btn"
         sendKeys "#thread-title", "Pinned post"
@@ -199,7 +211,7 @@ proc adminTests(session: Session, baseUrl: string) =
         checkText "#threads-list .thread-1 .thread-title a", "Pinned post"
         checkText "#threads-list .thread-2 .thread-title a", "Normal post"
 
-    test "Can unpin a thread":
+    test "can unpin a thread":
       with session:
         click "Pinned post", LinkTextSelector
         click "#pin-btn"
@@ -211,6 +223,31 @@ proc adminTests(session: Session, baseUrl: string) =
 
         checkText "#threads-list .thread-1 .thread-title a", "Normal post"
         checkText "#threads-list .thread-2 .thread-title a", "Pinned post"
+
+    test "can lock a thread":
+      with session:
+        click "Locking", LinkTextSelector
+        click "#lock-btn"
+
+        ensureExists "#thread-title i.fas.fa-lock.fa-xs"
+
+    test "locked thread appears on frontpage":
+      with session:
+        click "#new-thread-btn"
+        sendKeys "#thread-title", "A new locked thread"
+        sendKeys "#reply-textarea", "This thread should appear locked on the frontpage"
+        click "#create-thread-btn"
+        click "#lock-btn"
+        
+        navigate(baseUrl)
+        ensureExists "#threads-list .thread-1 .thread-title i.fas.fa-lock.fa-xs"
+
+    test "can unlock a thread":
+      with session:
+        click "Locking", LinkTextSelector       
+        click "#lock-btn"
+
+        checkIsNone "#thread-title i.fas.fa-lock.fa-xs"
 
     session.logout()
 
