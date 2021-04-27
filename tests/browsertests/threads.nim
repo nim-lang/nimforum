@@ -231,10 +231,16 @@ proc adminTests(session: Session, baseUrl: string) =
 
         ensureExists "#thread-title i.fas.fa-lock.fa-xs"
 
-        # Our locked thread has to appear locked on the frontpage too
+    test "locked thread appears on frontpage":
+      with session:
+        click "#new-thread-btn"
+        sendKeys "#thread-title", "A new locked thread"
+        sendKeys "#reply-textarea", "This thread should appear locked on the frontpage"
+        click "#create-thread-btn"
+        click "#lock-btn"
+        
         navigate(baseUrl)
-
-        ensureExists "#threads-list .thread-3 .thread-title i.fas.fa-lock.fa-xs"
+        ensureExists "#threads-list .thread-1 .thread-title i.fas.fa-lock.fa-xs"
 
     test "can unlock a thread":
       with session:
