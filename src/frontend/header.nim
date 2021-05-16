@@ -96,8 +96,8 @@ when defined(js):
           section(class="navbar-section"):
             tdiv(class="input-group input-inline"):
               input(class="search-input input-sm",
-                    `type`="text", placeholder="search",
-                    id="search-box",
+                    `type`="search", placeholder="Search",
+                    id="search-box", required="required",
                     onKeyDown=onKeyDown)
             if state.loading:
               tdiv(class="loading")
