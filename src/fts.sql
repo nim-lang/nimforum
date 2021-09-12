@@ -7,6 +7,7 @@ SELECT
         post_id,
         post_content,
         cdate,
+        person.id,
         person.name AS author,
         person.email AS email,
         strftime('%s', person.lastOnline) AS lastOnline,
@@ -44,7 +45,7 @@ SELECT
         post.id AS post_id,
         CASE what WHEN 1
             THEN snippet(post_fts, '**', '**', '...', what, -45)
-            ELSE SUBSTR(post_fts.content, 1, 200) END AS content,
+            ELSE SUBSTR(post_fts.content, 1, 200) END AS post_content,
         cdate,
         person.id,
         person.name AS author,
