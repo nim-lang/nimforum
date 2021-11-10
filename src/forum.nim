@@ -1071,7 +1071,7 @@ routes:
         formData["username"].body,
         formData["password"].body
       )
-      setCookie("sid", session)
+      setCookie("sid", session, httpOnly=true, sameSite=Strict, secure=true)
       resp Http200, "{}", "application/json"
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
@@ -1099,7 +1099,7 @@ routes:
         formData["email"].body
       )
       let session = executeLogin(c, username, password)
-      setCookie("sid", session)
+      setCookie("sid", session, httpOnly=true, sameSite=Strict, secure=true)
       resp Http200, "{}", "application/json"
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
