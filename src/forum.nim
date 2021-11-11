@@ -276,7 +276,7 @@ template createTFD() =
   new(c)
   init(c)
   c.req = request
-  if request.cookies.len > 0:
+  if cookies(request).len > 0:
     checkLoggedIn(c)
 
 #[ DB functions. TODO: Move to another module? ]#

@@ -2,7 +2,7 @@
 
 name: CI
 
-# Controls when the action will run. 
+# Controls when the action will run.
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
@@ -21,13 +21,13 @@ jobs:
       matrix:
         firefox: [ '73.0' ]
         include:
-          - nim-version: 'stable'
+          - nim-version: '1.6.0'
             cache-key: 'stable'
     steps:
       - uses: actions/checkout@v2
       - name: Checkout submodules
         run: git submodule update --init --recursive
-      
+
       - name: Setup firefox
         uses: browser-actions/setup-firefox@latest
         with:
@@ -37,13 +37,13 @@ jobs:
         id: get-date
         run: echo "::set-output name=date::$(date "+%Y-%m-%d")"
         shell: bash
-        
+
       - name: Cache choosenim
         uses: actions/cache@v2
         with:
           path: ~/.choosenim
           key: ${{ runner.os }}-choosenim-${{ matrix.cache-key }}
-        
+
       - name: Cache nimble
         uses: actions/cache@v2
         with:
@@ -58,7 +58,7 @@ jobs:
           mkdir geckodriver
           tar -xzf geckodriver-v0.29.1-linux64.tar.gz -C geckodriver
           export PATH=$PATH:$PWD/geckodriver
-          
+
       - name: Install choosenim
         run: |
           export CHOOSENIM_CHOOSE_VERSION="${{ matrix.nim-version }}"
@@ -66,7 +66,7 @@ jobs:
           sh init.sh -y
           export PATH=$HOME/.nimble/bin:$PATH
           nimble refresh -y
-          
+
       - name: Run tests
         run: |
           export PATH=$HOME/.nimble/bin:$PATH
