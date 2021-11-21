@@ -882,6 +882,8 @@ routes:
             where t.id = ? and isDeleted = 0 and category = c.id;"""
 
     let threadRow = getRow(db, threadsQuery, id)
+    if threadRow[0].len == 0:
+      resp Http404, "Thread not found"
     let thread = selectThread(threadRow, selectThreadAuthor(id))
 
     let postsQuery =
@@ -927,9 +929,11 @@ routes:
 
   get "/specific_posts.json":
     createTFD()
-    var
+    var ids: JsonNode
+    try:
       ids = parseJson(@"ids")
-
+    except JsonParsingError:
+      resp Http400, "Invalid JSON"
     cond ids.kind == JArray
     let intIDs = ids.elems.map(x => x.getInt())
     let postsQuery = sql("""

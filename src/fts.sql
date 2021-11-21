@@ -7,6 +7,7 @@ SELECT
         post_id,
         post_content,
         cdate,
+        person.id,
         person.name AS author,
         person.email AS email,
         strftime('%s', person.lastOnline) AS lastOnline,
