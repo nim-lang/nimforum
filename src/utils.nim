@@ -178,8 +178,10 @@ proc rstToHtml*(content: string): string =
                             docConfig)
   try:
     var node = parseHtml(newStringStream(result))
-    if node.kind == xnElement:
-      node = processQuotes(node)
+    # rst.nim parser did not support quotes until Nim 1.7:
+    when (NimMajor, NimMinor) < (1, 7):
+      if node.kind == xnElement:
+        node = processQuotes(node)
     node = processMentions(node)
     result = ""
     add(result, node, indWidth=0, addNewLines=false)
