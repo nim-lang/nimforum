@@ -303,6 +303,12 @@ proc selectUser(userRow: seq[string], avatarSize: int=80): User =
 proc selectPost(postRow: seq[string], skippedPosts: seq[int],
                 replyingTo: Option[PostLink], history: seq[PostInfo],
                 likes: seq[User]): Post =
+  let content =
+    try:
+      postRow[1].rstToHtml()
+    except EParseError:
+      span(class="text-error", "Couldn't render post #$1." % postRow[0])
+
   return Post(
     id: postRow[0].parseInt,
     replyingTo: replyingTo,
@@ -312,7 +318,7 @@ proc selectPost(postRow: seq[string], skippedPosts: seq[int],
     history: history,
     info: PostInfo(
       creation: postRow[2].parseInt,
-      content: postRow[1].rstToHtml()
+      content: content
     ),
     moreBefore: skippedPosts
   )

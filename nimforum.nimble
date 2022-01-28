@@ -13,6 +13,7 @@ skipExt = @["nim"]
 # Dependencies
 
 requires "nim >= 1.0.6"
+requires "httpbeast >= 0.4.0"
 requires "jester#405be2e"
 requires "bcrypt#440c5676ff6"
 requires "hmac#9c61ebe2fd134cf97"
