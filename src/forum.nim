@@ -23,6 +23,9 @@ import frontend/[
 
 from htmlgen import tr, th, td, span, input
 
+when not declared(roSandboxDisabled):
+  {.error: "Your Nim version is vulnerable to a CVE. Upgrade it.".}
+
 type
   TCrud = enum crCreate, crRead, crUpdate, crDelete
 
