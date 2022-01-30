@@ -358,7 +358,11 @@ proc selectHistory(postId: int): seq[PostInfo] =
   for row in getAllRows(db, historyQuery, $postId):
     result.add(PostInfo(
       creation: row[0].parseInt(),
-      content: row[1].rstToHtml()
+      content:
+        try:
+          row[1].rstToHtml()
+        except EParseError:
+          span(class="text-error", "Couldn't render historic post in #$1." % $postId)
     ))
 
 proc selectLikes(postId: int): seq[User] =
