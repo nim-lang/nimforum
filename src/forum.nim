@@ -1607,7 +1607,17 @@ routes:
 
   get "/search.json":
     cond "q" in request.params
-    let q = @"q"
+    var query = @"q"
+    
+    var depth = 0
+    for ch in query:
+      if ch == '(': depth.inc
+      elif ch == ')': depth.dec
+    if depth == 0: discard
+    elif depth > 0: query.add ')'.repeat(depth)
+    elif depth < 0: query = '('.repeat(abs(depth)) & query
+    
+    let q = query
     cond q.len > 0
 
     var results: seq[SearchResult] = @[]
@@ -1618,20 +1628,23 @@ routes:
       q, q, $count, $0, q,
       q, $count, $0, q
     ]
-    for rowFT in fastRows(db, queryFT, data):
-      var content = rowFT[3]
-      try: content = content.rstToHtml() except EParseError: discard
-      results.add(
-        SearchResult(
-          kind: SearchResultKind(rowFT[^1].parseInt()),
-          threadId: rowFT[0].parseInt(),
-          threadTitle: rowFT[1],
-          postId: rowFT[2].parseInt(),
-          postContent: content,
-          creation: rowFT[4].parseInt(),
-          author: selectUser(rowFT[5 .. 11]),
+    try:
+      for rowFT in fastRows(db, queryFT, data):
+        var content = rowFT[3]
+        try: content = content.rstToHtml() except EParseError: discard
+        results.add(
+          SearchResult(
+            kind: SearchResultKind(rowFT[^1].parseInt()),
+            threadId: rowFT[0].parseInt(),
+            threadTitle: rowFT[1],
+            postId: rowFT[2].parseInt(),
+            postContent: content,
+            creation: rowFT[4].parseInt(),
+            author: selectUser(rowFT[5 .. 11]),
+          )
         )
-      )
+    except DbError:
+      discard
 
     resp Http200, $(%results), "application/json"
 
