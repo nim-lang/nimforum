@@ -1,4 +1,4 @@
-FROM nimlang/nim:1.2.6-ubuntu
+FROM nimlang/nim:1.6.4-ubuntu
 
 RUN apt-get update -yqq \
     && apt-get install -y --no-install-recommends \
