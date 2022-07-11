@@ -12,7 +12,7 @@ import strutils, db_sqlite, os, times, json, options, terminal
 import auth, frontend/user
 
 proc backup(path: string, contents: Option[string]=none[string]()) =
-  if existsFile(path):
+  if fileExists(path):
     if contents.isSome() and readFile(path) == contents.get():
       # Don't backup if the files are equivalent.
       echo("Not backing up because new file is the same.")
