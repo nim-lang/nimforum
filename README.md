@@ -77,6 +77,8 @@ nimble devdb
 nimble frontend
 
 # Will start a server at localhost:5000
+# MacOS users should note that port 5000 is reserved for AirPlay
+# Set the entry "port" in forum.json to change the default
 nimble backend
 ```
 
