@@ -18,7 +18,7 @@ jobs:
       matrix:
         firefox: [ '73.0' ]
         include:
-          - nim-version: '#version-1-6'
+          - nim-version: '1.6.10'
             cache-key: 'stable'
     steps:
       - uses: actions/checkout@v2
