@@ -50,7 +50,7 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get -qq update
-          sudo apt-get install autoconf libtool libsass-dev
+          sudo apt-get install autoconf libtool libsass-dev xvfb
 
       - name: Install chromedriver
         uses: nanasess/setup-chromedriver@v1
