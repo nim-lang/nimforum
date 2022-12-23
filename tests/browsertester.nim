@@ -61,7 +61,7 @@ proc main() =
 
   try:
     let driver = newWebDriver()
-    let session = driver.createSession(%*{"capabilities": {"browserName": "chrome", "goog:chromeOptions": {"args": ["--headless", "--no-sandbox", "--disable-dev-shm-usage", "disable-infobars", "--disable-extension"]}}})
+    let session = driver.createSession(%*{"capabilities": {"alwaysMatch": {"browserName": "chrome", "goog:chromeOptions": {"args": ["--headless", "--no-sandbox", "--disable-dev-shm-usage", "disable-infobars", "--disable-extension"]}}}})
 
     withBackend:
       scenario1.test(session, baseUrl)
