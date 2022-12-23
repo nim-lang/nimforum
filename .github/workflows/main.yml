@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        firefox: [ '73.0' ]
+        chrome: [ 'stable' ]
         include:
           - nim-version: '1.6.10'
             cache-key: 'stable'
@@ -25,10 +25,10 @@ jobs:
       - name: Checkout submodules
         run: git submodule update --init --recursive
 
-      - name: Setup firefox
-        uses: browser-actions/setup-firefox@latest
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@latest
         with:
-          firefox-version: ${{ matrix.firefox }}
+          chrome-version: ${{ matrix.chrome }}
 
       - name: Get Date
         id: get-date
@@ -36,13 +36,13 @@ jobs:
         shell: bash
 
       - name: Cache choosenim
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.choosenim
           key: ${{ runner.os }}-choosenim-${{ matrix.cache-key }}
 
       - name: Cache nimble
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.nimble
           key: ${{ runner.os }}-nimble-${{ hashFiles('*.nimble') }}
@@ -51,9 +51,9 @@ jobs:
         run: |
           sudo apt-get -qq update
           sudo apt-get install autoconf libtool libsass-dev
-          wget https://github.com/mozilla/geckodriver/releases/download/v0.29.1/geckodriver-v0.29.1-linux64.tar.gz
+          wget https://github.com/mozilla/geckodriver/releases/download/v0.32.0/geckodriver-v0.32.0-linux64.tar.gz
           mkdir geckodriver
-          tar -xzf geckodriver-v0.29.1-linux64.tar.gz -C geckodriver
+          tar -xzf geckodriver-v0.32.0-linux64.tar.gz -C geckodriver
           export PATH=$PATH:$PWD/geckodriver
 
       - name: Install choosenim
