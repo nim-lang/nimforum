@@ -47,16 +47,16 @@ import browsertests/[scenario1, threads, issue181, categories]
 
 proc main() =
   # Kill any already running instances
-  discard execCmd("killall geckodriver")
-  spawn runProcess("geckodriver -p 4444 --log config")
+  discard execCmd("killall chromedriver")
+  spawn runProcess("chromedriver --port=4444 --log-level=DEBUG")
   defer:
-    discard execCmd("killall geckodriver")
+    discard execCmd("killall chromedriver")
 
   # Create a fresh DB for the tester.
   doAssert(execCmd("nimble testdb") == QuitSuccess)
 
   doAssert(execCmd("nimble -y frontend") == QuitSuccess)
-  echo("Waiting for geckodriver to startup...")
+  echo("Waiting for chromedriver to startup...")
   sleep(5000)
 
   try:

@@ -47,14 +47,14 @@ jobs:
           path: ~/.nimble
           key: ${{ runner.os }}-nimble-${{ hashFiles('*.nimble') }}
 
-      - name: Install geckodriver
+      - name: Install chromedriver
         run: |
           sudo apt-get -qq update
           sudo apt-get install autoconf libtool libsass-dev
-          wget https://github.com/mozilla/geckodriver/releases/download/v0.32.0/geckodriver-v0.32.0-linux64.tar.gz
-          mkdir geckodriver
-          tar -xzf geckodriver-v0.32.0-linux64.tar.gz -C geckodriver
-          export PATH=$PATH:$PWD/geckodriver
+          wget https://chromedriver.storage.googleapis.com/108.0.5359.71/chromedriver_linux64.zip
+          mkdir chromedriver
+          tar -xzf chromedriver_linux64.zip -C chromedriver
+          export PATH=$PATH:$PWD/chromedriver
 
       - name: Install choosenim
         run: |
