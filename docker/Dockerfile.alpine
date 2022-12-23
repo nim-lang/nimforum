@@ -1,0 +1,9 @@
+FROM nimlang/nim:1.6.4-alpine
+
+RUN apk --no-cache add libsass-dev sqlite3 libsass
+
+WORKDIR /app
+COPY . /app
+
+# install dependencies
+RUN nimble install -Y
