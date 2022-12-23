@@ -48,7 +48,7 @@ import browsertests/[scenario1, threads, issue181, categories]
 proc main() =
   # Kill any already running instances
   discard execCmd("killall chromedriver")
-  spawn runProcess("chromedriver --log-level=DEBUG")
+  spawn runProcess("chromedriver --port:9515 --log-level=DEBUG")
   defer:
     discard execCmd("killall chromedriver")
 
