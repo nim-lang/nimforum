@@ -47,14 +47,13 @@ jobs:
           path: ~/.nimble
           key: ${{ runner.os }}-nimble-${{ hashFiles('*.nimble') }}
 
-      - name: Install chromedriver
+      - name: Install tools
         run: |
           sudo apt-get -qq update
           sudo apt-get install autoconf libtool libsass-dev
-          wget https://chromedriver.storage.googleapis.com/108.0.5359.71/chromedriver_linux64.zip
-          mkdir chromedriver
-          unzip chromedriver_linux64.zip -d chromedriver
-          export PATH=$PATH:$PWD/chromedriver
+
+      - name: Install chromedriver
+        uses: nanasess/setup-chromedriver@v1
 
       - name: Install choosenim
         run: |
