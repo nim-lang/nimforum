@@ -26,7 +26,7 @@ jobs:
         run: git submodule update --init --recursive
 
       - name: Setup Chrome
-        run: /
+        run: |
           sudo apt-get -qq update
           sudo apt-get install chromium-browser
 
