@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        firefox: [ '73.0' ]
+        firefox: [ '84.0' ]
         include:
           - nim-version: '1.6.10'
             cache-key: 'stable'
@@ -51,9 +51,9 @@ jobs:
         run: |
           sudo apt-get -qq update
           sudo apt-get install autoconf libtool libsass-dev
-          wget https://github.com/mozilla/geckodriver/releases/download/v0.29.1/geckodriver-v0.29.1-linux64.tar.gz
+          wget https://github.com/mozilla/geckodriver/releases/download/v0.32.0/geckodriver-v0.32.0-linux64.tar.gz
           mkdir geckodriver
-          tar -xzf geckodriver-v0.29.1-linux64.tar.gz -C geckodriver
+          tar -xzf geckodriver-v0.32.0-linux64.tar.gz -C geckodriver
           export PATH=$PATH:$PWD/geckodriver
 
       - name: Install choosenim
