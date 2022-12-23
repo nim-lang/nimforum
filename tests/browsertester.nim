@@ -48,7 +48,7 @@ import browsertests/[scenario1, threads, issue181, categories]
 proc main() =
   # Kill any already running instances
   discard execCmd("killall chromedriver")
-  spawn runProcess("chromedriver --port=4444 --log-level=DEBUG")
+  spawn runProcess("chromedriver --log-level=DEBUG")
   defer:
     discard execCmd("killall chromedriver")
 
@@ -60,7 +60,7 @@ proc main() =
   sleep(5000)
 
   try:
-    let driver = newWebDriver()
+    let driver = newWebDriver(url = "http://localhost:9515")
     let session = driver.createSession(%*{"capabilities": {"alwaysMatch": {"browserName": "chrome", "goog:chromeOptions": {"args": ["--headless", "--no-sandbox", "--disable-dev-shm-usage", "disable-infobars", "--disable-extension"]}}}})
 
     withBackend:
