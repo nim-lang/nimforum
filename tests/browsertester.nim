@@ -1,4 +1,4 @@
-import options, osproc, streams, threadpool, os, strformat, httpclient
+import std/[options, osproc, streams, threadpool, os, strformat, httpclient, json]
 
 import webdriver
 
@@ -61,7 +61,7 @@ proc main() =
 
   try:
     let driver = newWebDriver()
-    let session = driver.createSession()
+    let session = driver.createSession(%*{"capabilities": {"browserName": "chrome"}})
 
     withBackend:
       scenario1.test(session, baseUrl)
