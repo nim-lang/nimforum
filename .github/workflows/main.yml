@@ -26,9 +26,9 @@ jobs:
         run: git submodule update --init --recursive
 
       - name: Setup Chrome
-        uses: browser-actions/setup-chrome@latest
-        with:
-          chrome-version: ${{ matrix.chrome }}
+        run: /
+          sudo apt-get -qq update
+          sudo apt-get install chromium-browser
 
       - name: Get Date
         id: get-date
