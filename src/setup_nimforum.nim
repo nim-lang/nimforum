@@ -386,4 +386,4 @@ when isMainModule:
   else:
     echoHelp()
 
-
+  quit()
