@@ -41,8 +41,7 @@ task testbackend, "Runs the forum backend in test mode":
   exec "nimble c -r --mm:refc -d:skipRateLimitCheck src/forum.nim"
 
 task frontend, "Builds the necessary JS frontend (with CSS)":
-  exec "nimble c -r src/buildcss"
-  exec "nimble js -d:release src/frontend/forum.nim"
+  exec "nimble c -r --mm:refc src/buildcss"
   mkDir "public/js"
   cpFile "src/frontend/forum.js", "public/js/forum.js"
 
