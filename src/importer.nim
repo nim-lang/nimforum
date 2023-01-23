@@ -1,5 +1,9 @@
-import db_sqlite, strutils
-
+import strutils
+when NimMajor >= 1 and NimMinor >= 9:
+  import db_connector/db_sqlite
+else:
+  import std/db_sqlite
+  
 let origFile = "nimforum.db-21-05-18"
 let targetFile = "nimforum-blank.db"
 

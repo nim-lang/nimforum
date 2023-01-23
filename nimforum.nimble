@@ -24,6 +24,9 @@ requires "karax#45bac6b"
 
 requires "webdriver#429933a"
 
+when NimMajor >= 1 and NimMinor >= 9:
+  requires "db_connector >= 0.1.0"
+
 # Tasks
 
 task backend, "Compiles and runs the forum backend":

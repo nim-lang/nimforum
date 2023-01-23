@@ -7,14 +7,19 @@
 #
 import system except Thread
 import
-  os, strutils, times, md5, strtabs, math, db_sqlite,
+  os, strutils, times, md5, strtabs, math,
   jester, asyncdispatch, asyncnet, sequtils,
   parseutils, random, rst, recaptcha, json, re, sugar,
   strformat, logging
 import cgi except setCookie
-import options
+import std/options
 
 import auth, email, utils, buildcss
+
+when NimMajor >= 1 and NimMinor >= 9:
+  import db_connector/db_sqlite
+else:
+  import std/db_sqlite
 
 import frontend/threadlist except User
 import frontend/[
