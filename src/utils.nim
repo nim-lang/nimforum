@@ -173,9 +173,10 @@ proc processMentions(node: XmlNode): XmlNode =
   else:
     return node
 
-proc rstToHtml*(content: string): string =
-  result = rstgen.rstToHtml(content, {roSupportMarkdown},
-                            docConfig)
+proc rstToHtml*(content: string): string {.gcsafe.}=
+  {.cast(gcsafe).}:
+    result = rstgen.rstToHtml(content, {roSupportMarkdown},
+                              docConfig)
   try:
     var node = parseHtml(newStringStream(result))
     # rst.nim parser did not support quotes until Nim 1.7:
