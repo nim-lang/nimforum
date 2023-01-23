@@ -26,18 +26,19 @@ requires "webdriver#429933a"
 
 when NimMajor >= 1 and NimMinor >= 9:
   requires "db_connector >= 0.1.0"
+  requires "smtp >= 0.1.0"
 
 # Tasks
 
 task backend, "Compiles and runs the forum backend":
-  exec "nimble c src/forum.nim"
+  exec "nimble c --mm:refc src/forum.nim"
   exec "./src/forum"
 
 task runbackend, "Runs the forum backend":
   exec "./src/forum"
 
 task testbackend, "Runs the forum backend in test mode":
-  exec "nimble c -r -d:skipRateLimitCheck src/forum.nim"
+  exec "nimble c -r --mm:refc -d:skipRateLimitCheck src/forum.nim"
 
 task frontend, "Builds the necessary JS frontend (with CSS)":
   exec "nimble c -r src/buildcss"
@@ -61,7 +62,7 @@ task blankdb, "Creates a blank DB":
   exec "./src/setup_nimforum --blank"
 
 task test, "Runs tester":
-  exec "nimble c -y src/forum.nim"
+  exec "nimble c -y --mm:refc src/forum.nim"
   exec "nimble c -y -r -d:actionDelayMs=0 tests/browsertester"
 
 task fasttest, "Runs tester without recompiling backend":
