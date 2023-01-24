@@ -42,6 +42,7 @@ task testbackend, "Runs the forum backend in test mode":
 
 task frontend, "Builds the necessary JS frontend (with CSS)":
   exec "nimble c -r --mm:refc src/buildcss"
+  exec "nimble js -d:release src/frontend/forum.nim"
   mkDir "public/js"
   cpFile "src/frontend/forum.js", "public/js/forum.js"
 
