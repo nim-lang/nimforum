@@ -22,7 +22,7 @@ requires "sass#649e0701fa5c"
 
 requires "karax#45bac6b"
 
-requires "webdriver#429933a"
+requires "webdriver#c5e4182"
 
 when NimMajor >= 1 and NimMinor >= 9:
   requires "db_connector >= 0.1.0"
