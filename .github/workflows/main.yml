@@ -68,5 +68,5 @@ jobs:
         run: |
           export PATH=$HOME/.nimble/bin:$PATH
           export MOZ_HEADLESS=1
-          nimble -y install
+          nimble -y --mm:refc install
           nimble -y test
