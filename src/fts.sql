@@ -44,7 +44,7 @@ SELECT
         thread.name AS thread,
         post.id AS post_id,
         CASE what WHEN 1
-            THEN snippet(post_fts, '**', '**', '...', what, -45)
+            THEN snippet(post_fts, ' **', '** ', '...', what, -45)
             ELSE SUBSTR(post_fts.content, 1, 200) END AS content,
         cdate,
         person.id,
