@@ -1620,6 +1620,8 @@ routes:
     ]
     for rowFT in fastRows(db, queryFT, data):
       var content = rowFT[3]
+      content = content.replace("# ", "\\# ")
+        
       try: content = content.rstToHtml() except EParseError: discard
       results.add(
         SearchResult(
