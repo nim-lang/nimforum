@@ -807,6 +807,15 @@ proc updateProfile(
     $rank, email, username
   )
 
+proc escapeMDCharacters(s: string): string =
+  ## Escapes problematic Markdown characters:
+  ## `# ` as it gets interpreted as headline
+  ## `[` as it gets interpreted as startingpoint for a hyperlink
+  const headlineHash = ("# ", "\\# ")
+  const linkBracket = ("[", "\\[")
+  result = s.multireplace(@[headlineHash, linkBracket])
+
+
 include "main.tmpl"
 
 initialise()
@@ -1621,7 +1630,7 @@ routes:
     ]
     for rowFT in fastRows(db, queryFT, data):
       var content = rowFT[3]
-      content = content.replace("# ", "\\# ")
+      content = content.escapeMDCharacters()
         
       try: content = content.rstToHtml() except EParseError: discard
       results.add(
