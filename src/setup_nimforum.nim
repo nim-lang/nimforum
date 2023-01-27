@@ -7,7 +7,12 @@
 #
 # Script to initialise the nimforum.
 
-import strutils, db_sqlite, os, times, json, options, terminal
+import strutils, os, times, json, options, terminal
+
+when NimMajor >= 1 and NimMinor >= 9:
+  import db_connector/db_sqlite
+else:
+  import std/db_sqlite
 
 import auth, frontend/user
 
@@ -381,4 +386,4 @@ when isMainModule:
   else:
     echoHelp()
 
-
+  quit()

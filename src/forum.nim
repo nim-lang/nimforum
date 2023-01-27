@@ -7,14 +7,19 @@
 #
 import system except Thread
 import
-  os, strutils, times, md5, strtabs, math, db_sqlite,
+  os, strutils, times, md5, strtabs, math,
   jester, asyncdispatch, asyncnet, sequtils,
   parseutils, random, rst, recaptcha, json, re, sugar,
   strformat, logging
 import cgi except setCookie
-import options
+import std/options
 
 import auth, email, utils, buildcss
+
+when NimMajor >= 1 and NimMinor >= 9:
+  import db_connector/db_sqlite
+else:
+  import std/db_sqlite
 
 import frontend/threadlist except User
 import frontend/[
@@ -80,22 +85,23 @@ proc getGravatarUrl(email: string, size = 80): string =
 
 # -----------------------------------------------------------------------------
 
-proc validateCaptcha(recaptchaResp, ip: string) {.async.} =
+proc validateCaptcha(recaptchaResp, ip: string) {.async, gcsafe.} =
   # captcha validation:
-  if config.recaptchaSecretKey.len > 0:
-    var verifyFut = captcha.verify(recaptchaResp, ip)
-    yield verifyFut
-    if verifyFut.failed:
-      raise newForumError(
-        "Invalid recaptcha answer", @[]
-      )
+  {.cast(gcsafe).}:
+    if config.recaptchaSecretKey.len > 0:
+      var verifyFut = captcha.verify(recaptchaResp, ip)
+      yield verifyFut
+      if verifyFut.failed:
+        raise newForumError(
+          "Invalid recaptcha answer", @[]
+        )
 
 proc sendResetPassword(
   c: TForumData,
   email: string,
   recaptchaResp: string,
   userIp: string
-) {.async.} =
+) {.async, gcsafe.} =
   # Gather some extra information to determine ident hash.
   let row = db.getRow(
     sql"""
@@ -107,14 +113,15 @@ proc sendResetPassword(
   if row[0] == "":
     raise newForumError("Email or username not found", @["email"])
 
-  if not c.loggedIn:
-    await validateCaptcha(recaptchaResp, userIp)
+  {.cast(gcsafe).}:
+    if not c.loggedIn:
+      await validateCaptcha(recaptchaResp, userIp)
 
-  await sendSecureEmail(
-    mailer,
-    ResetPassword, c.req,
-    row[0], row[1], row[2], row[3]
-  )
+    await sendSecureEmail(
+      mailer,
+      ResetPassword, c.req,
+      row[0], row[1], row[2], row[3]
+    )
 
 proc logout(c: TForumData) =
   const query = sql"delete from session where key = ?"
@@ -175,7 +182,7 @@ proc incrementViews(threadId: int) =
   const query = sql"update thread set views = views + 1 where id = ?"
   exec(db, query, threadId)
 
-proc validateRst(c: TForumData, content: string): bool =
+proc validateRst(c: TForumData, content: string): bool {.gcsafe.}=
   result = true
   try:
     discard rstToHtml(content)
@@ -438,7 +445,7 @@ proc selectThread(threadRow: seq[string], author: User): Thread =
   return thread
 
 proc executeReply(c: TForumData, threadId: int, content: string,
-                  replyingTo: Option[int]): int64 =
+                  replyingTo: Option[int]): int64 {.gcsafe.} =
   # TODO: Refactor TForumData.
   assert c.loggedIn()
 
@@ -553,7 +560,7 @@ proc updateThread(c: TForumData, threadId: string, queryKeys: seq[string], query
 
   exec(db, crud(crUpdate, "thread", queryKeys), queryValues)
 
-proc executeNewThread(c: TForumData, subject, msg, categoryID: string): (int64, int64) =
+proc executeNewThread(c: TForumData, subject, msg, categoryID: string): (int64, int64) {.gcsafe.} =
   const
     query = sql"""
       insert into thread(name, views, modified, category) values (?, 0, DATETIME('now'), ?)
@@ -635,7 +642,7 @@ proc validateEmail(email: string, checkDuplicated: bool) =
       raise newForumError("Email already exists", @["email"])
 
 proc executeRegister(c: TForumData, name, pass, antibot, userIp,
-                     email: string) {.async.} =
+                     email: string) {.async, gcsafe.} =
   ## Registers a new user.
 
   # email validation
@@ -662,9 +669,10 @@ proc executeRegister(c: TForumData, name, pass, antibot, userIp,
   let password = makePassword(pass, salt)
 
   # Send activation email.
-  await sendSecureEmail(
-    mailer, ActivateEmail, c.req, name, password, email, salt
-  )
+  {.cast(gcsafe).}:
+    await sendSecureEmail(
+      mailer, ActivateEmail, c.req, name, password, email, salt
+    )
 
   # Add account to person table
   exec(db, sql"""
@@ -768,7 +776,7 @@ proc executeDeleteUser(c: TForumData, username: string) =
 
 proc updateProfile(
   c: TForumData, username, email: string, rank: Rank
-) {.async.} =
+) {.async, gcsafe.} =
   if c.rank < rank:
     raise newForumError("You cannot set a rank that is higher than yours.")
 
@@ -794,10 +802,11 @@ proc updateProfile(
   if c.rank < Moderator and wasEmailChanged:
     if rank != EmailUnconfirmed:
       raise newForumError("Rank needs a change when setting new email.")
-
-    await sendSecureEmail(
-      mailer, ActivateEmail, c.req, row[0], row[1], email, row[3]
-    )
+    
+    {.cast(gcsafe).}:
+      await sendSecureEmail(
+        mailer, ActivateEmail, c.req, row[0], row[1], email, row[3]
+      )
 
   validateEmail(email, checkDuplicated=wasEmailChanged)
 
@@ -855,9 +864,9 @@ routes:
 
     const threadsQuery =
       """select t.id, t.name, views, strftime('%s', modified), isLocked, isPinned,
-                   c.id, c.name, c.description, c.color,
-                   u.id, u.name, u.email, strftime('%s', u.lastOnline),
-                   strftime('%s', u.previousVisitAt), u.status, u.isDeleted
+                  c.id, c.name, c.description, c.color,
+                  u.id, u.name, u.email, strftime('%s', u.lastOnline),
+                  strftime('%s', u.previousVisitAt), u.status, u.isDeleted
             from thread t, category c, person u
             where t.isDeleted = 0 and category = c.id and $#
                   u.status <> 'Spammer' and u.status <> 'Troll' and
@@ -890,7 +899,7 @@ routes:
 
     const threadsQuery =
       sql"""select t.id, t.name, views, strftime('%s', modified), isLocked, isPinned,
-                   c.id, c.name, c.description, c.color
+                  c.id, c.name, c.description, c.color
             from thread t, category c
             where t.id = ? and isDeleted = 0 and category = c.id;"""
 
@@ -909,9 +918,9 @@ routes:
                   u.id, u.name, u.email, strftime('%s', u.lastOnline),
                   strftime('%s', u.previousVisitAt), u.status,
                   u.isDeleted
-           from post p, person u
-           where u.id = p.author and p.thread = ? and p.isDeleted = 0
-           order by p.id"""
+          from post p, person u
+          where u.id = p.author and p.thread = ? and p.isDeleted = 0
+          order by p.id"""
       )
 
     var list = PostList(
@@ -957,10 +966,10 @@ routes:
     let intIDs = ids.elems.map(x => x.getInt())
     let postsQuery = sql("""
       select p.id, p.content, strftime('%s', p.creation), p.author,
-             p.replyingTo,
-             u.id, u.name, u.email, strftime('%s', u.lastOnline),
-             strftime('%s', u.previousVisitAt), u.status,
-             u.isDeleted
+            p.replyingTo,
+            u.id, u.name, u.email, strftime('%s', u.lastOnline),
+            strftime('%s', u.previousVisitAt), u.status,
+            u.isDeleted
       from post p, person u
       where u.id = p.author and p.id in ($#)
       order by p.id;
@@ -1005,8 +1014,8 @@ routes:
     # TODO: Figure out a better way. This is horrible.
     let creatorSubquery = """
         (select $1 from post p
-         where p.thread = t.id
-         order by p.id asc limit 1)
+        where p.thread = t.id
+        order by p.id asc limit 1)
     """
 
     let threadsFrom = """
@@ -1021,15 +1030,15 @@ routes:
 
     let postsQuery = sql("""
       select p.id, strftime('%s', p.creation),
-             t.name, t.id
+            t.name, t.id
       $1
       order by p.id desc limit 10;
     """ % postsFrom)
 
     let userQuery = sql("""
       select id, name, email, strftime('%s', lastOnline),
-             strftime('%s', previousVisitAt), status, isDeleted,
-             strftime('%s', creation), id
+            strftime('%s', previousVisitAt), status, isDeleted,
+            strftime('%s', creation), id
       from person
       where name = ? and isDeleted = 0
     """)
@@ -1102,8 +1111,9 @@ routes:
   post "/signup":
     createTFD()
     let formData = request.formData
-    if not config.isDev:
-      cond "g-recaptcha-response" in formData
+    {.cast(gcsafe).}:
+      if not config.isDev:
+        cond "g-recaptcha-response" in formData
 
     let username = formData["username"].body
     let password = formData["password"].body
@@ -1158,16 +1168,16 @@ routes:
         ))
       else:
         none[User]()
-
-    let status = UserStatus(
-      user: user,
-      recaptchaSiteKey:
-        if not config.isDev:
-          some(config.recaptchaSiteKey)
-        else:
-          none[string]()
-    )
-    resp $(%status), "application/json"
+    {.cast(gcsafe).}:
+      let status = UserStatus(
+        user: user,
+        recaptchaSiteKey:
+          if not config.isDev:
+            some(config.recaptchaSiteKey)
+          else:
+            none[string]()
+      )
+      resp $(%status), "application/json"
 
   post "/preview":
     createTFD()
@@ -1189,7 +1199,7 @@ routes:
       let err = PostError(
         errorFields: @[],
         message: "Message needs to be valid RST! Error: " &
-                 getCurrentExceptionMsg()
+                getCurrentExceptionMsg()
       )
       resp Http400, $(%err), "application/json"
 
@@ -1479,7 +1489,9 @@ routes:
         ""
 
     if not c.loggedIn():
-      if not config.isDev:
+      {.cast(gcsafe).}:
+        let isProductionEnvironment = not config.isDev
+      if isProductionEnvironment:
         if "g-recaptcha-response" notin formData:
           let err = PostError(
             errorFields: @[],
@@ -1586,12 +1598,13 @@ routes:
     resp Http404, readFile("public/karax.html")
 
   get "/about/license.html":
-    let content = readFile("public/license.rst") %
-      {
-        "hostname": config.hostname,
-        "name": config.name
-      }.newStringTable()
-    resp content.rstToHtml()
+    {.cast(gcsafe).}:
+      let content = readFile("public/license.rst") %
+        {
+          "hostname": config.hostname,
+          "name": config.name
+        }.newStringTable()
+      resp content.rstToHtml()
 
   get "/about/rst.html":
     let content = readFile("public/rst.rst")
@@ -1599,11 +1612,13 @@ routes:
 
   get "/threadActivity.xml":
     createTFD()
-    resp genThreadsRSS(c), "application/atom+xml"
+    {.cast(gcsafe).}:
+      resp genThreadsRSS(c), "application/atom+xml"
 
   get "/postActivity.xml":
     createTFD()
-    resp genPostsRSS(c), "application/atom+xml"
+    {.cast(gcsafe).}:
+      resp genPostsRSS(c), "application/atom+xml"
 
   get "/search.json":
     cond "q" in request.params
@@ -1637,4 +1652,5 @@ routes:
 
   get re"/(.*)":
     cond request.matches[0].splitFile.ext == ""
-    resp karaxHtml
+    {.cast(gcsafe).}:
+      resp karaxHtml
