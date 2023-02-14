@@ -320,6 +320,9 @@ These can be changed later in the generated forum.json file.
     dbPath
   )
 
+  echo("Creating public/robots.txt")
+  writeFile(getAppDir() / "public", "Sitemap: " & hostname & "sitemap.xml")
+
   echo("Setup complete!")
 
 proc echoHelp() =

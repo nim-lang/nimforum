@@ -14,7 +14,7 @@ import
 import cgi except setCookie
 import std/options
 
-import auth, email, utils, buildcss
+import auth, email, utils, buildcss, sitemap
 
 when NimMajor >= 1 and NimMinor >= 9:
   import db_connector/db_sqlite
@@ -50,6 +50,7 @@ var
   config: Config
   captcha: ReCaptcha
   mailer: Mailer
+  sitemapGenerator: SitemapGenerator
   karaxHtml: string
 
 proc init(c: TForumData) =
@@ -253,6 +254,13 @@ proc verifyIdentHash(
   if newIdent != ident:
     raise newForumError("Invalid ident hash")
 
+proc periodicallyCreateSitemap() {.async.} =
+  while true:
+    info "Regenerate sitemap"
+    sitemapGenerator.generate()
+    await sleepAsync(1000 * 60 * 60 * 24) # One day
+
+
 proc initialise() =
   randomize()
 
@@ -270,6 +278,10 @@ proc initialise() =
   isFTSAvailable = db.getAllRows(sql("SELECT name FROM sqlite_master WHERE " &
       "type='table' AND name='post_fts'")).len == 1
 
+  sitemapGenerator = newSitemapGenerator(db, config.hostname)
+  info "Generate sitemap on start"
+  sitemapGenerator.generate()
+  asyncCheck periodicallyCreateSitemap()
   buildCSS(config)
 
   # Read karax.html and set its properties.
@@ -802,7 +814,7 @@ proc updateProfile(
   if c.rank < Moderator and wasEmailChanged:
     if rank != EmailUnconfirmed:
       raise newForumError("Rank needs a change when setting new email.")
-    
+
     {.cast(gcsafe).}:
       await sendSecureEmail(
         mailer, ActivateEmail, c.req, row[0], row[1], email, row[3]
