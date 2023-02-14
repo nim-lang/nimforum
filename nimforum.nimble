@@ -23,7 +23,7 @@ requires "sass#649e0701fa5c"
 requires "karax#45bac6b"
 
 requires "webdriver#c5e4182"
-requires "https://github.com/enthus1ast/nimSimpleSitemap.git#d64c4a6"
+requires "https://github.com/enthus1ast/nimSimpleSitemap.git#f62730a"
 when NimMajor >= 1 and NimMinor >= 9:
   requires "db_connector >= 0.1.0"
   requires "smtp >= 0.1.0"
