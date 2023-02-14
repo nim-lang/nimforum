@@ -15,8 +15,6 @@ proc newSitemapGenerator*(dbconn: DbConn, hostname: string): SitemapGenerator =
 proc generate*(sg: SitemapGenerator) =
   ## Generates the xml sitemap(s) creates them in `getAppDir() / "public"`
   var urlDates: seq[UrlDate] = @[]
-  # for row in sg.dbconn.rows(sql"select id, name, modified from thread"):
-    # let absurl = sg.hostname / "t" / row[0] / row[1]
   for row in sg.dbconn.rows(sql"select id, modified from thread"):
     let absurl = sg.hostname / "t" / row[0]
     let pdate = row[1].parse("yyyy-MM-dd H':'m':'s")
