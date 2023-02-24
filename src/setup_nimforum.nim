@@ -7,7 +7,7 @@
 #
 # Script to initialise the nimforum.
 
-import strutils, os, times, json, options, terminal
+import strutils, os, times, json, options, terminal, uri
 
 when NimMajor >= 1 and NimMinor >= 9:
   import db_connector/db_sqlite
@@ -319,6 +319,9 @@ These can be changed later in the generated forum.json file.
     admin=(adminUser, adminPass, adminEmail),
     dbPath
   )
+
+  echo("Creating public/robots.txt")
+  writeFile("public" / "robots.txt", "Sitemap: " & $(parseUri(hostname) / "sitemap.xml"))
 
   echo("Setup complete!")
 
