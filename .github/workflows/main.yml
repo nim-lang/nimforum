@@ -12,16 +12,16 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  test_stable:
+  test_stable_and_devel:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         chrome: [ 'stable' ]
+        nim-version: ['stable', 'devel']
         include:
-          - nim-version: '1.6.10'
-            cache-key: 'stable'
+          - cache-key: 'stable'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Checkout submodules
         run: git submodule update --init --recursive
 
@@ -67,5 +67,5 @@ jobs:
         run: |
           export PATH=$HOME/.nimble/bin:$PATH
           export MOZ_HEADLESS=1
-          nimble -y install
+          nimble -y --mm:refc install
           nimble -y test
