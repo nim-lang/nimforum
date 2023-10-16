@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         chrome: [ 'stable' ]
-        nim-version: ['1.6.10', 'devel']
+        nim-version: ['stable', 'devel']
         include:
           - cache-key: 'stable'
     steps:
