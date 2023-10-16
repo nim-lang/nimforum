@@ -24,7 +24,7 @@ requires "karax#45bac6b"
 
 requires "webdriver#c5e4182"
 
-when NimMajor >= 1 and NimMinor >= 9:
+when NimMajor > 1:
   requires "db_connector >= 0.1.0"
   requires "smtp >= 0.1.0"
 

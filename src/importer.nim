@@ -1,5 +1,5 @@
 import strutils
-when NimMajor >= 1 and NimMinor >= 9:
+when NimMajor > 1:
   import db_connector/db_sqlite
 else:
   import std/db_sqlite
