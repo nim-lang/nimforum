@@ -816,6 +816,15 @@ proc updateProfile(
     $rank, email, username
   )
 
+proc escapeMDCharacters(s: string): string =
+  ## Escapes problematic Markdown characters:
+  ## `# ` as it gets interpreted as headline
+  ## `[` as it gets interpreted as startingpoint for a hyperlink
+  const headlineHash = ("# ", "\\# ")
+  const linkBracket = ("[", "\\[")
+  result = s.multireplace(@[headlineHash, linkBracket])
+
+
 include "main.tmpl"
 
 initialise()
@@ -1622,19 +1631,22 @@ routes:
 
   get "/search.json":
     cond "q" in request.params
-    let q = @"q"
-    cond q.len > 0
+    let searchTerm: string = @"q"
+    cond searchTerm.len > 0
 
     var results: seq[SearchResult] = @[]
 
     const queryFT = "fts.sql".slurp.sql
-    const count = 40
+    const count: string = $40
+    const offset: string = $0
     let data = [
-      q, q, $count, $0, q,
-      q, $count, $0, q
+      searchTerm, searchTerm, count, offset, searchTerm,
+      searchTerm, count, offset, searchTerm
     ]
     for rowFT in fastRows(db, queryFT, data):
       var content = rowFT[3]
+      content = content.escapeMDCharacters()
+        
       try: content = content.rstToHtml() except EParseError: discard
       results.add(
         SearchResult(
