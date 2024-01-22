@@ -36,13 +36,13 @@ jobs:
         shell: bash
 
       - name: Cache choosenim
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.choosenim
           key: ${{ runner.os }}-choosenim-${{ matrix.cache-key }}
 
       - name: Cache nimble
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.nimble
           key: ${{ runner.os }}-nimble-${{ hashFiles('*.nimble') }}
