@@ -1,6 +1,8 @@
-import asyncdispatch, smtp, strutils, json, os, rst, rstgen, xmltree, strtabs,
+import asyncdispatch, smtp, strutils, json, os, xmltree, strtabs,
   htmlparser, streams, parseutils, options, logging
 from times import getTime, utc, format
+
+import packages/docutils/[rst, rstgen]
 
 # Used to be:
 # {'A'..'Z', 'a'..'z', '0'..'9', '_', '\128'..'\255'}

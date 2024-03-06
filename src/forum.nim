@@ -10,7 +10,7 @@ import
   os, strutils, times, md5, strtabs, math,
   jester, asyncdispatch, asyncnet, sequtils,
   parseutils, random, rst, recaptcha, json, re, sugar,
-  strformat, logging
+  strformat, logging, xmltree
 import cgi except setCookie
 import std/options
 
@@ -1635,7 +1635,10 @@ routes:
     ]
     for rowFT in fastRows(db, queryFT, data):
       var content = rowFT[3]
-      try: content = content.rstToHtml() except EParseError: discard
+      try: content = content.rstToHtml()
+      except EParseError:
+        warn("Could not parse rst html.")
+        content = xmltree.escape(content) # bug #362 escapes content
       results.add(
         SearchResult(
           kind: SearchResultKind(rowFT[^1].parseInt()),
