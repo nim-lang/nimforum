@@ -1634,18 +1634,19 @@ routes:
       q, $count, $0, q
     ]
     for rowFT in fastRows(db, queryFT, data):
-      var content = rowFT[3]
-      try: content = content.rstToHtml()
+      let content = rowFT[3]
+      var outcome = ""
+      try: outcome = content.rstToHtml()
       except EParseError:
         warn("Could not parse rst html.")
-        content = xmltree.escape(content) # bug #362 escapes content
+        outcome = xmltree.escape(content) # bug #362 escapes content
       results.add(
         SearchResult(
           kind: SearchResultKind(rowFT[^1].parseInt()),
           threadId: rowFT[0].parseInt(),
           threadTitle: rowFT[1],
           postId: rowFT[2].parseInt(),
-          postContent: content,
+          postContent: outcome,
           creation: rowFT[4].parseInt(),
           author: selectUser(rowFT[5 .. 11]),
         )
