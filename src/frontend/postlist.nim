@@ -227,6 +227,7 @@ when defined(js):
       loggedIn and currentUser.get().name == post.author.name
     let currentAdmin =
       currentUser.isSome() and currentUser.get().rank == Admin
+    let isArchived = (getTime() - post.info.creation).inHours >= 2
 
     # Don't show buttons if the post is being edited.
     if state.editing.isSome() and state.editing.get() == post:
@@ -234,7 +235,7 @@ when defined(js):
 
     result = buildHtml():
       tdiv(class="post-buttons"):
-        if authoredByUser or currentAdmin:
+        if (authoredByUser and not isArchived) or currentAdmin:
           tdiv(class="edit-button", onClick=(e: Event, n: VNode) =>
                onEditClick(e, n, post)):
             button(class="btn"):
