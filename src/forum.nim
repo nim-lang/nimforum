@@ -26,7 +26,8 @@ import frontend/[
   category, postlist, error, header, post, profile, user, karaxutils, search
 ]
 
-from htmlgen import tr, th, td, span, input
+from htmlgen import tr, th, td, span, input, `div`, pre
+from xmltree import escape
 
 when not declared(roSandboxDisabled):
   {.error: "Your Nim version is vulnerable to a CVE. Upgrade it.".}
@@ -314,7 +315,10 @@ proc selectPost(postRow: seq[string], skippedPosts: seq[int],
     try:
       postRow[1].rstToHtml()
     except EParseError:
-      span(class="text-error", "Couldn't render post #$1." % postRow[0])
+      `div`(
+        span(class="text-error", "Couldn't render post #$1, raw RST below." % postRow[0]),
+        pre(xmltree.escape(postRow[1]))
+      )
 
   return Post(
     id: postRow[0].parseInt,
@@ -369,7 +373,10 @@ proc selectHistory(postId: int): seq[PostInfo] =
         try:
           row[1].rstToHtml()
         except EParseError:
-          span(class="text-error", "Couldn't render historic post in #$1." % $postId)
+          `div`(
+            span(class="text-error", "Couldn't render historic post #$1, raw RST below." % $postId),
+            pre(xmltree.escape(row[1]))
+          )
     ))
 
 proc selectLikes(postId: int): seq[User] =
