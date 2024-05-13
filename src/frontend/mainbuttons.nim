@@ -27,7 +27,7 @@ when defined(js):
     result.categoryPicker = newCategoryPicker(
       onCategoryChange = proc (oldCategory, newCategory: Category) =
         onSelectedCategoryChanged(oldCategory, newCategory)
-        result.onCategoryChange(oldCategory, newCategory)
+        onCategoryChange(oldCategory, newCategory)
     )
 
   proc render*(state: MainButtons, currentUser: Option[User], categoryId = none(int)): VNode =

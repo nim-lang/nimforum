@@ -3,7 +3,7 @@ import strformat, times, options, json, httpcore, sugar
 import category, user
 
 type
-  Thread* = object
+  Thread* = ref object
     id*: int
     topic*: string
     category*: Category

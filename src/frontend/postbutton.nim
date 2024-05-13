@@ -155,11 +155,11 @@ when defined(js):
     LockButton()
 
   proc onPost(httpStatus: int, response: kstring, state: LockButton,
-              thread: var Thread) =
+              thread: Thread) =
     postFinished:
       thread.isLocked = not thread.isLocked
 
-  proc onLockClick(ev: Event, n: VNode, state: LockButton, thread: var Thread) =
+  proc onLockClick(ev: Event, n: VNode, state: LockButton, thread: Thread) =
     if state.loading: return
 
     state.loading = true
@@ -179,7 +179,7 @@ when defined(js):
 
     ev.preventDefault()
 
-  proc render*(state: LockButton, thread: var Thread,
+  proc render*(state: LockButton, thread: Thread,
                currentUser: Option[User]): VNode =
     if currentUser.isNone() or
        currentUser.get().rank < Moderator:
@@ -212,11 +212,11 @@ when defined(js):
     PinButton()
 
   proc onPost(httpStatus: int, response: kstring, state: PinButton,
-              thread: var Thread) =
+              thread: Thread) =
     postFinished:
       thread.isPinned = not thread.isPinned
 
-  proc onPinClick(ev: Event, n: VNode, state: PinButton, thread: var Thread) =
+  proc onPinClick(ev: Event, n: VNode, state: PinButton, thread: Thread) =
     if state.loading: return
 
     state.loading = true
@@ -235,7 +235,7 @@ when defined(js):
  
     ev.preventDefault()
 
-  proc render*(state: PinButton, thread: var Thread,
+  proc render*(state: PinButton, thread: Thread,
               currentUser: Option[User]): VNode =
     if currentUser.isNone() or
        currentUser.get().rank < Moderator:
