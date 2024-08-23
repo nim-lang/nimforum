@@ -63,7 +63,7 @@ ${xmlEncode(rstToHtml(!postContent))}</content>
 #    strftime('%Y-%m-%dT%H:%M:%SZ', A.creation),
 #    A.creation, COUNT(C.id)
 #    FROM post AS A, person AS B, post AS C, thread AS T
-#    WHERE NOT T.isDeleted AND A.author = B.id AND A.thread = C.thread AND C.id <= A.id
+#    WHERE NOT T.isDeleted AND NOT A.isDeleted AND A.author = B.id AND A.thread = C.thread AND C.id <= A.id
 #          AND T.id = A.thread
 #    GROUP BY A.id
 #    ORDER BY A.creation DESC LIMIT 10"""
