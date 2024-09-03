@@ -1,5 +1,5 @@
 # Package
-version       = "2.4.0"
+version       = "2.5.0"
 author        = "Dominik Picheta"
 description   = "The Nim forum"
 license       = "MIT"
