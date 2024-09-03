@@ -1,6 +1,8 @@
-import asyncdispatch, smtp, strutils, json, os, rst, rstgen, xmltree, strtabs,
+import asyncdispatch, smtp, strutils, json, os, xmltree, strtabs,
   htmlparser, streams, parseutils, options, logging
 from times import getTime, utc, format
+
+import packages/docutils/[rst, rstgen]
 
 # Used to be:
 # {'A'..'Z', 'a'..'z', '0'..'9', '_', '\128'..'\255'}
@@ -173,9 +175,10 @@ proc processMentions(node: XmlNode): XmlNode =
   else:
     return node
 
-proc rstToHtml*(content: string): string =
-  result = rstgen.rstToHtml(content, {roSupportMarkdown},
-                            docConfig)
+proc rstToHtml*(content: string): string {.gcsafe.}=
+  {.cast(gcsafe).}:
+    result = rstgen.rstToHtml(content, {roSupportMarkdown},
+                              docConfig)
   try:
     var node = parseHtml(newStringStream(result))
     # rst.nim parser did not support quotes until Nim 1.7:
