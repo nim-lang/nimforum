@@ -1,4 +1,4 @@
-import options, osproc, streams, threadpool, os, strformat, httpclient
+import std/[options, osproc, streams, threadpool, os, strformat, httpclient, json]
 
 import webdriver
 
@@ -47,21 +47,21 @@ import browsertests/[scenario1, threads, issue181, categories]
 
 proc main() =
   # Kill any already running instances
-  discard execCmd("killall geckodriver")
-  spawn runProcess("geckodriver -p 4444 --log config")
+  discard execCmd("killall chromedriver")
+  spawn runProcess("chromedriver --port:9515 --log-level=DEBUG")
   defer:
-    discard execCmd("killall geckodriver")
+    discard execCmd("killall chromedriver")
 
   # Create a fresh DB for the tester.
   doAssert(execCmd("nimble testdb") == QuitSuccess)
 
   doAssert(execCmd("nimble -y frontend") == QuitSuccess)
-  echo("Waiting for geckodriver to startup...")
+  echo("Waiting for chromedriver to startup...")
   sleep(5000)
 
   try:
-    let driver = newWebDriver()
-    let session = driver.createSession()
+    let driver = newWebDriver(url = "http://localhost:9515")
+    let session = driver.createSession(%*{"capabilities": {"alwaysMatch": {"browserName": "chrome", "goog:chromeOptions": {"args": ["--headless", "--no-sandbox", "--disable-dev-shm-usage", "disable-infobars", "--disable-extension"]}}}})
 
     withBackend:
       scenario1.test(session, baseUrl)
