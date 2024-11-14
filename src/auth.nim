@@ -3,8 +3,9 @@ import md5, std/sysrand
 import bcrypt, hmac
 
 proc devRandomSalt(length = 128): string =
+  result = ""
   for i in urandom(length):
-    if ord(i) >= 32 and ord(i) <= 126:
+    if i >= 32 and i <= 126:
       result.add(char(i))
   return result
 
@@ -12,7 +13,7 @@ proc makeSalt*(length = 128): string =
   ## Creates a salt using a cryptographically secure random number generator.
   ##
   ## Ensures that the resulting salt contains no ``\0``.
-  
+  result = ""
   for ch in devRandomSalt(length):
     case ch:
     of '\0': continue
