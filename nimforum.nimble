@@ -30,8 +30,15 @@ when NimMajor > 1:
 
 # Tasks
 
+var
+  commit = ""
+  commitCmd = gorgeEx("git rev-parse HEAD^")
+
+if commitCmd[1] == 0:
+  commit = commitCmd[0]
+
 task backend, "Compiles and runs the forum backend":
-  exec "nimble c --mm:refc src/forum.nim"
+  exec "nimble c -d:Commit=\"" & commit & "\" -d:Version=\"" & version & "\" --mm:refc src/forum.nim"
   exec "./src/forum"
 
 task runbackend, "Runs the forum backend":
@@ -42,7 +49,7 @@ task testbackend, "Runs the forum backend in test mode":
 
 task frontend, "Builds the necessary JS frontend (with CSS)":
   exec "nimble c -r --mm:refc src/buildcss"
-  exec "nimble js -d:release src/frontend/forum.nim"
+  exec "nimble js -d:Commit=\"" & commit & "\" -d:Version=\"" & version & "\" -d:release src/frontend/forum.nim"
   mkDir "public/js"
   cpFile "src/frontend/forum.js", "public/js/forum.js"
 

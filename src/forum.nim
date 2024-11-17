@@ -45,6 +45,12 @@ type
     userid: string
     config: Config
 
+const
+  # These are supplied by nimble at compile-time
+  # Admittedly, it's a bit hacky but it'll do.
+  Version* {.strdefine.}: string = "0.0.0"
+  Commit* {.strdefine.}: string = ""
+
 var
   db: DbConn
   isFTSAvailable: bool
@@ -278,6 +284,8 @@ proc initialise() =
     {
       "title": config.title,
       "timestamp": encodeUrl(CompileDate & CompileTime),
+      "version": Version,
+      "commit": Commit,
       "ga": config.ga
     }.newStringTable()
 
