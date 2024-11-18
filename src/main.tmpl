@@ -2,13 +2,6 @@
 #template `!`(idx: untyped): untyped =
 #  row[idx]
 #end template
-#proc genRSSHeaders(c: TForumData): string =
-#  result = ""
-<link href="${c.req.makeUri("/threadActivity.xml")}" title="Thread activity"
-  type="application/atom+xml" rel="alternate">
-<link href="${c.req.makeUri("/postActivity.xml")}" title="Post activity"
-  type="application/atom+xml" rel="alternate">
-#end proc
 #
 #proc genThreadsRSS(c: TForumData): string =
 #  result = ""
@@ -16,7 +9,7 @@
 #    strftime('%Y-%m-%dT%H:%M:%SZ', (A.modified)),
 #    COUNT(B.id), C.name, B.content, B.id
 #    FROM thread AS A, post AS B, person AS C
-#    WHERE A.id = b.thread AND B.author = C.id
+#    WHERE NOT A.isDeleted AND A.id = b.thread AND B.author = C.id
 #    GROUP BY B.thread
 #    ORDER BY modified DESC LIMIT ?"""
 #  const threadId = 0
@@ -63,7 +56,7 @@ ${xmlEncode(rstToHtml(!postContent))}</content>
 #    strftime('%Y-%m-%dT%H:%M:%SZ', A.creation),
 #    A.creation, COUNT(C.id)
 #    FROM post AS A, person AS B, post AS C, thread AS T
-#    WHERE A.author = B.id AND A.thread = C.thread AND C.id <= A.id
+#    WHERE NOT T.isDeleted AND NOT A.isDeleted AND A.author = B.id AND A.thread = C.thread AND C.id <= A.id
 #          AND T.id = A.thread
 #    GROUP BY A.id
 #    ORDER BY A.creation DESC LIMIT 10"""
