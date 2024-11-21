@@ -39,7 +39,8 @@ when defined(js):
                   kstring"0.25rem solid #" & category.color)
           ))
           span(class="category-name"):
-            text category.name
+            a(href=makeUri("/c/" & $category.id)):
+              text category.name
           if not compact:
             span(class="topic-count"):
               text "× " & $category.numTopics
