@@ -26,9 +26,9 @@ jobs:
         run: git submodule update --init --recursive
 
       - name: Setup Chrome
-        uses: browser-actions/setup-chrome@latest
-        with:
-          chrome-version: ${{ matrix.chrome }}
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get install chromium-browser
 
       - name: Get Date
         id: get-date
@@ -47,14 +47,13 @@ jobs:
           path: ~/.nimble
           key: ${{ runner.os }}-nimble-${{ hashFiles('*.nimble') }}
 
-      - name: Install geckodriver
+      - name: Install tools
         run: |
           sudo apt-get -qq update
-          sudo apt-get install autoconf libtool libsass-dev
-          wget https://github.com/mozilla/geckodriver/releases/download/v0.32.0/geckodriver-v0.32.0-linux64.tar.gz
-          mkdir geckodriver
-          tar -xzf geckodriver-v0.32.0-linux64.tar.gz -C geckodriver
-          export PATH=$PATH:$PWD/geckodriver
+          sudo apt-get install autoconf libtool libsass-dev xvfb
+
+      - name: Install chromedriver
+        uses: nanasess/setup-chromedriver@v2
 
       - name: Install choosenim
         run: |
