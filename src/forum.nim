@@ -45,11 +45,6 @@ type
     userid: string
     config: Config
 
-const
-  # These are supplied by nimble at compile-time
-  # Admittedly, it's a bit hacky but it'll do.
-  Version* {.strdefine.}: string = "0.0.0"
-  Commit* {.strdefine.}: string = ""
 
 var
   db: DbConn
@@ -280,12 +275,15 @@ proc initialise() =
   buildCSS(config)
 
   # Read karax.html and set its properties.
-  karaxHtml = readFile("public/karax.html") %
+  when defined(versioned):
+    karaxHtml = readFile("public/karax.ver.html")
+  else:
+    karaxHtml = readFile("public/karax.html")
+
+  karaxHtml = karaxHtml %
     {
       "title": config.title,
       "timestamp": encodeUrl(CompileDate & CompileTime),
-      "version": Version,
-      "commit": Commit,
       "ga": config.ga
     }.newStringTable()
 

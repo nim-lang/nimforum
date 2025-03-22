@@ -12,6 +12,7 @@ nimcache/
 forum
 createdb
 editdb
+embedinfo
 
 .vscode
 forum.json*
@@ -21,3 +22,4 @@ buildcss
 nimforum.css
 
 /src/frontend/forum.js
+public/karax.ver.html
