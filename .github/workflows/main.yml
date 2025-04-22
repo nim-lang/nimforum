@@ -50,7 +50,7 @@ jobs:
       - name: Install geckodriver
         run: |
           sudo apt-get -qq update
-          sudo apt-get install autoconf libtool libsass-dev
+          sudo apt-get install autoconf libtool libsass-dev libpcre3-dev
           wget https://github.com/mozilla/geckodriver/releases/download/v0.32.0/geckodriver-v0.32.0-linux64.tar.gz
           mkdir geckodriver
           tar -xzf geckodriver-v0.32.0-linux64.tar.gz -C geckodriver
