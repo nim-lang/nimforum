@@ -31,7 +31,19 @@ when NimMajor > 1:
 # Tasks
 
 task backend, "Compiles and runs the forum backend":
-  exec "nimble c --mm:refc src/forum.nim"
+  when defined(embedInfo):
+    exec "nimble c src/embedinfo"
+
+    let commit = gorgeEx("git rev-parse HEAD^")
+    if commit[1] == 0:
+      exec "./src/embedinfo " & version & " " & commit[0]
+    else:
+      exec "./src/embedinfo " & version
+    
+    # Tell nimforum to use karax.ver.html
+    exec "nimble c -d:versioned --mm:refc src/forum.nim"
+  else:
+    exec "nimble c --mm:refc src/forum.nim"
   exec "./src/forum"
 
 task runbackend, "Runs the forum backend":

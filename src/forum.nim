@@ -45,6 +45,7 @@ type
     userid: string
     config: Config
 
+
 var
   db: DbConn
   isFTSAvailable: bool
@@ -274,7 +275,12 @@ proc initialise() =
   buildCSS(config)
 
   # Read karax.html and set its properties.
-  karaxHtml = readFile("public/karax.html") %
+  when defined(versioned):
+    karaxHtml = readFile("public/karax.ver.html")
+  else:
+    karaxHtml = readFile("public/karax.html")
+
+  karaxHtml = karaxHtml %
     {
       "title": config.title,
       "timestamp": encodeUrl(CompileDate & CompileTime),
