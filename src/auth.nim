@@ -1,41 +1,25 @@
-import random, md5
+import md5, std/sysrand
 
 import bcrypt, hmac
 
-proc randomSalt(): string =
+proc devRandomSalt(length = 128): string =
   result = ""
-  for i in 0..127:
-    var r = rand(225)
-    if r >= 32 and r <= 126:
-      result.add(chr(rand(225)))
+  for i in urandom(length):
+    if i >= 32 and i <= 126:
+      result.add(char(i))
+  return result
 
-proc devRandomSalt(): string =
-  when defined(posix):
-    result = ""
-    var f = open("/dev/urandom")
-    var randomBytes: array[0..127, char]
-    discard f.readBuffer(addr(randomBytes), 128)
-    for i in 0..127:
-      if ord(randomBytes[i]) >= 32 and ord(randomBytes[i]) <= 126:
-        result.add(randomBytes[i])
-    f.close()
-  else:
-    result = randomSalt()
-
-proc makeSalt*(): string =
+proc makeSalt*(length = 128): string =
   ## Creates a salt using a cryptographically secure random number generator.
   ##
   ## Ensures that the resulting salt contains no ``\0``.
-  try:
-    result = devRandomSalt()
-  except IOError:
-    result = randomSalt()
+  result = ""
+  for ch in devRandomSalt(length):
+    case ch:
+    of '\0': continue
+    else: result.add(ch)
 
-  var newResult = ""
-  for i in 0 ..< result.len:
-    if result[i] != '\0':
-      newResult.add result[i]
-  return newResult
+  return result
 
 proc makeSessionKey*(): string =
   ## Creates a random key to be used to authorize a session.
