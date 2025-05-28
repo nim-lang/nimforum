@@ -123,7 +123,7 @@ proc initialiseDb(admin: tuple[username, password, email: string],
 
   # Create some test data for development
   if isTest or isDev:
-    for rank in Spammer..Moderator:
+    for rank in AutoSpammer..Moderator:
       let rankLower = toLowerAscii($rank)
       let user = (username: $rankLower,
                   password: $rankLower,
