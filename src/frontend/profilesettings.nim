@@ -100,7 +100,7 @@ when defined(js):
           text "Your rank determines the actions you can perform " &
                "on the forum."
         case state.rank:
-        of Spammer, Troll:
+        of bannedRanks:
           p(class="form-input-hint text-warning"):
             text "Your account was banned."
         of EmailUnconfirmed:

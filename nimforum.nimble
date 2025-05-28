@@ -19,6 +19,7 @@ requires "bcrypt#440c5676ff6"
 requires "hmac#9c61ebe2fd134cf97"
 requires "recaptcha#d06488e"
 requires "sass#649e0701fa5c"
+requires "checksums#f8f6bd3"
 
 requires "karax#45bac6b"
 

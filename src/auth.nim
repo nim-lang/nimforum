@@ -1,4 +1,5 @@
-import md5, std/sysrand
+import std/sysrand
+import checksums/md5
 
 import bcrypt, hmac
 
