@@ -48,6 +48,8 @@ type
     userid: string
     config: Config
 
+const supportUrl {.strdefine.} = ""
+
 var
   db: DbConn
   isFTSAvailable: bool
@@ -617,7 +619,7 @@ proc executeNewThread(c: TForumData, subject, msg, categoryID: string): (int64, 
             sql"update person set status = ? where name = ?;",
             AutoSpammer, c.userName
           )
-          raise newForumError("Your account has been marked by https://www.stopforumspam.com/. If you believe this is a mistake please contact a moderator.")
+          raise newForumError("Your account has been marked by https://www.stopforumspam.com/. If you believe this is a mistake please contact a moderator. " & supportUrl)
 
   result[0] = tryInsertID(db, query, subject, categoryID).int
   if result[0] < 0:
