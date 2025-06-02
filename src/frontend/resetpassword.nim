@@ -1,5 +1,5 @@
 when defined(js):
-  import sugar, httpcore, options, json
+  import sugar, httpcore, options, json, uri
   import dom except Event, KeyboardEvent
   import jsffi except `&`
 
@@ -36,7 +36,7 @@ when defined(js):
     state.loading = true
     state.error = none[PostError]()
 
-    let uri = makeUri("resetPassword", ("newPassword", $state.newPassword))
+    let uri = makeUri("resetPassword", ("newPassword", encodeUrl($state.newPassword)))
     ajaxPost(uri, @[], "",
              (s: int, r: kstring) => onPost(s, r, state))
 
