@@ -274,11 +274,17 @@ proc initialise() =
   buildCSS(config)
 
   # Read karax.html and set its properties.
+  when defined(embedVersion):
+    const
+      NimblePkgVersion {.strdefine.} = ""
+      GitHash = staticExec("git rev-parse --short HEAD || echo \"\"")
+      Version = NimblePkgVersion & (if GitHash.len != 0: "-" & GitHash else: "")
   karaxHtml = readFile("public/karax.html") %
     {
       "title": config.title,
       "timestamp": encodeUrl(CompileDate & CompileTime),
-      "ga": config.ga
+      "ga": config.ga,
+      "generator": when defined(embedVersion): "Nimforum " & Version else: "Nimforum"
     }.newStringTable()
 
 
