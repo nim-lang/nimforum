@@ -610,7 +610,7 @@ proc executeNewThread(c: TForumData, subject, msg, categoryID: string): (int64, 
     if c.rank == Moderated:
       let
         client = newHttpClient()
-        resp = client.get("http://api.stopforumspam.org/api?emailhash=" & c.email.getMd5 & "&json")
+        resp = client.get("https://api.stopforumspam.org/api?emailhash=" & c.email.getMd5 & "&json")
       if resp.code == Http200:
         let jresp = resp.body.parseJson
         if jresp["success"].num == 1 and jresp["emailhash"].hasKey("confidence") and jresp["emailhash"]["confidence"].fnum > 0.0:
@@ -897,7 +897,7 @@ routes:
             from thread t, category c, person u
             where t.isDeleted = 0 and category = c.id and $#
                   u.status <> 'Spammer' and u.status <> 'Troll' and
-                  u.status <> 'AutoSpammer' and u.status <> 'Banned' and
+                  u.status <> 'AutoSpammer' and
                   u.id = (
                     select p.author from post p
                     where p.thread = t.id
