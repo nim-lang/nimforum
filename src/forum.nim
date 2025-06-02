@@ -7,12 +7,13 @@
 #
 import system except Thread
 import
-  os, strutils, times, md5, strtabs, math,
+  os, strutils, times, strtabs, math,
   jester, asyncdispatch, asyncnet, sequtils,
   parseutils, random, rst, recaptcha, json, re, sugar,
   strformat, logging, xmltree
 import cgi except setCookie
 import std/options
+import checksums/md5
 
 import auth, email, utils, buildcss
 
@@ -20,6 +21,8 @@ when NimMajor > 1:
   import db_connector/db_sqlite
 else:
   import std/db_sqlite
+when not defined(skipStopForumSpamCheck):
+  import httpclient
 
 import frontend/threadlist except User
 import frontend/[
@@ -44,6 +47,8 @@ type
     req: Request
     userid: string
     config: Config
+
+const supportUrl {.strdefine.} = ""
 
 var
   db: DbConn
@@ -282,8 +287,8 @@ proc initialise() =
     }.newStringTable()
 
 
-template createTFD() =
-  var c {.inject.}: TForumData
+template createTFD() {.dirty.} =
+  var c: TForumData
   new(c)
   init(c)
   c.req = request
@@ -601,6 +606,21 @@ proc executeNewThread(c: TForumData, subject, msg, categoryID: string): (int64, 
     if rateLimitCheck(c):
       raise newForumError("You're posting too fast!")
 
+  when not defined(skipStopForumSpamCheck):
+    if c.rank == Moderated:
+      let
+        client = newHttpClient()
+        resp = client.get("https://api.stopforumspam.org/api?emailhash=" & c.email.getMd5 & "&json")
+      if resp.code == Http200:
+        let jresp = resp.body.parseJson
+        if jresp["success"].num == 1 and jresp["emailhash"].hasKey("confidence") and jresp["emailhash"]["confidence"].fnum > 0.0:
+          exec(
+            db,
+            sql"update person set status = ? where name = ?;",
+            AutoSpammer, c.userName
+          )
+          raise newForumError("Your account has been marked by https://www.stopforumspam.com/. If you believe this is a mistake please contact a moderator. " & supportUrl)
+
   result[0] = tryInsertID(db, query, subject, categoryID).int
   if result[0] < 0:
     raise newForumError("Subject already exists", @["subject"])
@@ -877,6 +897,7 @@ routes:
             from thread t, category c, person u
             where t.isDeleted = 0 and category = c.id and $#
                   u.status <> 'Spammer' and u.status <> 'Troll' and
+                  u.status <> 'AutoSpammer' and
                   u.id = (
                     select p.author from post p
                     where p.thread = t.id
@@ -944,12 +965,13 @@ routes:
       let addDetail = i < count or rows.len-i < count or id == anchor
 
       if addDetail:
-        let replyingTo = selectReplyingTo(rows[i][4])
-        let history = selectHistory(id)
-        let likes = selectLikes(id)
-        let post = selectPost(
-          rows[i], skippedPosts, replyingTo, history, likes
-        )
+        let
+          replyingTo = selectReplyingTo(rows[i][4])
+          history = selectHistory(id)
+          likes = selectLikes(id)
+          post = selectPost(
+            rows[i], skippedPosts, replyingTo, history, likes
+          )
         list.posts.add(post)
         skippedPosts = @[]
       else:

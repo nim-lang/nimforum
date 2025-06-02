@@ -3,6 +3,7 @@ import times, options
 type
   # If you add more "Banned" states, be sure to modify forum's threadsQuery too.
   Rank* {.pure.} = enum ## serialized as 'status'
+    AutoSpammer      ## Account automatically marked as spammer
     Spammer          ## spammer: every post is invisible
     Moderated        ## new member: posts manually reviewed before everybody
                      ## can see them
@@ -25,6 +26,8 @@ type
     rank*: Rank
     isDeleted*: bool
 
+const bannedRanks* = {AutoSpammer, Spammer, Troll, Banned}
+
 proc isOnline*(user: User): bool =
   return getTime().toUnix() - user.lastOnline < (60*5)
 
@@ -39,7 +42,7 @@ proc canPost*(rank: Rank): bool =
   rank >= Rank.User or rank == Moderated
 
 proc isBanned*(rank: Rank): bool =
-  rank in {Spammer, Troll, Banned}
+  rank in bannedRanks
 
 when defined(js):
   include karax/prelude
@@ -63,7 +66,7 @@ when defined(js):
   proc renderUserRank*(user: User): VNode =
     result = buildHtml():
       case user.rank
-      of Spammer, Troll, Banned:
+      of bannedRanks:
         italic(class="fas fa-eye-ban",
                title="User is banned")
       of Rank.User, EmailUnconfirmed:
