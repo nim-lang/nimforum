@@ -143,6 +143,16 @@ $logo-height: $navbar-height - 20px;
   white-space: nowrap;
 }
 
+.category-name {
+  a:link,
+  a:hover,
+  a:active,
+  a:visited {
+    color: $body-font-color;
+    text-decoration: none;
+  }
+}
+
 #new-thread {
   .modal-container .modal-body {
     max-height: none;
