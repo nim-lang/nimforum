@@ -619,7 +619,7 @@ proc executeNewThread(c: TForumData, subject, msg, categoryID: string): (int64, 
         resp = client.get("https://api.stopforumspam.org/api?emailhash=" & c.email.getMd5 & "&json")
       if resp.code == Http200:
         let jresp = resp.body.parseJson
-        if jresp["success"].num == 1 and jresp["emailhash"].hasKey("confidence") and jresp["emailhash"]["confidence"].fnum > 0.0:
+        if jresp["success"].num == 1 and jresp["emailhash"].hasKey("confidence") and jresp["emailhash"]["confidence"].str.parseFloat > 0.0:
           exec(
             db,
             sql"update person set status = ? where name = ?;",
