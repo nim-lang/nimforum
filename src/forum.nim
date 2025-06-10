@@ -242,6 +242,49 @@ proc rateLimitCheck(c: TForumData): bool =
   if last300s > 6: return true
   return false
 
+proc stopForumSpamCheck(c: TForumData): bool =
+  if c.rank == Moderated:
+    let
+      client = newHttpClient()
+      resp = client.get("https://api.stopforumspam.org/api?emailhash=" & c.email.getMd5 & "&json")
+    if resp.code == Http200:
+      let jresp = resp.body.parseJson
+      if jresp["success"].num == 1 and jresp["emailhash"].hasKey("confidence") and jresp["emailhash"]["confidence"].str.parseFloat > 0.0:
+        exec(
+          db,
+          sql"update person set status = ? where name = ?;",
+          AutoSpammer, c.userName
+        )
+        return true
+
+proc spamHeuristicsCheck(c: TForumData, content: string, topic = ""): bool =
+  if c.rank == Moderated:
+    var spamScore = 0.0
+    if topic.len > 8 and topic.allCharsInSet(UppercaseLetters + Digits + Whitespace):
+      spamScore += 1.0
+    let dollar = content.find('$')
+    if dollar != -1 and content.len > dollar + 1 and content[dollar + 1] in Digits:
+      spamScore += 0.5
+
+    let
+      lowerContent = content.toLowerAscii
+      marker = "{{WORDLIST_HIT}}"
+      wordlistHits = lowerContent.multiReplace([
+        ("bitcoin", marker), ("ethereum", marker), ("cryptocurrency", marker),
+        ("hacker", marker), ("recovery", marker), ("contact", marker),
+        ("hemp", marker), ("cbd", marker),("gummy", marker), ("thc", marker),
+        ("www.facebook.com", marker), ("whatsapp", marker)])
+      wordlistHitCount = wordlistHits.count(marker)
+    if wordlistHitCount >= 2:
+      spamScore += wordlistHitCount.float * 0.3
+    if spamScore > 1:
+      echo "Post by user ", c.userid, " trigger AutoSpam with score ", spamScore
+      exec(
+        db,
+        sql"update person set status = ? where name = ?;",
+        AutoSpammer, c.userName
+      )
+      return true
 
 proc verifyIdentHash(
   c: TForumData, name: string, epoch: int64, ident: string
@@ -478,6 +521,14 @@ proc executeReply(c: TForumData, threadId: int, content: string,
     if rateLimitCheck(c):
       raise newForumError("You're posting too fast!")
 
+  when not defined(skipStopForumSpamCheck):
+    if stopForumSpamCheck(c):
+      raise newForumError("Your account has been marked by https://www.stopforumspam.com/. If you believe this is a mistake please contact a moderator. " & supportUrl)
+
+  when not defined(skipSpamHeuristics):
+    if spamHeuristicsCheck(c, content):
+      raise newForumError("Your account has been automatically marked as spam. If you believe this is a mistake please contact a moderator. " & supportUrl)
+
   if content.strip().len == 0:
     raise newForumError("Message cannot be empty")
 
@@ -613,19 +664,12 @@ proc executeNewThread(c: TForumData, subject, msg, categoryID: string): (int64, 
       raise newForumError("You're posting too fast!")
 
   when not defined(skipStopForumSpamCheck):
-    if c.rank == Moderated:
-      let
-        client = newHttpClient()
-        resp = client.get("https://api.stopforumspam.org/api?emailhash=" & c.email.getMd5 & "&json")
-      if resp.code == Http200:
-        let jresp = resp.body.parseJson
-        if jresp["success"].num == 1 and jresp["emailhash"].hasKey("confidence") and jresp["emailhash"]["confidence"].str.parseFloat > 0.0:
-          exec(
-            db,
-            sql"update person set status = ? where name = ?;",
-            AutoSpammer, c.userName
-          )
-          raise newForumError("Your account has been marked by https://www.stopforumspam.com/. If you believe this is a mistake please contact a moderator. " & supportUrl)
+    if stopForumSpamCheck(c):
+      raise newForumError("Your account has been marked by https://www.stopforumspam.com/. If you believe this is a mistake please contact a moderator. " & supportUrl)
+
+  when not defined(skipSpamHeuristics):
+    if spamHeuristicsCheck(c, msg, subject):
+      raise newForumError("Your account has been automatically marked as spam. If you believe this is a mistake please contact a moderator. " & supportUrl)
 
   result[0] = tryInsertID(db, query, subject, categoryID).int
   if result[0] < 0:
