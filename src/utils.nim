@@ -177,7 +177,7 @@ proc processMentions(node: XmlNode): XmlNode =
 
 proc rstToHtml*(content: string): string {.gcsafe.}=
   {.cast(gcsafe).}:
-    result = rstgen.rstToHtml(content, {roSupportMarkdown},
+    result = rstgen.rstToHtml(content & "\n", {roSupportMarkdown},
                               docConfig)
   try:
     var node = parseHtml(newStringStream(result))
