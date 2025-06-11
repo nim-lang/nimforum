@@ -924,6 +924,7 @@ routes:
     resp $(%list), "application/json"
 
   get "/threads.json":
+    createTFD()
     var
       start = getInt(@"start", 0)
       count = getInt(@"count", 30)
@@ -941,7 +942,7 @@ routes:
       countArgs.add($categoryId)
       categoryArgs.insert($categoryId, 0)
 
-    const threadsQuery =
+    let threadsQuery =
       """select t.id, t.name, views, strftime('%s', modified), isLocked, isPinned,
                   c.id, c.name, c.description, c.color,
                   u.id, u.name, u.email, strftime('%s', u.lastOnline),
@@ -949,7 +950,7 @@ routes:
             from thread t, category c, person u
             where t.isDeleted = 0 and category = c.id and $#
                   u.status <> 'Spammer' and u.status <> 'Troll' and
-                  u.status <> 'AutoSpammer' and
+                  u.status <> 'AutoSpammer' and """ & (if c.username.len > 0 and c.rank notin [Moderator, Admin]: "(u.status <> 'Moderated' or u.id == " & c.userid & ") and" else: "") & """
                   u.id = (
                     select p.author from post p
                     where p.thread = t.id
@@ -999,7 +1000,9 @@ routes:
                   strftime('%s', u.previousVisitAt), u.status,
                   u.isDeleted
           from post p, person u
-          where u.id = p.author and p.thread = ? and p.isDeleted = 0
+          where u.id = p.author and p.thread = ? and p.isDeleted = 0 and
+            u.status <> 'Spammer' and u.status <> 'Troll' and
+            u.status <> 'AutoSpammer'""" & (if c.username.len > 0 and c.rank notin [Moderator, Admin]: " and (u.status <> 'Moderated' or u.id == " & c.userid & ")" else: "") & """
           order by p.id"""
       )
 

@@ -16,7 +16,7 @@
 #    strftime('%Y-%m-%dT%H:%M:%SZ', (A.modified)),
 #    COUNT(B.id), C.name, B.content, B.id
 #    FROM thread AS A, post AS B, person AS C
-#    WHERE A.id = b.thread AND B.author = C.id
+#    WHERE A.id = b.thread AND B.author = C.id AND (C.status == 'User' OR C.status == 'Moderator' OR C.status == 'Admin' OR C.status == 'Banned')
 #    GROUP BY B.thread
 #    ORDER BY modified DESC LIMIT ?"""
 #  const threadId = 0
@@ -64,7 +64,7 @@ ${xmlEncode(rstToHtml(!postContent))}</content>
 #    A.creation, COUNT(C.id)
 #    FROM post AS A, person AS B, post AS C, thread AS T
 #    WHERE A.author = B.id AND A.thread = C.thread AND C.id <= A.id
-#          AND T.id = A.thread
+#          AND T.id = A.thread AND (B.status == 'User' OR B.status == 'Moderator' OR B.status == 'Admin' OR B.status == 'Banned')
 #    GROUP BY A.id
 #    ORDER BY A.creation DESC LIMIT 10"""
 #  const postId = 0
