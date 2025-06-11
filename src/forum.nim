@@ -58,6 +58,11 @@ var
   mailer: Mailer
   karaxHtml: string
 
+when defined(wordlistSpamCutoff):
+  const wordlistSpamCutoff {.intdefine.} = 0
+  echo "Wordlist spam cutoff enabled! ", wordlistSpamCutoff
+  var wordList: Table[string, float]
+
 proc init(c: TForumData) =
   c.userPass = ""
   c.userName = ""
@@ -242,20 +247,21 @@ proc rateLimitCheck(c: TForumData): bool =
   if last300s > 6: return true
   return false
 
-proc stopForumSpamCheck(c: TForumData): bool =
-  if c.rank == Moderated:
-    let
-      client = newHttpClient()
-      resp = client.get("https://api.stopforumspam.org/api?emailhash=" & c.email.getMd5 & "&json")
-    if resp.code == Http200:
-      let jresp = resp.body.parseJson
-      if jresp["success"].num == 1 and jresp["emailhash"].hasKey("confidence") and jresp["emailhash"]["confidence"].str.parseFloat > 0.0:
-        exec(
-          db,
-          sql"update person set status = ? where name = ?;",
-          AutoSpammer, c.userName
-        )
-        return true
+when not defined(skipStopForumSpamCheck):
+  proc stopForumSpamCheck(c: TForumData): bool =
+    if c.rank == Moderated:
+      let
+        client = newHttpClient()
+        resp = client.get("https://api.stopforumspam.org/api?emailhash=" & c.email.getMd5 & "&json")
+      if resp.code == Http200:
+        let jresp = resp.body.parseJson
+        if jresp["success"].num == 1 and jresp["emailhash"].hasKey("confidence") and jresp["emailhash"]["confidence"].str.parseFloat > 0.0:
+          exec(
+            db,
+            sql"update person set status = ? where name = ?;",
+            AutoSpammer, c.userName
+          )
+          return true
 
 proc spamHeuristicsCheck(c: TForumData, content: string, topic = ""): bool =
   if c.rank == Moderated:
@@ -279,14 +285,38 @@ proc spamHeuristicsCheck(c: TForumData, content: string, topic = ""): bool =
       wordlistHitCount = wordlistHits.count(marker)
     if wordlistHitCount >= 2:
       spamScore += wordlistHitCount.float * 0.3
+    echo "Post by user ", c.userName, " has spam heuristics score ", spamScore
     if spamScore > 1:
-      echo "Post by user ", c.userid, " trigger AutoSpam with score ", spamScore
       exec(
         db,
         sql"update person set status = ? where name = ?;",
         AutoSpammer, c.userName
       )
       return true
+
+when defined(wordlistSpamCutoff):
+  proc wordlistSpamCheck(c: TForumData, content: string): bool =
+    if c.rank == Moderated:
+      var
+        wordCount = 0
+        score = 0.0
+      let words = content.toLowerAscii.splitWhitespace()
+      for word in words:
+        {.gcsafe.}:
+          if wordList.hasKey(word):
+            wordCount += 1
+            score += wordList[word]
+      if wordCount == 0:
+        return false # No known words in list, extremely unlikely
+      score = score / wordCount.float
+      echo "Post by user ", c.userName, " has a wordlist spam score ", score
+      if score > wordlistSpamCutoff / 1000:
+        exec(
+          db,
+          sql"update person set status = ? where name = ?;",
+          AutoSpammer, c.userName
+        )
+        return true
 
 proc verifyIdentHash(
   c: TForumData, name: string, epoch: int64, ident: string
@@ -531,6 +561,10 @@ proc executeReply(c: TForumData, threadId: int, content: string,
     if spamHeuristicsCheck(c, content):
       raise newForumError("Your account has been automatically marked as spam. If you believe this is a mistake please contact a moderator. " & supportUrl)
 
+  when defined(wordlistSpamCutoff):
+    if wordlistSpamCheck(c, content):
+      raise newForumError("Your account has been automatically marked as spam. If you believe this is a mistake please contact a moderator. " & supportUrl)
+
   if content.strip().len == 0:
     raise newForumError("Message cannot be empty")
 
@@ -671,6 +705,10 @@ proc executeNewThread(c: TForumData, subject, msg, categoryID: string): (int64, 
 
   when not defined(skipSpamHeuristics):
     if spamHeuristicsCheck(c, msg, subject):
+      raise newForumError("Your account has been automatically marked as spam. If you believe this is a mistake please contact a moderator. " & supportUrl)
+
+  when defined(wordlistSpamCutoff):
+    if wordlistSpamCheck(c, msg):
       raise newForumError("Your account has been automatically marked as spam. If you believe this is a mistake please contact a moderator. " & supportUrl)
 
   result[0] = tryInsertID(db, query, subject, categoryID).int
@@ -896,6 +934,13 @@ proc updateProfile(
   )
 
 include "main.tmpl"
+
+when defined(wordlistSpamCutoff):
+  if fileExists("wordlist.csv"):
+    echo "Found spam score wordlist"
+    for line in "wordlist.csv".lines:
+      let split = line.split(',', 1)
+      wordList[split[1][1..^2]] = split[0].parseFloat
 
 initialise()
 
