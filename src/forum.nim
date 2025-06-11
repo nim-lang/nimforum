@@ -260,6 +260,8 @@ proc stopForumSpamCheck(c: TForumData): bool =
 proc spamHeuristicsCheck(c: TForumData, content: string, topic = ""): bool =
   if c.rank == Moderated:
     var spamScore = 0.0
+    if topic.startsWith("https://") or topic.startsWith("http://") or topic.startsWith("www."):
+      spamScore += 1.0
     if topic.len > 8 and topic.allCharsInSet(UppercaseLetters + Digits + Whitespace):
       spamScore += 1.0
     let dollar = content.find('$')
