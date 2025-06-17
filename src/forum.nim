@@ -553,18 +553,6 @@ proc executeReply(c: TForumData, threadId: int, content: string,
     if rateLimitCheck(c):
       raise newForumError("You're posting too fast!")
 
-  when not defined(skipStopForumSpamCheck):
-    if stopForumSpamCheck(c):
-      raise newForumError("Your account has been marked by https://www.stopforumspam.com/. If you believe this is a mistake please contact a moderator. " & supportUrl)
-
-  when not defined(skipSpamHeuristics):
-    if spamHeuristicsCheck(c, content):
-      raise newForumError("Your account has been automatically marked as spam. If you believe this is a mistake please contact a moderator. " & supportUrl)
-
-  when defined(wordlistSpamCutoff):
-    if wordlistSpamCheck(c, content):
-      raise newForumError("Your account has been automatically marked as spam. If you believe this is a mistake please contact a moderator. " & supportUrl)
-
   if content.strip().len == 0:
     raise newForumError("Message cannot be empty")
 
@@ -605,6 +593,18 @@ proc executeReply(c: TForumData, threadId: int, content: string,
     crud(crCreate, "post_fts", "id", "content"),
     retID.int, content
   )
+
+  when not defined(skipStopForumSpamCheck):
+    if stopForumSpamCheck(c):
+      raise newForumError("Your account has been marked by https://www.stopforumspam.com/. If you believe this is a mistake please contact a moderator. " & supportUrl)
+
+  when not defined(skipSpamHeuristics):
+    if spamHeuristicsCheck(c, content):
+      raise newForumError("Your account has been automatically marked as spam. If you believe this is a mistake please contact a moderator. " & supportUrl)
+
+  when defined(wordlistSpamCutoff):
+    if wordlistSpamCheck(c, content):
+      raise newForumError("Your account has been automatically marked as spam. If you believe this is a mistake please contact a moderator. " & supportUrl)
 
   exec(db, sql"update thread set modified = DATETIME('now') where id = ?",
        $threadId)
@@ -699,6 +699,16 @@ proc executeNewThread(c: TForumData, subject, msg, categoryID: string): (int64, 
     if rateLimitCheck(c):
       raise newForumError("You're posting too fast!")
 
+  result[0] = tryInsertID(db, query, subject, categoryID).int
+  if result[0] < 0:
+    raise newForumError("Subject already exists", @["subject"])
+
+  discard tryExec(db, crud(crCreate, "thread_fts", "id", "name"),
+                  result[0], subject)
+  result[1] = executeReply(c, result[0].int, msg, none[int]())
+  discard tryExec(db, sql"insert into post_fts(post_fts) values('optimize')")
+  discard tryExec(db, sql"insert into post_fts(thread_fts) values('optimize')")
+
   when not defined(skipStopForumSpamCheck):
     if stopForumSpamCheck(c):
       raise newForumError("Your account has been marked by https://www.stopforumspam.com/. If you believe this is a mistake please contact a moderator. " & supportUrl)
@@ -710,16 +720,6 @@ proc executeNewThread(c: TForumData, subject, msg, categoryID: string): (int64, 
   when defined(wordlistSpamCutoff):
     if wordlistSpamCheck(c, msg):
       raise newForumError("Your account has been automatically marked as spam. If you believe this is a mistake please contact a moderator. " & supportUrl)
-
-  result[0] = tryInsertID(db, query, subject, categoryID).int
-  if result[0] < 0:
-    raise newForumError("Subject already exists", @["subject"])
-
-  discard tryExec(db, crud(crCreate, "thread_fts", "id", "name"),
-                  result[0], subject)
-  result[1] = executeReply(c, result[0].int, msg, none[int]())
-  discard tryExec(db, sql"insert into post_fts(post_fts) values('optimize')")
-  discard tryExec(db, sql"insert into post_fts(thread_fts) values('optimize')")
 
 proc executeLogin(c: TForumData, username, password: string): string =
   ## Performs a login with the specified details.
