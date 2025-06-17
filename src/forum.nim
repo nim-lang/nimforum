@@ -255,7 +255,10 @@ when not defined(skipStopForumSpamCheck):
         resp = client.get("https://api.stopforumspam.org/api?emailhash=" & c.email.getMd5 & "&json")
       if resp.code == Http200:
         let jresp = resp.body.parseJson
-        if jresp["success"].num == 1 and jresp["emailhash"].hasKey("confidence") and jresp["emailhash"]["confidence"].str.parseFloat > 0.0:
+        if jresp["success"].num == 1 and jresp["emailhash"].hasKey("confidence") and (
+            (jresp["emailhash"]["confidence"].kind == JString and jresp["emailhash"]["confidence"].str.parseFloat > 0.0) or
+            (jresp["emailhash"]["confidence"].kind == JInt and jresp["emailhash"]["confidence"].num.float > 0.0) or
+            (jresp["emailhash"]["confidence"].kind == JFloat and jresp["emailhash"]["confidence"].fnum > 0.0)):
           exec(
             db,
             sql"update person set status = ? where name = ?;",
