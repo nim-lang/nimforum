@@ -27,7 +27,8 @@ requires "webdriver#c5e4182"
 
 when NimMajor > 1:
   requires "db_connector >= 0.1.0"
-  requires "smtp >= 0.1.0"
+  #requires "smtp >= 0.1.0"
+  requires "https://github.com/PMunch/smtp#579ca36"
 
 # Tasks
 

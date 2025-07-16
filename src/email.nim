@@ -57,7 +57,7 @@ proc sendMail(
     await client.connect(mailer.config.smtpAddress, Port(mailer.config.smtpPort))
 
   if mailer.config.smtpUser.len > 0:
-    await client.auth(mailer.config.smtpUser, mailer.config.smtpPassword)
+    await client.auth(mailer.config.smtpUser, mailer.config.smtpPassword, true)
 
   let toList = @[recipient]
 
@@ -67,7 +67,7 @@ proc sendMail(
   let dateHeader = now().utc().format("ddd, dd MMM yyyy hh:mm:ss") & " +0000"
   headers.add(("Date", dateHeader))
 
-  let encoded = createMessage(subject, message,
+  let encoded = createMessage(subject, message.replace("\n", "\c\L").replace("\c\L.\c\L", "\c\L. \c\L"),
       toList, @[], headers)
 
   await client.sendMail(mailer.config.smtpFromAddr, toList, $encoded)
