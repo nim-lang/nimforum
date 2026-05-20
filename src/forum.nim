@@ -997,7 +997,7 @@ routes:
                   strftime('%s', u.previousVisitAt), u.status, u.isDeleted
             from thread t, category c, person u
             where t.isDeleted = 0 and category = c.id and $#
-                  u.status <> 'Spammer' and u.status <> 'Troll' and
+                  u.status <> 'Spammer' and u.status <> 'Troll' and u.status <> 'Bot' and
                   u.status <> 'AutoSpammer' and """ & (if c.username.len > 0 and c.rank notin [Moderator, Admin]: "(u.status <> 'Moderated' or u.id == " & c.userid & ") and" else: "") & """
                   u.id = (
                     select p.author from post p
@@ -1049,7 +1049,7 @@ routes:
                   u.isDeleted
           from post p, person u
           where u.id = p.author and p.thread = ? and p.isDeleted = 0 and
-            u.status <> 'Spammer' and u.status <> 'Troll' and
+            u.status <> 'Spammer' and u.status <> 'Troll' and u.status <> 'Bot' and
             u.status <> 'AutoSpammer'""" & (if c.username.len > 0 and c.rank notin [Moderator, Admin]: " and (u.status <> 'Moderated' or u.id == " & c.userid & ")" else: "") & """
           order by p.id"""
       )

@@ -8,6 +8,7 @@ type
     Moderated        ## new member: posts manually reviewed before everybody
                      ## can see them
     Troll            ## troll: cannot write new posts
+    Bot
     Banned           ## A non-specific ban
     EmailUnconfirmed ## member with unconfirmed email address. Their posts
                      ## are visible, but cannot make new posts. This is so that
@@ -26,7 +27,7 @@ type
     rank*: Rank
     isDeleted*: bool
 
-const bannedRanks* = {AutoSpammer, Spammer, Troll, Banned}
+const bannedRanks* = {AutoSpammer, Spammer, Troll, Bot, Banned}
 
 proc isOnline*(user: User): bool =
   return getTime().toUnix() - user.lastOnline < (60*5)
