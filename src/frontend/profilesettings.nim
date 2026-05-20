@@ -93,6 +93,27 @@ when defined(js):
         p(class="form-input-hint text-warning"):
           text "You can modify anyone's rank. Remember: with " &
                "great power comes great responsibility."
+          ul:
+            li: text "AutoSpammer: Only to distinguish automatically " &
+                     "identified spammers from human identified spammers"
+            li: text "Spammer: Posts spam, content not related to Nim at " &
+                     "all. Users in this category are used to train the spam " &
+                     "filter so don't add users who posts about Nim but in a " &
+                     "spammy way."
+            li: text "Moderated: The default state for new users, posts only " &
+                     "visible to moderators for human verification."
+            li: text "Troll: Posts are hidden, can't create new posts. People " &
+                     "who might post about Nim, but in a trolly way."
+            li: text "Banned: Posts are not hidden, can't create new posts. " &
+                     "People who might've contributed useful things in the " &
+                     "past but have since turned."
+            li: text "EmailUnconfirmed: Can't post, but topics are still " &
+                     "visible. Will get status Moderated once the email " &
+                     "address is confirmed."
+            li: text "User: A normal user."
+            li: text "Moderator: Can change a users rank."
+            li: text "Admin: Can do everything, such as editing and deleting " &
+                     "other peoples posts."
       else:
         input(id="rank-field", class="form-input",
               `type`="text", disabled="", value = $state.rank)
@@ -111,6 +132,12 @@ when defined(js):
             text "Your account is under moderation. This is a spam prevention "&
                  "measure. You can write posts but only moderators and admins "&
                  "will see them until your account is verified by them."
+        of Bot:
+          p(class="form-input-hint text-warning"):
+            text "Your account has been marked as a bot. We value quality " &
+                 "contributions on this forum and without a human in the loop " &
+                 "it's hard to trust. If you believe this is an error, please " &
+                 "get in touch with a moderator. " & supportUrl
         else:
           discard
 
