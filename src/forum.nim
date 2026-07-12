@@ -849,7 +849,123 @@ proc updateProfile(
     $rank, email, username
   )
 
-include "main.tmpl"
+proc genRSSHeaders(c: TForumData): string =
+  # Migration from main.tmpl
+  result = fmt"""
+<link href="{c.req.makeUri("/threadActivity.xml")}" title="Thread activity"
+  type="application/atom+xml" rel="alternate">
+<link href="{c.req.makeUri("/postActivity.xml")}" title="Post activity"
+  type="application/atom+xml" rel="alternate">
+  """ 
+
+proc genThreadsRSS(c: TForumData): string =
+  # Migration from main.tmpl
+  const
+    query = sql"""SELECT A.id, A.name,
+    strftime('%Y-%m-%dT%H:%M:%SZ', (A.modified)),
+    COUNT(B.id), C.name, B.content, B.id
+    FROM thread AS A, post AS B, person AS C
+    WHERE A.id = b.thread AND B.author = C.id
+    GROUP BY B.thread
+    ORDER BY modified DESC LIMIT ?"""
+    threadId = 0
+    name = 1
+    threadDate = 2
+    postCount = 3
+    postAuthor = 4
+    postContent = 5
+    postId = 6
+  
+  let
+    frontQuery = c.req.makeUri("/")
+    recent = getValue(db, sql"""SELECT
+    strftime('%Y-%m-%dT%H:%M:%SZ', (modified)) FROM thread
+    ORDER BY modified DESC LIMIT 1""")
+
+  result = fmt"""
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>{config.name} thread activity</title>
+    <link href="{c.req.makeUri("/threadActivity.xml")}" rel="self" />
+    <link href="{frontQuery}" />
+    <id>{frontQuery}</id>
+    <updated>{recent}</updated>
+"""
+
+  for row in rows(db, query, 10):
+    let url = c.genThreadUrl(threadId = row[threadId]) & "#" & row[postId]
+    
+    result.add(
+      fmt"""<entry>
+        <title>{xmlEncode(row[name])}</title>
+        <id>urn:entry:{row[threadId]}</id>
+        <link rel="alternate" type="text/html"
+          href="{c.req.makeUri(url)}"/>
+        <published>{row[threadDate]}</published>
+        <updated>{row[threadDate]}</updated>
+        <author><name>{xmlEncode(row[postAuthor])}</name></author>
+        <content type="html">Posts {row[postCount]}, {xmlEncode(row[postAuthor])} said:
+&lt;p&gt;
+{xmlEncode(rstToHtml(row[postContent]))}</content>
+    </entry>
+      """)
+  
+  return result & "</feed>"
+
+proc genPostsRSS(c: TForumData): string =
+  ## Migration from main.tmpl
+  const
+    query = sql"""SELECT A.id, B.name, A.content, A.thread, T.name,
+    strftime('%Y-%m-%dT%H:%M:%SZ', A.creation),
+    A.creation, COUNT(C.id)
+    FROM post AS A, person AS B, post AS C, thread AS T
+    WHERE A.author = B.id AND A.thread = C.thread AND C.id <= A.id
+          AND T.id = A.thread
+    GROUP BY A.id
+    ORDER BY A.creation DESC LIMIT 10"""
+    postId = 0
+    postAuthor = 1
+    postContent = 2
+    postThread = 3
+    postHeader = 4
+    postRssDate = 5
+    postHumanDate = 6
+    postPosition = 7
+  
+  let
+    frontQuery = c.req.makeUri("/")
+    recent = getValue(db, sql"""SELECT
+    strftime('%Y-%m-%dT%H:%M:%SZ', creation) FROM post
+    ORDER BY creation DESC LIMIT 1""")
+  
+  result = fmt"""
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>{config.name} post activity</title>
+    <link href="{c.req.makeUri("/postActivity.xml")}" rel="self" />
+    <link href="{frontQuery}" />
+    <id>{frontQuery}</id>
+    <updated>{recent}</updated>
+"""
+
+  for row in rows(db, query):
+    let url = c.genThreadUrl(threadid = row[postThread]) & "#" & row[postId]
+    result.add(
+      fmt"""<entry>
+          <title>{xmlEncode(row[postHeader])}</title>
+          <id>urn:entry:{row[postId]}</id>
+          #
+          <link rel="alternate" type="text/html"
+            href="{c.req.makeUri(url)}"/>
+          <published>{row[postRssDate]}</published>
+          <updated>{row[postRssDate]}</updated>
+          <author><name>{xmlEncode(row[postAuthor])}</name></author>
+          <content type="html">On {xmlEncode(row[postHumanDate])}, {xmlEncode(row[postAuthor])} said:
+&lt;p&gt;
+{xmlEncode(rstToHtml(row[postContent]))}</content>
+    </entry>""")
+
+  return result & "</feed>"
 
 initialise()
 
