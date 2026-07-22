@@ -137,18 +137,18 @@ proc categoriesUserTests(session: Session, baseUrl: string) =
 
         click "#category-unsorted"
         checkText "#threads-list .thread-title a", "Post 3"
-        for element in session.waitForElements("#threads-list .category-name"):
+        for element in session.waitForElements("#threads-list .category-name a"):
           # Have to user "innerText" because elements are hidden on this page
           assert element.getProperty("innerText") == "Unsorted"
 
         selectCategory "announcements"
         checkText "#threads-list .thread-title a", "Post 2"
-        for element in session.waitForElements("#threads-list .category-name"):
+        for element in session.waitForElements("#threads-list .category-name a"):
           assert element.getProperty("innerText") == "Announcements"
 
         selectCategory "fun"
         checkText "#threads-list .thread-title a", "Post 1"
-        for element in session.waitForElements("#threads-list .category-name"):
+        for element in session.waitForElements("#threads-list .category-name a"):
           assert element.getProperty("innerText") == "Fun"
 
     session.logout()
