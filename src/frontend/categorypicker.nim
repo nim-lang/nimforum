@@ -86,13 +86,17 @@ when defined(js):
     state.addEnabled = enabled
 
   proc onCategoryClick(state: CategoryPicker, category: Category): proc (ev: Event, n: VNode) =
-    # this is necessary to capture the right value
-    let cat = category
+    # The JS backend hoists the loop variable into one shared object that is
+    # mutated in place per iteration, so capturing `category` itself would
+    # make every menu item select the last category. Only primitives are
+    # safe to capture here.
+    let categoryId = category.id
     return
       proc (ev: Event, n: VNode) =
         let oldCategory = state[state.selectedCategoryID]
-        state.select(cat.id)
-        state.onCategoryChange(oldCategory, cat)
+        let newCategory = state[categoryId]
+        state.select(categoryId)
+        state.onCategoryChange(oldCategory, newCategory)
 
   proc genAddCategory(state: CategoryPicker): VNode =
     result = buildHtml():

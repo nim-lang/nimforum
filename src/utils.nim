@@ -145,10 +145,13 @@ proc replaceMentions(node: XmlNode): seq[XmlNode] =
       if username.len == 0:
         result.add(newText(current & "@"))
       else:
-        let el = <>span(
-          class="user-mention",
-          data-username=username,
-          newText("@" & username)
+        # `<>span` can't be used here: `data-username` parses as the infix
+        # expression `data - username` and xmltree's `<>` macro chokes on it
+        # with newer Nim versions.
+        let el = newXmlTree(
+          "span",
+          [newText("@" & username)],
+          {"class": "user-mention", "data-username": username}.toXmlAttributes
         )
 
         result.add(newText(current))

@@ -910,7 +910,9 @@ routes:
                     order by p.author
                     limit 1
                   )
-            order by isPinned desc, modified desc limit ?, ?;"""
+            -- `t.id desc` breaks ties between threads modified within the same
+            -- second, so the ordering stays deterministic (newest first).
+            order by isPinned desc, modified desc, t.id desc limit ?, ?;"""
 
     let thrCount = getValue(db, countQuery, countArgs).parseInt()
     let moreCount = max(0, thrCount - (start + count))
