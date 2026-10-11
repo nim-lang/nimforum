@@ -276,6 +276,17 @@ proc initialise() =
   isFTSAvailable = db.getAllRows(sql("SELECT name FROM sqlite_master WHERE " &
       "type='table' AND name='post_fts'")).len == 1
 
+  # -- Migrations for DBs created before email notifications existed.
+  let personColumns = db.getAllRows(sql"pragma table_info(person)").map(
+    (row: seq[string]) => row[1]
+  )
+  for column in ["emailNewThreads", "emailMentions", "emailReplies"]:
+    if column notin personColumns:
+      db.exec(sql(
+        "alter table person add column " & column &
+        " boolean not null default 0"
+      ))
+
   buildCSS(config)
 
   # Read karax.html and set its properties.
@@ -462,6 +473,85 @@ proc selectThread(threadRow: seq[string], author: User): Thread =
 
   return thread
 
+# --------------- Email notifications -----------------------------------------
+
+type
+  PendingNotification = tuple
+    kind: NotificationKind
+    email: string
+    name: string
+
+proc sendNotifications(
+  mailer: Mailer,
+  notifications: seq[PendingNotification],
+  author, topic, url: string
+) {.async.} =
+  for n in notifications:
+    try:
+      await sendNotificationEmail(
+        mailer, n.kind, n.email, n.name, author, topic, url
+      )
+    except:
+      warn("Couldn't send notification email to ", n.email, ": ",
+           getCurrentExceptionMsg())
+
+proc queueNotifications(c: TForumData, threadId, postId: int,
+                        content: string, isNewThread: bool) {.gcsafe.} =
+  ## Queues email notifications for a newly created post. Recipient lookups
+  ## and URL building happen synchronously while the request is still alive;
+  ## only the SMTP transfers run in the background. Failures are logged and
+  ## never affect the post itself.
+  const excludedRanks = """status not in ('Spammer', 'Troll', 'AutoSpammer',
+                            'Banned', 'EmailUnconfirmed')"""
+
+  let topic = getValue(db, sql"select name from thread where id = ?", threadId)
+  if topic.len == 0: return
+
+  let url = c.req.makeUri("/t/$1#$2" % [$threadId, $postId], absolute = true)
+
+  var notifications: seq[PendingNotification] = @[]
+  var notified: seq[string] = @[]
+
+  # Mentions. When `content` is empty (new thread creation already queues
+  # them via `executeReply`) this is a no-op.
+  if content.len > 0:
+    for name in extractMentions(content):
+      for row in db.getAllRows(sql("""
+          select name, email from person
+          where name = ? and id != ? and emailMentions = 1 and isDeleted = 0 and
+          """ & excludedRanks), name, c.userid):
+        if row[0] notin notified:
+          notifications.add((nkMention, row[1], row[0]))
+          notified.add(row[0])
+
+  # Replies: notify everyone who already posted in this thread.
+  if not isNewThread:
+    for row in db.getAllRows(sql("""
+        select distinct u.name, u.email
+        from person u, post p
+        where p.thread = ? and p.author = u.id and u.id != ? and
+              u.emailReplies = 1 and u.isDeleted = 0 and
+        """ & excludedRanks), $threadId, c.userid):
+      if row[0] notin notified:
+        notifications.add((nkReply, row[1], row[0]))
+        notified.add(row[0])
+
+  # New threads: notify subscribers of every new thread on the forum.
+  if isNewThread:
+    for row in db.getAllRows(sql("""
+        select name, email from person
+        where id != ? and emailNewThreads = 1 and isDeleted = 0 and
+        """ & excludedRanks), c.userid):
+      if row[0] notin notified:
+        notifications.add((nkNewThread, row[1], row[0]))
+        notified.add(row[0])
+
+  if notifications.len > 0:
+    {.cast(gcsafe).}:
+      asyncCheck sendNotifications(
+        mailer, notifications, c.username, topic, url
+      )
+
 proc executeReply(c: TForumData, threadId: int, content: string,
                   replyingTo: Option[int]): int64 {.gcsafe.} =
   # TODO: Refactor TForumData.
@@ -521,6 +611,8 @@ proc executeReply(c: TForumData, threadId: int, content: string,
 
   exec(db, sql"update thread set modified = DATETIME('now') where id = ?",
        $threadId)
+
+  queueNotifications(c, threadId, retID.int, content, isNewThread=false)
 
   return retID
 
@@ -634,6 +726,8 @@ proc executeNewThread(c: TForumData, subject, msg, categoryID: string): (int64, 
   discard tryExec(db, crud(crCreate, "thread_fts", "id", "name"),
                   result[0], subject)
   result[1] = executeReply(c, result[0].int, msg, none[int]())
+  # Mentions in the first post are already queued by `executeReply` above.
+  queueNotifications(c, result[0].int, result[1].int, "", isNewThread=true)
   discard tryExec(db, sql"insert into post_fts(post_fts) values('optimize')")
   discard tryExec(db, sql"insert into post_fts(thread_fts) values('optimize')")
 
@@ -808,7 +902,8 @@ proc executeDeleteUser(c: TForumData, username: string) =
   logout(c)
 
 proc updateProfile(
-  c: TForumData, username, email: string, rank: Rank
+  c: TForumData, username, email: string, rank: Rank,
+  emailNewThreads, emailMentions, emailReplies: bool
 ) {.async, gcsafe.} =
   if c.rank < rank:
     raise newForumError("You cannot set a rank that is higher than yours.")
@@ -820,8 +915,11 @@ proc updateProfile(
   if email.len == 0:
     exec(
       db,
-      sql"update person set status = ? where name = ?;",
-      $rank, username
+      sql"""update person set status = ?, emailNewThreads = ?,
+                     emailMentions = ?, emailReplies = ?
+              where name = ?;""",
+      $rank, $int(emailNewThreads), $int(emailMentions),
+      $int(emailReplies), username
     )
     return
 
@@ -845,8 +943,11 @@ proc updateProfile(
 
   exec(
     db,
-    sql"update person set status = ?, email = ? where name = ?;",
-    $rank, email, username
+    sql"""update person set status = ?, email = ?, emailNewThreads = ?,
+                   emailMentions = ?, emailReplies = ?
+            where name = ?;""",
+    $rank, email, $int(emailNewThreads), $int(emailMentions),
+    $int(emailReplies), username
   )
 
 include "main.tmpl"
@@ -1073,7 +1174,8 @@ routes:
     let userQuery = sql("""
       select id, name, email, strftime('%s', lastOnline),
             strftime('%s', previousVisitAt), status, isDeleted,
-            strftime('%s', creation), id
+            strftime('%s', creation), id,
+            emailNewThreads, emailMentions, emailReplies
       from person
       where name = ? and isDeleted = 0
     """)
@@ -1085,16 +1187,20 @@ routes:
 
     let userRow = db.getRow(userQuery, username)
 
-    let userID = userRow[^1]
+    let userID = userRow[8]
     if userID.len == 0:
       halt()
 
     profile.user = selectUser(userRow, avatarSize=200)
-    profile.joinTime = userRow[^2].parseInt()
+    profile.joinTime = userRow[7].parseInt()
     profile.postCount =
       getValue(db, sql("select count(*) " & postsFrom), username).parseInt()
     profile.threadCount =
       getValue(db, sql("select count(*) " & threadsFrom), userID).parseInt()
+
+    profile.emailNewThreads = userRow[9] == "1"
+    profile.emailMentions = userRow[10] == "1"
+    profile.emailReplies = userRow[11] == "1"
 
     if c.rank >= Admin or c.username == username:
       profile.email = some(userRow[2])
@@ -1147,7 +1253,7 @@ routes:
     createTFD()
     let formData = request.formData
     {.cast(gcsafe).}:
-      if not config.isDev:
+      if config.recaptchaSecretKey.len > 0:
         cond "g-recaptcha-response" in formData
 
     let username = formData["username"].body
@@ -1506,9 +1612,18 @@ routes:
     let username = formData["username"].body
     let email = formData["email"].body
     let rank = parseEnum[Rank](formData["rank"].body)
+    cond "emailNewThreads" in formData
+    cond "emailMentions" in formData
+    cond "emailReplies" in formData
+    let emailNewThreads = formData["emailNewThreads"].body in ["on", "true", "1"]
+    let emailMentions = formData["emailMentions"].body in ["on", "true", "1"]
+    let emailReplies = formData["emailReplies"].body in ["on", "true", "1"]
 
     try:
-      await updateProfile(c, username, email, rank)
+      await updateProfile(
+        c, username, email, rank, emailNewThreads, emailMentions,
+        emailReplies
+      )
       resp Http200, "{}", "application/json"
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
@@ -1525,8 +1640,8 @@ routes:
 
     if not c.loggedIn():
       {.cast(gcsafe).}:
-        let isProductionEnvironment = not config.isDev
-      if isProductionEnvironment:
+        let captchaRequired = config.recaptchaSecretKey.len > 0
+      if captchaRequired:
         if "g-recaptcha-response" notin formData:
           let err = PostError(
             errorFields: @[],

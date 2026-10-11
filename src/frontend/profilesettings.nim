@@ -14,6 +14,9 @@ when defined(js):
       error: Option[PostError]
       email: kstring
       rank: Rank
+      emailNewThreads: bool
+      emailMentions: bool
+      emailReplies: bool
       deleteModal: DeleteModal
       resetPassword: PostButton
       profile: Profile
@@ -28,6 +31,9 @@ when defined(js):
     else:
       state.email = ""
     state.rank = profile.user.rank
+    state.emailNewThreads = profile.emailNewThreads
+    state.emailMentions = profile.emailMentions
+    state.emailReplies = profile.emailReplies
 
     state.error = none[PostError]()
 
@@ -45,6 +51,9 @@ when defined(js):
     postFinished:
      state.profile.email = some($state.email)
      state.profile.user.rank = state.rank
+     state.profile.emailNewThreads = state.emailNewThreads
+     state.profile.emailMentions = state.emailMentions
+     state.profile.emailReplies = state.emailReplies
 
   proc onEmailChange(event: Event, node: VNode, state: ProfileSettings) =
     state.email = node.value
@@ -58,6 +67,20 @@ when defined(js):
   proc onRankChange(event: Event, node: VNode, state: ProfileSettings) =
     state.rank = parseEnum[Rank]($node.value)
 
+  proc genCheckboxSwitch(
+    id, label: string, checked: bool,
+    onClick: proc (event: Event, node: VNode)
+  ): VNode =
+    # `checked` is set imperatively: an empty-string attribute would still
+    # count as "present" for a checkbox and force it on.
+    let checkbox = buildHtml(input(`type`="checkbox", onclick=onClick))
+    if checked:
+      checkbox.setAttr("checked", "true")
+    result = buildHtml(label(class="form-switch", id=id)):
+      checkbox
+      italic(class="form-icon")
+      text label
+
   proc save(state: ProfileSettings) =
     if state.loading:
       return
@@ -68,6 +91,9 @@ when defined(js):
     formData.append("email", state.email)
     formData.append("rank", $state.rank)
     formData.append("username", $state.profile.user.name)
+    formData.append("emailNewThreads", if state.emailNewThreads: "on" else: "off")
+    formData.append("emailMentions", if state.emailMentions: "on" else: "off")
+    formData.append("emailReplies", if state.emailReplies: "on" else: "off")
     let uri = makeUri("/saveProfile")
     ajaxPost(uri, @[], formData.to(cstring),
              (s: int, r: kstring) => onProfilePost(s, r, state))
@@ -76,6 +102,9 @@ when defined(js):
     if state.profile.email.isSome():
       result = state.email != state.profile.email.get()
     result = result or state.rank != state.profile.user.rank
+    result = result or state.emailNewThreads != state.profile.emailNewThreads
+    result = result or state.emailMentions != state.profile.emailMentions
+    result = result or state.emailReplies != state.profile.emailReplies
 
   proc render*(state: ProfileSettings,
                currentUser: Option[User]): VNode =
@@ -148,6 +177,41 @@ when defined(js):
                       text "gravatar.com"
                     text ". Note that any changes to your email will " &
                          "require email verification."
+            tdiv(class="form-group"):
+              tdiv(class="col-3 col-sm-12"):
+                label(class="form-label"):
+                  text "Notifications"
+              tdiv(class="col-9 col-sm-12"):
+                # Each switch sits in its own div: Spectre's .form-switch is
+                # inline-block, so without this they end up on one line.
+                tdiv:
+                  genCheckboxSwitch(
+                    "email-new-threads-checkbox",
+                    " New threads",
+                    state.emailNewThreads,
+                    (e: Event, n: VNode) => (
+                      state.emailNewThreads = not state.emailNewThreads)
+                  )
+                tdiv:
+                  genCheckboxSwitch(
+                    "email-mentions-checkbox",
+                    " Mentions",
+                    state.emailMentions,
+                    (e: Event, n: VNode) => (
+                      state.emailMentions = not state.emailMentions)
+                  )
+                tdiv:
+                  genCheckboxSwitch(
+                    "email-replies-checkbox",
+                    " Replies to threads I posted in",
+                    state.emailReplies,
+                    (e: Event, n: VNode) => (
+                      state.emailReplies = not state.emailReplies)
+                  )
+                p(class="form-input-hint"):
+                  text "Send an email to " & $state.email & " when these " &
+                       "events happen. Mentions are @username references " &
+                       "in posts."
             tdiv(class="form-group"):
               tdiv(class="col-3 col-sm-12"):
                 label(class="form-label"):

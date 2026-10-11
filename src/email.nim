@@ -64,7 +64,7 @@ proc sendMail(
   var headers = otherHeaders
   headers.add(("From", mailer.config.smtpFromAddr))
 
-  let dateHeader = now().utc().format("ddd, dd MMM yyyy hh:mm:ss") & " +0000"
+  let dateHeader = now().utc().format("ddd, dd MMM yyyy HH:mm:ss") & " +0000"
   headers.add(("Date", dateHeader))
 
   let encoded = createMessage(subject, message,
@@ -110,6 +110,36 @@ Thank you for registering and becoming a part of our community!
 type
   SecureEmailKind* = enum
     ActivateEmail, ResetPassword
+
+  NotificationKind* = enum
+    nkNewThread, nkMention, nkReply
+
+proc sendNotificationEmail*(
+  mailer: Mailer,
+  kind: NotificationKind,
+  email, user, author, topic, url: string
+) {.async.} =
+  let
+    (action, subjectPrefix) =
+      case kind
+      of nkNewThread:
+        ("started a new thread", "New thread")
+      of nkMention:
+        ("mentioned you in", "Mention")
+      of nkReply:
+        ("replied to a thread you participated in", "Reply")
+    message = """Hello $1,
+
+$2 $3 "$4" on the $5:
+
+  $6
+
+---
+You are receiving this email because you enabled the corresponding
+notification in your profile settings.
+""" % [user, author, action, topic, mailer.config.name, url]
+    subject = "$1: $2 - $3" % [subjectPrefix, topic, mailer.config.name]
+  await sendMail(mailer, subject, message, email)
 
 proc sendSecureEmail*(
   mailer: Mailer,

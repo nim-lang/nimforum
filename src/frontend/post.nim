@@ -54,6 +54,9 @@ type
     posts*: seq[PostLink]
     postCount*: int
     threadCount*: int
+    emailNewThreads*: bool
+    emailMentions*: bool
+    emailReplies*: bool
     # Information that only admins should see.
     email*: Option[string]
 

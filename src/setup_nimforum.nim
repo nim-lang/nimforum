@@ -110,7 +110,10 @@ proc initialiseDb(admin: tuple[username, password, email: string],
     lastOnline timestamp not null default (DATETIME('now')),
     previousVisitAt timestamp not null default (DATETIME('now')),
     isDeleted boolean not null default 0,
-    needsPasswordReset boolean not null default 0
+    needsPasswordReset boolean not null default 0,
+    emailNewThreads boolean not null default 0,
+    emailMentions boolean not null default 0,
+    emailReplies boolean not null default 0
   );""" % [userNameType, passwordType, emailType]), [])
 
   db.exec(sql"""

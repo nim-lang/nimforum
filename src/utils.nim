@@ -1,5 +1,5 @@
 import asyncdispatch, smtp, strutils, json, os, xmltree, strtabs,
-  htmlparser, streams, parseutils, options, logging
+  htmlparser, streams, parseutils, options, logging, sets
 from times import getTime, utc, format
 
 import packages/docutils/[rst, rstgen]
@@ -145,10 +145,12 @@ proc replaceMentions(node: XmlNode): seq[XmlNode] =
       if username.len == 0:
         result.add(newText(current & "@"))
       else:
-        let el = <>span(
-          class="user-mention",
-          data-username=username,
-          newText("@" & username)
+        # newXmlTree instead of htmlgen's ``<>span``: the latter no longer
+        # compiles on Nim 2.2 (``Invalid node kind nnkInfix``).
+        let el = newXmlTree(
+          "span",
+          [newText("@" & username)],
+          {"class": "user-mention", "data-username": username}.toXmlAttributes
         )
 
         result.add(newText(current))
@@ -190,3 +192,23 @@ proc rstToHtml*(content: string): string {.gcsafe.}=
     add(result, node, indWidth=0, addNewLines=false)
   except:
     warn("Could not parse rst html.")
+
+proc extractMentions*(content: string): seq[string] {.gcsafe.} =
+  ## Returns the usernames mentioned in the specified RST content.
+  ## Reuses the rendering pipeline so that mentions inside code blocks
+  ## and links are ignored, just like on the rendered page.
+  var found = initHashSet[string]()
+  try:
+    let node = parseHtml(newStringStream(content.rstToHtml()))
+    proc walk(n: XmlNode) =
+      if n.kind != xnElement: return
+      if n.tag == "span" and n.attr("data-username").len > 0:
+        found.incl(n.attr("data-username"))
+      for child in n:
+        walk(child)
+    walk(node)
+  except:
+    warn("Could not parse rst html while extracting mentions.")
+  result = @[]
+  for name in found:
+    result.add(name)
