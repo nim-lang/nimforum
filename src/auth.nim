@@ -1,4 +1,5 @@
 import std/sysrand
+import strutils
 import checksums/md5
 
 import bcrypt, hmac
@@ -23,9 +24,16 @@ proc makeSalt*(length = 128): string =
   return result
 
 proc makeSessionKey*(): string =
-  ## Creates a random key to be used to authorize a session.
-  let random = makeSalt()
-  return bcrypt.hash(random, genSalt(8))
+  ## Creates a random token to be used to authorize a session.
+  ## The raw token is sent to the client in a cookie; only
+  ## `hashSessionKey(token)` may be stored in the database.
+  for b in urandom(32):
+    result.add(strutils.toHex(b))
+
+proc hashSessionKey*(key: string): string =
+  ## One-way hash of a session token for database storage, so that a
+  ## database leak does not yield usable session cookies.
+  result = hash_sha256(key).toHex()
 
 proc makePassword*(password, salt: string, comparingTo = ""): string =
   ## Creates an MD5 hash by combining password and salt.
