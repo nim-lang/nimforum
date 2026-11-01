@@ -130,21 +130,36 @@ proc sendResetPassword(
     )
 
 proc logout(c: TForumData) =
-  const query = sql"delete from session where key = ?"
+  ## Ends every session of the logged-in user, on all devices.
   c.username = ""
   c.userpass = ""
-  exec(db, query, c.req.cookies["sid"])
+  if c.userid != "":
+    exec(db, sql"delete from session where userid = ?", c.userid)
 
 proc checkLoggedIn(c: TForumData) =
   if not c.req.cookies.hasKey("sid"): return
   let sid = c.req.cookies["sid"]
-  if execAffectedRows(db,
-       sql("update session set lastModified = DATETIME('now') " &
-           "where key = ?"),
-           sid) > 0:
-    c.userid = getValue(db,
-      sql"select userid from session where key = ?",
-      sid)
+
+  # Sessions slide while in use: a session stays valid for 30 days after
+  # its last request, but never longer than 90 days after its creation.
+  let sessionRow = getRow(db, sql"""
+      select userid,
+             lastModified > DATETIME('now', '-30 days'),
+             created > DATETIME('now', '-90 days')
+      from session where key = ?
+    """, sid)
+
+  if sessionRow[0] != "":
+    if sessionRow[1] == "0" or sessionRow[2] == "0":
+      exec(db, sql"delete from session where key = ?", sid)
+      warn("Expired session used. Assuming logged out.")
+      return
+
+    exec(db,
+         sql("update session set lastModified = DATETIME('now') " &
+             "where key = ?"),
+         sid)
+    c.userid = sessionRow[0]
 
     let row = getRow(db,
       sql"select name, email, status from person where id = ?", c.userid)
@@ -275,6 +290,16 @@ proc initialise() =
               database="nimforum")
   isFTSAvailable = db.getAllRows(sql("SELECT name FROM sqlite_master WHERE " &
       "type='table' AND name='post_fts'")).len == 1
+
+  # -- Migrations for DBs created before sliding sessions existed.
+  # SQLite forbids expression defaults in ADD COLUMN, so backfill manually.
+  # `lastModified` is the closest estimate of a pre-migration session's age.
+  let sessionColumns = db.getAllRows(sql"pragma table_info(session)").map(
+    (row: seq[string]) => row[1]
+  )
+  if "created" notin sessionColumns:
+    db.exec(sql"alter table session add column created timestamp")
+    db.exec(sql"update session set created = lastModified")
 
   buildCSS(config)
 
@@ -654,9 +679,19 @@ proc executeLogin(c: TForumData, username, password: string): string =
   for row in fastRows(db, query, username, username):
     if row[2] == makePassword(password, row[4], row[2]):
       let key = makeSessionKey()
+
+      # Every login purges sessions that have expired, either through
+      # 30 days of inactivity or the 90-day absolute cap.
+      exec(db, sql"""
+        delete from session
+        where lastModified < DATETIME('now', '-30 days')
+           or created < DATETIME('now', '-90 days')
+      """)
+
       exec(
         db,
-        sql"insert into session (ip, key, userid) values (?, ?, ?)",
+        sql"""insert into session (ip, key, userid, created)
+                   values (?, ?, ?, DATETIME('now'))""",
         c.req.ip, key, row[0]
       )
       return key
@@ -1138,7 +1173,8 @@ routes:
         formData["username"].body,
         formData["password"].body
       )
-      setCookie("sid", session, httpOnly=true, sameSite=Strict, secure=true)
+      setCookie("sid", session, daysForward(30),
+                httpOnly=true, sameSite=Strict, secure=true)
       resp Http200, "{}", "application/json"
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
@@ -1167,7 +1203,8 @@ routes:
         formData["email"].body
       )
       let session = executeLogin(c, username, password)
-      setCookie("sid", session, httpOnly=true, sameSite=Strict, secure=true)
+      setCookie("sid", session, daysForward(30),
+                httpOnly=true, sameSite=Strict, secure=true)
       resp Http200, "{}", "application/json"
     except ForumError as exc:
       resp Http400, $(%exc.data), "application/json"
