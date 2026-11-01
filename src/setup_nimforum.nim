@@ -177,6 +177,7 @@ proc initialiseDb(admin: tuple[username, password, email: string],
       ip inet not null,
       key $# not null,
       userid integer not null,
+      created timestamp not null default (DATETIME('now')),
       lastModified timestamp not null default (DATETIME('now')),
       foreign key (userid) references person(id)
     );""" % [passwordType]), [])
