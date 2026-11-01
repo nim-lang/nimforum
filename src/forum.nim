@@ -142,23 +142,25 @@ proc checkLoggedIn(c: TForumData) =
 
   # Sessions slide while in use: a session stays valid for 30 days after
   # its last request, but never longer than 90 days after its creation.
+  # Only the hash of the cookie token is stored, so lookups hash it too.
+  let sidHash = hashSessionKey(sid)
   let sessionRow = getRow(db, sql"""
       select userid,
              lastModified > DATETIME('now', '-30 days'),
              created > DATETIME('now', '-90 days')
       from session where key = ?
-    """, sid)
+    """, sidHash)
 
   if sessionRow[0] != "":
     if sessionRow[1] == "0" or sessionRow[2] == "0":
-      exec(db, sql"delete from session where key = ?", sid)
+      exec(db, sql"delete from session where key = ?", sidHash)
       warn("Expired session used. Assuming logged out.")
       return
 
     exec(db,
          sql("update session set lastModified = DATETIME('now') " &
              "where key = ?"),
-         sid)
+         sidHash)
     c.userid = sessionRow[0]
 
     let row = getRow(db,
@@ -692,7 +694,7 @@ proc executeLogin(c: TForumData, username, password: string): string =
         db,
         sql"""insert into session (ip, key, userid, created)
                    values (?, ?, ?, DATETIME('now'))""",
-        c.req.ip, key, row[0]
+        c.req.ip, hashSessionKey(key), row[0]
       )
       return key
 
